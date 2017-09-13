@@ -1,0 +1,36 @@
+{
+  "name": "agent-js-cucumber",
+  "version": "0.0.1",
+  "description": "Agent that connects cucumber-js with report portal ",
+  "main": "index.js",
+  "spec": "сumber version >=2.0.3 <3.0.0",
+  "dependencies": {
+    "path": "^0.12.7",
+    "reportportal-client": "^3.0.0"
+  },
+  "devDependencies": {
+    "chromedriver": "^2.32.2",
+    "cucumber-parallel": "^2.0.3",
+    "log4js": "^2.3.3",
+    "selenium-webdriver": "^3.5.0"
+  },
+  "scripts": {
+    "test": "cd testSample && node cuceLaunch.js",
+    "testSingle": "cd testSample && npm run testSingle  "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reportportal/agent-js-cucumber"
+  },
+  "keywords": [
+    "cucumber-reporter",
+    "reportportal",
+    "reporter"
+  ],
+  "author": "Uladzimir Paliakou",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/reportportal/agent-js-cucumber/issues"
+  },
+  "homepage": "https://github.com/reportportal/agent-js-cucumber#readme"
+}
