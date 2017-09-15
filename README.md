@@ -1,7 +1,9 @@
 # agent-js-cucumber
-### This cucumber agent works well with cucumber version < 3.0.0
-Install agent to your project dir
-```cmd npm install agent-js-cucumber --save-dev ```
+ This cucumber agent works well with cucumber version < 3.0.0
+## Install agent to your project dir
+```cmd 
+npm install agent-js-cucumber --save-dev 
+```
 
 1. Make sure that you required glue code correctly. It is important to make Cucumber see support code.
    For example:
@@ -65,7 +67,7 @@ If you use Protractor, your config should have the following code
     let {Logger} = require('agent-js-cucumber');
     defineSupportCode(consumer => consumer.setWorldConstructor(Logger(consumer).call()));
 ```
-    If you have other world constructors it must be used with the logger as shown below
+If you have other world constructors it must be used with the logger as shown below
 ```javascript
     function CustomWorld() {
     /*
@@ -91,9 +93,8 @@ defineSupportCode(consumer => consumer.setWorldConstructor(Logger(consumer,Custo
         this.screenshot("This screenshot").then(() => callback());
     });
 ```
-
-    screenshot function return promise fulfilled after screenshot is taken and image added to attachments.
-    Handler will parse attachments and send corresponding log to the step item.
+screenshot function return promise fulfilled after screenshot is taken and image added to attachments.
+Handler will parse attachments and send corresponding log to the step item.
 
 
 
@@ -116,7 +117,11 @@ defineSupportCode(consumer => CucumberReportPortalHandler(
 
 ```
 
-And just launch cucumber. with command ```cmd ./node_modules/cucumber/bin/cucumber.js ```  or the way you like.
+And just launch cucumber with command 
+```cmd 
+./node_modules/cucumber/bin/cucumber.js 
+```  
+or the way you like.
 
 
 ### Launch agents in multi thread mode.
@@ -129,8 +134,8 @@ And just launch cucumber. with command ```cmd ./node_modules/cucumber/bin/cucumb
  generate new processes  of node, which can't interact with each other, so Singelton objects or functions can't be created for synchronizing it work.
  Only primitive types could be sent as args to the new processes before launch. The way of resolving this problem is
  to create **launch file** that would generate a Parent Launch and send launch's **ID** to cucumber as argument. Then cucmber would launch cucmber-agents with the parent's ID.
- Look through example of the Launch File with native node modules ```cmd spawn ``` and ```cmd npm ```. ```cmd cucumber-parallel ``` module was used for paralleling cucumber processes.
- Also all code sample could be viewed at the ```cmd testSample ``` folder.
+ Look through example of the Launch File with native node modules ```spawn``` and ```npm ```. ```cucumber-parallel``` module was used for paralleling cucumber processes.
+ Also all code sample could be viewed at the ```testSample``` folder.
  #### This is just an example. You can use any launchers as gulp or grunt to make paralizing in way you want.
 
 
@@ -141,8 +146,6 @@ Parent id as global variable has been send with NPM , it could be sent in other 
 
 #### cuceLaunch.js
 ```javascript
-
-'use strict'
 const {spawn} = require('child_process'),
     config = require('./config/rpConfig.json'),
     reportPortal = require('reportportal-client'),
@@ -174,12 +177,11 @@ rp.startLaunch(
     .catch(err => {
         console.log('Failed to start launch due to error', config.launch, err);
     })
-
 ```
 
 **Parent id as global variable has been send with NPM , it could be sent in other ways.**
 
-```cmd test ``` script stored at package.json file
+```test``` script stored at package.json file
 #### package.json file
 ```javascript
   "scripts": {
@@ -191,7 +193,6 @@ rp.startLaunch(
 #### handlers.js file
 
 ```javascript
-
 const {CucumberReportPortalHandler} = require('../../../../modules'),
          {defineSupportCode} = require('cucumber'),
          conf = require('../../../config/rpConfig.json');
@@ -200,21 +201,20 @@ const {CucumberReportPortalHandler} = require('../../../../modules'),
      id: process.env.npm_config_id,
      takeScreenshot: 'onFailure',
  }, config)).bind(consumer).call());
-
 ```
 
-```cmd process.env.npm_config_id ``` is global varuable that has been sent with npm
+```process.env.npm_config_id``` is global varuable that has been sent with npm
 
-5. Run **cuceLaunch.js** file with command ```cmd node cuceLaunch.js ```
+5. Run **cuceLaunch.js** file with command ```node cuceLaunch.js```
 
 ### Run test sample .
 For running test sample clone cucumber-js-agent .
 At the working directory run
-```cmd npm i --dev```  - that would install all dev dependencies.
+```npm i --dev```  - that would install all dev dependencies.
 
-```cmd npm run test``` - that would run test in parallel mode
+```npm run test``` - that would run test in parallel mode
 
-```cmd npm run testSingle``` - that would run test in one tread mode .
+```npm run testSingle``` - that would run test in one tread mode .
 
 
 
