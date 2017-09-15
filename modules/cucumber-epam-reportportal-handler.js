@@ -248,7 +248,7 @@ module.exports = (config) => {
                         message: errorMessage
                     })
                         .then(result => {
-                            if(config.takeScreenshot === 'onFailure'){
+                            if(browser && config.takeScreenshot && config.takeScreenshot === 'onFailure'){
                                 browser.takeScreenshot()
                                     .then(png => {
                                         return reportportal.sendFile([
