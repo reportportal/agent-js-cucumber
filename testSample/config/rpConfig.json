@@ -4,6 +4,9 @@
   "launch": "LAUNCH_NAME",
   "project": "PROJECT_NAME",
   "mode": "DEFAULT",
-  "tags": ["your", "tags"],
+  "tags": [
+    "your",
+    "tags"
+  ],
   "description": "DESCRIPTION"
 }

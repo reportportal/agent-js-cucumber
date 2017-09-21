@@ -21,18 +21,56 @@ npm install agent-js-cucumber --save-dev
         L package.json
 ```
 
-If you use Protractor, your config should have the following code
+If you use Protractor you must use protractor-cucumber-framework, bellow you could look at the config example:
 
 ```javascript
+
+   exports.config = {
+    framework: 'custom',
+    getPageTimeout: 4000,
+    allScriptsTimeout: 4000,
+    params: {
+        defaultTimeOut: 4000
+    },
+    seleniumAddress: 'http://localhost:4444/wd/hub',
+    frameworkPath: require.resolve('protractor-cucumber-framework'),
     cucumberOpts: {
-        require: 'features/step_definitions/**/*.js',
+        require: './protractor/features/step_definitions/**/*.js',
         tags: false,
         format: 'pretty',
         profile: false,
         'no-source': true
     },
-    specs: ['features/*.feature'],
+    multiCapabilities: [
+    {
+        name: 'normal',
+        browserName: 'chrome',
+        shardTestFiles: true,
+        maxInstances: 2,
+        chromeOptions: {
+            args: ['--window-size=1024,768', '--disable-infobars']
+        }
+    }
+],
+
+    specs: ['./protractor/features/*.feature']
+}
+
 ```
+### Note
+Protractor and Cucumber have their own **timeouts** . When protractror start main process that lauches cucumber it would have different timeouts if there not the same they would wait for scripts different time. If cucumbers's timeout less then protractor's it would through wrong exeption. For example if page that has been loaded and hasn't got angular, the next error   would be thrown : ```javascript Error: function timed out after 10000 milliseconds . . . ``` . Instead of protractor's :
+```javascript  Error: Error while running testForAngular: asynchronous script timeout: result was not received in 4 seconds . . .```  .
+So it must be handled manually by setting cucumbers's timeout greater then protractor's is at the hooks.js. For example if you set up protractor's timeout 9000 miliseconds , so cucumber must be at least 1 second greater = 10000 miliseconds .  example could example :
+```javascript
+
+var {defineSupportCode} = require('cucumber');
+
+defineSupportCode(function({setDefaultTimeout}) {
+    setDefaultTimeout(1 * 10000);
+});
+
+```
+
 
 2. Create Report Portal Configuration
    For example in ./rpConfig.json
@@ -117,10 +155,10 @@ defineSupportCode(consumer => CucumberReportPortalHandler(
 
 ```
 
-And just launch cucumber with command 
-```cmd 
-./node_modules/cucumber/bin/cucumber.js 
-```  
+And just launch cucumber with command
+```cmd
+./node_modules/cucumber/bin/cucumber.js
+```
 or the way you like.
 
 
@@ -146,25 +184,65 @@ Parent id as global variable has been send with NPM , it could be sent in other 
 
 #### cuceLaunch.js
 ```javascript
+
+'use strict'
 const {spawn} = require('child_process'),
     config = require('./config/rpConfig.json'),
     reportPortal = require('reportportal-client'),
     rp = new reportPortal(config);
+/*
+ * Parallel launch example of cucumber with webdriver
+ */
+const launchObject = {
+    name: config.launch,
+    description: !config.description ? "" : config.description,
+    tags: config.tags
+};
 
 rp.startLaunch(
     Object.assign({
         start_time: rp._now(),
-    }, config)
+    }, launchObject)
 ).then(id => {
+
     let cuce = spawn('npm', ['run', 'test', `--id=${id.id}`]);
+
     cuce.stdout.on('data', (data) => {
-        console.log(data.toString());
-    })
-    cuce.stderr.on('data', (data) => {
         console.log(data.toString());
     });
 
-    cuce.on('close', (code) => {
+   cuce.on('close', (code) => {
+       rp.finishLaunch(id.id, {
+           end_time: rp._now()
+       })
+           .then(result => console.log('exit with code ' + code))
+           .catch(err => {
+               console.log("Error occured dring finishing launch", err);
+           });
+   });
+
+}).catch(err => {
+        console.log('Failed to start launch due to error', config.launch, err);
+    });
+
+/*
+ * Protractor launch example
+ */
+rp.startLaunch(
+    Object.assign({
+        start_time: rp._now(),
+    }, launchObject)
+).then(id => {
+    let protractor = spawn('npm',['run','protractorTest',`--id=${id.id}`]);
+
+    protractor.stdout.on('data', (data) =>{
+        console.log(data.toString());
+    });
+    protractor.stderr.on('data', (data) => {
+        console.log(data.toString());
+
+    });
+    protractor.on('close',(code)=> {
         rp.finishLaunch(id.id, {
             end_time: rp._now()
         })
@@ -173,10 +251,11 @@ rp.startLaunch(
                 console.log("Error occured dring finishing launch", err);
             });
     });
-})
-    .catch(err => {
-        console.log('Failed to start launch due to error', config.launch, err);
-    })
+
+}).catch(err => {
+    console.log('Failed to start launch due to error', config.launch, err);
+});;
+
 ```
 
 **Parent id as global variable has been send with NPM , it could be sent in other ways.**
@@ -186,6 +265,7 @@ rp.startLaunch(
 ```javascript
   "scripts": {
     "test": "../node_modules/cucumber-parallel/bin/cucumber-parallel ./features -r ./features/step_definitions/ -f json:./reports/report.json",
+    "protractorTest": "protractor protractor.conf.js"
   }
 ```
 3. Then create or refactor handlers.js file by adding ID  as in example below:
@@ -212,7 +292,9 @@ For running test sample clone cucumber-js-agent .
 At the working directory run
 ```npm i --dev```  - that would install all dev dependencies.
 
-```npm run test``` - that would run test in parallel mode
+```npm run test``` - that would run all tests in parallel mode
+
+```npm run protractor``` - that would run tests with parallel mode
 
 ```npm run testSingle``` - that would run test in one tread mode .
 

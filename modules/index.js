@@ -1,6 +1,6 @@
-const CucumberReportPortalHandler = require('./cucumber-epam-reportportal-handler');
-const Logger = require('./loggerWorld');
+const CucumberReportPortalHandler = require('./cucumber-epam-reportportal-handler')
+const Logger = require('./loggerWorld')
 module.exports = {
-    CucumberReportPortalHandler,
-    Logger
-};
+  CucumberReportPortalHandler,
+  Logger
+}

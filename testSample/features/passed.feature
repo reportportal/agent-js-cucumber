@@ -1,4 +1,4 @@
-Feature: Logging one
+Feature: Logging feature
 
   @scenario
   Scenario: Log messages at the different level
