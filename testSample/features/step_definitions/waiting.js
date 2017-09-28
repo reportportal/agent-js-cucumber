@@ -26,7 +26,11 @@ defineSupportCode(function ({Before, Given, Then, When}) {
   Given(/^I am on the Cucumber.js GitHub repository/, function (callback) {
     this.info('Goint to the git hub')
     browser.get('https://github.com/cucumber/cucumber-js/tree/master').then(() => {
-      callback()
+
+    }).then(() => {
+      this.screenshot('Test screen').then(() => {
+        callback()
+      })
     })
   })
 

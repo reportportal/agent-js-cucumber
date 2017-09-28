@@ -31,12 +31,12 @@ module.exports = () => {
         let _self = this
         if (browser) {
           return browser.takeScreenshot()
-            .then(png => {
+            .then(png =>
               _self.attach(JSON.stringify({
                 message: logMessage,
                 data: png
               }), 'image/png')
-            })
+            )
         } else {
 
         }
