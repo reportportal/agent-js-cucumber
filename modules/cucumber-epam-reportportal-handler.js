@@ -44,7 +44,7 @@ module.exports = (config) => {
 
     this.registerHandler('BeforeFeature', (event, callback) => {
       let featureUri = getEventUri(event.uri)
-      let description = featureUri// event.description ? reportportal._formatName(event.description) : featureUri
+      let description = event.description ? event.description : featureUri
       let name = event.name
       let launchObj = reportportal.startTestItem({
         name: name,
