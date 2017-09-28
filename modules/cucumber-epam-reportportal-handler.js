@@ -36,44 +36,24 @@ module.exports = (config) => {
 
   reportPortalHandlers = function () {
     this.registerHandler('BeforeFeatures', (event, callback) => {
-      if (!config.id) {
-        reportportal.startLaunch({
-          name: config.launch,
-          start_time: reportportal._now(),
-          description: !config.description ? '' : config.description,
-          tags: tagsConf
-        }).then(id => {
-          context.launchId = id.id
-          callback()
-        })
-          .catch(err => {
-            console.log('Failed to start launch due to error', config.launch, err)
-            callback()
-          })
-      } else {
-        context.launchId = config.id
-        callback()
-      }
+      const startObj = config.id ? {id: config.id} : {}
+      const launchObj = reportportal.startLaunch(startObj)
+      context.launchId = launchObj.tempId
+      callback()
     })
+
     this.registerHandler('BeforeFeature', (event, callback) => {
       let featureUri = getEventUri(event.uri)
-      let description = event.description ? reportportal._formatName(event.description) : featureUri
+      let description = featureUri// event.description ? reportportal._formatName(event.description) : featureUri
       let name = event.name
-      reportportal.startTestItem({
-        name: reportportal._formatName(name),
-        launch_id: context.launchId,
-        start_time: reportportal._now(),
+      let launchObj = reportportal.startTestItem({
+        name: name,
         type: 'SUITE',
         description: description,
         tags: event.tags ? event.tags.map(tag => tag.name) : []
-      })
-        .then(id => {
-          context.featureId = id.id
-          callback()
-        }).catch(err => {
-          console.log('Error occured on starting feature', err)
-          callback()
-        })
+      }, context.launchId)
+      context.featureId = launchObj.tempId
+      callback()
     })
     this.registerHandler('BeforeScenario', (event, callback) => {
       let keyword = event.keyword
@@ -88,22 +68,16 @@ module.exports = (config) => {
         name += ' [' + context.outlineRow + ']'
       }
 
-      reportportal.startTestItem({
-        name: reportportal._formatName(name),
-        launch_id: context.launchId,
-        start_time: reportportal._now(),
+      let launchObj = reportportal.startTestItem({
+        name: name,
         type: 'TEST',
         description: description,
         tags: event.tags ? event.tags.map(tag => tag.name) : []
-      }, context.featureId)
-        .then(testId => {
-          context.scenarioId = testId.id
-          callback()
-        }).catch(err => {
-          console.log('Error occured on starting scenario', err)
-          callback()
-        })
+      }, context.launchId, context.featureId)
+      context.scenarioId = launchObj.tempId
+      callback()
     })
+
     this.registerHandler('BeforeStep', (event, callback) => {
       let args = []
       if (event.arguments && event.arguments.length) {
@@ -117,21 +91,14 @@ module.exports = (config) => {
           }
         })
       }
-      let name = event.name ? reportportal._formatName(`${event.keyword} ${event.name}`) : reportportal._formatName(event.keyword)
-      reportportal.startTestItem({
+      let name = event.name ? `${event.keyword} ${event.name}` : event.keyword
+      let launchObj = reportportal.startTestItem({
         name: name,
-        launch_id: context.launchId,
-        start_time: reportportal._now(),
         type: 'STEP',
         description: args.length ? args.join('\n').trim() : ''
-      }, context.scenarioId)
-        .then(stepId => {
-          context.stepId = stepId.id
-          callback()
-        }).catch(err => {
-          console.log('Error occured on starting step', err)
-          callback()
-        })
+      }, context.featureId, context.scenarioId)
+      context.stepId = launchObj.tempId
+      callback()
     })
     this.registerHandler('StepResult', (event, callback) => {
       let sceenshotName = !event.stepDefinition ? 'UNDEFINED STEP' : `Failed at step definition line:${event.stepDefinition.line}`
@@ -140,10 +107,7 @@ module.exports = (config) => {
           switch (attachment.mimeType) {
             case 'text/plain': {
               let logMessage = getCuceJSON(attachment.data)
-              let request = {
-                item_id: context.stepId,
-                time: reportportal._now()
-              }
+              let request = {}
               if (logMessage) {
                 request.level = logMessage.level
                 request.message = logMessage.message
@@ -151,32 +115,25 @@ module.exports = (config) => {
                 request.level = 'DEBUG'
                 request.message = attachment.data
               }
-              reportportal.log(request)
-                .catch(err => {
-                  console.log(err)
-                })
+              reportportal.sendLog(context.stepId, request)
               break
             }
             case 'image/png': {
               let request = {
-                item_id: context.stepId,
-                time: reportportal._now(),
                 level: context.stepStatus === 'passed' ? 'DEBUG' : 'ERROR'
               }
+              let screenObj = { name: sceenshotName,
+                type: 'image/png'}
               let pngObj = getCuceJSON(attachment.data)
               if (pngObj) {
-                request.file = {name: pngObj.message}
                 request.message = pngObj.message
-                reportportal.sendFile([request], pngObj.message, pngObj.data, 'image/png').catch(err => {
-                  console.log('Error occured on img png', err)
-                })
+                screenObj.content = pngObj.data
               } else {
-                request.file = {name: sceenshotName}
+                request.name = sceenshotName
                 request.message = sceenshotName
-                reportportal.sendFile([request], sceenshotName, attachment.data, 'image/png').catch(err => {
-                  console.log('Error occured on img screenshot', err)
-                })
+                screenObj.content = attachment.data
               }
+              reportportal.sendLog(context.stepId, request, screenObj)
               break
             }
           }
@@ -190,9 +147,7 @@ module.exports = (config) => {
           break
         }
         case 'pending': {
-          reportportal.log({
-            item_id: context.stepId,
-            time: reportportal._now(),
+          reportportal.sendLog(context.stepId, {
             level: 'WARN',
             message: "This step is marked as 'pending'"
           })
@@ -203,9 +158,7 @@ module.exports = (config) => {
           break
         }
         case 'undefined': {
-          reportportal.log({
-            item_id: context.stepId,
-            time: reportportal._now(),
+          reportportal.sendLog(context.stepId, {
             level: 'ERROR',
             message: 'There is no step definition found. Please verify and implement it.'
           })
@@ -216,9 +169,7 @@ module.exports = (config) => {
           break
         }
         case 'ambiguous': {
-          reportportal.log({
-            item_id: context.stepId,
-            time: reportportal._now(),
+          reportportal.sendLog(context.stepId, {
             level: 'ERROR',
             message: 'There are more than one step implementation. Please verify and reimplement it.'
           })
@@ -240,44 +191,32 @@ module.exports = (config) => {
           context.stepStatus = 'failed'
           context.failedScenarios++
           let errorMessage = `${event.stepDefinition.uri}\n ${util.format(event.failureException)}`
-          reportportal.log({
-            item_id: context.stepId,
-            time: reportportal._now(),
+          const errorObj = {
             level: 'ERROR',
             message: errorMessage
-          })
-            .then(result => {
-              if (browser && config.takeScreenshot && config.takeScreenshot === 'onFailure') {
-                return browser.takeScreenshot()
-                  .then(png => {
-                    return reportportal.sendFile([
-                      {
-                        item_id: context.stepId,
-                        time: reportportal._now(),
-                        level: 'ERROR',
-                        file: {name: sceenshotName},
-                        message: sceenshotName
-                      }], sceenshotName, png, 'image/png')
+          }
+          if (browser && config.takeScreenshot && config.takeScreenshot === 'onFailure') {
+            browser.takeScreenshot()
+              .then(png => {
+                reportportal.sendLog(context.stepId,
+                  errorObj, {
+                    name: sceenshotName,
+                    type: 'image/png',
+                    content: png
                   })
-                  .then(result => {
-                    callback()
-                  })
-                  .catch(error => {
-                    console.log('Failed to send Screenshot, error')
-                    callback(error)
-                  })
-              } else {
                 callback()
-              }
-            })
+              })
+          } else {
+            reportportal.sendLog(context.stepId, errorObj)
+            callback()
+          }
           break
         }
       }
     })
     this.registerHandler('AfterStep', (event, callback) => {
       let request = {
-        status: context.stepStatus,
-        end_time: reportportal._now()
+        status: context.stepStatus
       }
       if (request.status === 'not_found') {
         request.status = 'failed'
@@ -290,63 +229,35 @@ module.exports = (config) => {
           issue_type: 'TO_INVESTIGATE', comment: 'STEP IS PENDING IMPLEMENTATION'
         }
       }
-      reportportal.finishTestItem(context.stepId, request)
-        .then(result => {
-          context.stepStatus = 'failed'
-          context.stepId = null
-          callback()
-        })
-        .catch(err => {
-          console.log('Error occured on finishing step', err)
-          callback()
-        })
+      let launchObj = reportportal.finishTestItem(context.stepId, request)
+      callback()
     })
     this.registerHandler('ScenarioResult', (event, callback) => {
-      reportportal.finishTestItem(context.scenarioId, {
-        status: event.status !== 'PASSED' ? 'failed' : 'passed',
-        end_time: reportportal._now()
+      let launchObj = reportportal.finishTestItem(context.scenarioId, {
+        status: event.status !== 'PASSED' ? 'failed' : 'passed'
       })
-        .then(result => {
-          context.scenarioStatus = 'failed'
-          context.scenarioId = null
-          callback()
-        })
-        .catch(err => {
-          console.log('Error occured when finishing scenario', err)
-          callback()
-        })
+      context.scenarioStatus = 'failed'
+      context.scenarioId = null
+      callback()
     })
     this.registerHandler('AfterFeature', (event, callback) => {
       let featureStatus = context.failedScenarios > 0 ? 'failed' : 'passed'
       reportportal.finishTestItem(context.featureId, {
-        status: featureStatus,
-        end_time: reportportal._now()
+        status: featureStatus
       })
-        .then(result => {
-          callback()
-        })
-        .catch(err => {
-          console.log('Error occured when finishing feature', err)
-          callback()
-        })
+
+      callback()
     })
     this.registerHandler('AfterFeatures', (event, callback) => {
-      if (!context.launchId) {
-        console.log('Failed to finish test launch - launchId is not defined')
-        callback()
-      }
       if (!config.id) {
-        reportportal.finishLaunch(context.launchId, {
-          end_time: reportportal._now()
+        reportportal.finishLaunch(context.launchId, {}).promise.then(() => {
+          context = cleanReportContext()
+          callback()
         })
-          .then(result => callback())
-          .catch(err => {
-            console.log('Error occured dring finishing launch', err)
-            context = cleanReportContext()
-            callback()
-          })
       } else {
-        callback()
+        reportportal.getPromiseFinishAllItems(context.launchId).then(() => {
+          callback()
+        })
       }
     })
   }
