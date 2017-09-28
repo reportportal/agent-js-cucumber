@@ -6,7 +6,7 @@
   "spec": "сumber version >=2.0.3 <3.0.0",
   "dependencies": {
     "path": "^0.12.7",
-    "reportportal-client": "^5.0.0"
+    "reportportal-client": "^5.1.0"
   },
   "devDependencies": {
     "chromedriver": "^2.32.2",
