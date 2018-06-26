@@ -1,21 +1,46 @@
 const ReportPortalClient = require('reportportal-client')
 const Path = require('path')
-const util = require('util')
+const deasync = require('deasync');
+
+const takeScreenshotSync = () => {
+  let done = false;
+  let image;
+  browser.takeScreenshot().then(png => {
+    done = true;
+    image = png
+  });
+  deasync.loopWhile(function () {
+    return !done;
+  });
+  return image;
+};
+
+const resolveReportPortalPromise = (promise) => {
+  let asyncDone = false;
+  promise.then(() => asyncDone = true, () => {
+    asyncDone = true;
+    console.log('Error occured on resolving Report Portal promise');
+  });
+  deasync.loopWhile(function () {return !asyncDone;});
+};
 
 module.exports = (config) => {
-  getCuceJSON = (json) => {
-    try {
-      let jsonObject = JSON.parse(json)
-      if (jsonObject && typeof jsonObject === 'object') {
-        return jsonObject
-      }
-    } catch (error) {
-    }
-    return false
-  }
 
-  getEventUri = uri => uri.replace(process.cwd() + Path.sep, '')
-  cleanReportContext = () => {
+  getJSON = (json) => {
+    try {
+      let jsonObject = JSON.parse(json);
+      if (jsonObject && typeof jsonObject === "object") {
+        return jsonObject;
+      }
+    }
+    catch (error) {
+    }
+    return false;
+  };
+
+  getUri = uri => uri.replace(process.cwd() + Path.sep, '');
+
+  cleanContext = () => {
     return {
       outlineRow: 0,
       scenarioStatus: 'failed',
@@ -25,241 +50,420 @@ module.exports = (config) => {
       stepId: null,
       stepStatus: 'failed',
       launchId: null,
-      failedScenarios: 0,
-      lastScenarioDescription: null
+      failedScenarios: {},
+      lastScenarioDescription: null,
+      scenario: null,
+      step: null,
+      stepSourceLocation: null,
+      stepDefinitions: null,
+      stepDefinition: null,
+      isBeforeHook: true
+    };
+  };
+
+  let gherkinDocuments = {};
+  let pickleDocuments = {};
+  let reportportal = new ReportPortalClient(config);
+  let context = cleanContext();
+  let tagsConf = !config.tags ? [] : config.tags;
+  let done = null;
+  let afterHookURIToSkip = 'protractor-cucumber-framework';
+
+  function cacheDocument(gherkinDocument) {
+    gherkinDocuments[gherkinDocument.uri] = gherkinDocument.document;
+  }
+
+  function cacheAcceptedPickle(event) {
+    pickleDocuments[event.uri] = event.pickle;
+  }
+
+  function isAcceptedPickleCached(event) {
+    return !!pickleDocuments[event.uri];
+  }
+
+  function findFeature(location) {
+    return gherkinDocuments[location.uri].feature;
+  }
+
+  function findScenario(location) {
+    const children = findFeature(location).children;
+    const scenario = children.find(
+      child => child.type === 'Scenario' && child.location.line === location.line
+    );
+    if (scenario) {
+      return scenario;
+    }
+
+    const outlines = children.filter(child => child.type === 'ScenarioOutline');
+    return _findOutlineScenario(outlines, location);
+  }
+
+  function _findOutlineScenario(outlines, location) {
+    return outlines
+      .map(child => _createScenarioFromOutline(child, location))
+      .find(outline => !!outline);
+  }
+
+  function _createScenarioFromOutline(outline, location) {
+    const foundExample = outline.examples.find(example => {
+      const foundRow = example.tableBody.find(
+        row => row.location.line === location.line
+      );
+
+      return !!foundRow;
+    });
+
+    if (!foundExample) return null;
+
+    return _createScenarioFromOutlineExample(outline, foundExample, location);
+  }
+
+  function _createScenarioFromOutlineExample(outline, example, location) {
+    const found = example.tableBody.find(
+      row => row.location.line === location.line
+    );
+
+    if (!found) return null;
+
+    return {
+      type: 'Scenario',
+      steps: _createSteps(example.tableHeader, found, outline.steps),
+      name: outline.name,
+      location: found.location
+    };
+  }
+
+  function _createSteps(header, row, steps) {
+    return steps.map(step => {
+      const modified = Object.assign({}, step);
+
+      header.cells.forEach((varable, index) => {
+        modified.text = modified.text.replace(
+          '<' + varable.value + '>',
+          row.cells[index].value
+        );
+      });
+
+      return modified;
+    });
+  }
+
+  function findStep(event) {
+    let stepObj = null;
+    let stepSourceLocation = context.stepDefinitions.steps[event.index];
+
+    if (stepSourceLocation.sourceLocation) {
+      context.isBeforeHook = false;
+      context.scenario.steps.forEach((step) => {
+        if (stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri && stepSourceLocation.sourceLocation.line === step.location.line) {
+          stepObj = step;
+        }
+      })
+    } else {
+      stepObj = {'keyword': context.isBeforeHook ? 'Before' : 'After'};
+    }
+    return stepObj;
+  }
+
+  function findStepDefinition(event) {
+    return context.stepDefinitions.steps[event.index].actionLocation;
+  }
+
+  function countFailedScenarios(uri) {
+    if (context.failedScenarios[uri]) {
+      context.failedScenarios[uri]++
+    } else {
+      context.failedScenarios[uri] = 1;
     }
   }
 
-  let reportportal = new ReportPortalClient(config)
-  let context = cleanReportContext()
-  let tagsConf = !config.tags ? [] : config.tags
-
   reportPortalHandlers = function () {
-    this.registerHandler('BeforeFeatures', (event, callback) => {
-      const startObj = config.id ? {id: config.id} : {}
-      const launchObj = reportportal.startLaunch(startObj)
-      context.launchId = launchObj.tempId
-      callback()
-    })
 
-    this.registerHandler('BeforeFeature', (event, callback) => {
-      let featureUri = getEventUri(event.uri)
-      let description = event.description ? event.description : featureUri
-      let name = event.name
-      let launchObj = reportportal.startTestItem({
-        name: name,
-        type: 'SUITE',
-        description: description,
-        tags: event.tags ? event.tags.map(tag => tag.name) : []
-      }, context.launchId)
-      context.featureId = launchObj.tempId
-      callback()
-    })
-    this.registerHandler('BeforeScenario', (event, callback) => {
-      let keyword = event.keyword
-      let name = [keyword, event.name].join(': ')
+    this.eventBroadcaster.on('gherkin-document', (event) => {
+      cacheDocument(event);
 
-      let description = [getEventUri(event.uri), event.line].join(':')
+      //BeforeFeatures
+      if (!context.launchId) {
+        context.launchId = reportportal.startLaunch({
+          name: config.launch,
+          start_time: reportportal.helpers.now(),
+          description: !config.description ? "" : config.description,
+          tags: tagsConf
+        }).tempId;
+      }
+    });
+
+    this.eventBroadcaster.on('pickle-accepted', (event) => {
+      if (!isAcceptedPickleCached(event)) {
+        cacheAcceptedPickle(event);
+
+        let featureDocument = findFeature(event);
+        let description = featureDocument.description ? featureDocument.description : featureUri;
+        let featureUri = getUri(event.uri);
+        let name = featureDocument.name;
+        let tagsEvent = featureDocument.tags ? featureDocument.tags.map(tag => tag.name) : [];
+
+        //BeforeFeature
+        let featureId = reportportal.startTestItem({
+          name: name,
+          start_time: reportportal.helpers.now(),
+          type: "SUITE",
+          description: description,
+          tags: [...tagsConf, ...tagsEvent]
+        }, context.launchId).tempId;
+
+        pickleDocuments[event.uri].featureId = featureId;
+      }
+    });
+
+    this.eventBroadcaster.on('test-case-prepared', (event) => {
+      context.stepDefinitions = event;
+      context.isBeforeHook = true;
+    });
+
+    this.eventBroadcaster.on('test-case-started', (event) => {
+      context.scenario = findScenario(event.sourceLocation);
+      let keyword = context.scenario.keyword ? context.scenario.keyword : context.scenario.type;
+      let name = [keyword, context.scenario.name].join(': ');
+      let tagsEvent = context.scenario.tags ? context.scenario.tags.map(tag => tag.name) : [];
+      let description = [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
+      let featureId = pickleDocuments[event.sourceLocation.uri].featureId;
+
       if (context.lastScenarioDescription !== name) {
-        context.lastScenarioDescription = name
-        context.outlineRow = 0
+        context.lastScenarioDescription = name;
+        context.outlineRow = 0;
       } else {
-        context.outlineRow++
-        name += ' [' + context.outlineRow + ']'
+        context.outlineRow++;
+        name += ' [' + context.outlineRow + ']';
       }
 
-      let launchObj = reportportal.startTestItem({
+      //BeforeScenario
+      context.scenarioId = reportportal.startTestItem({
         name: name,
-        type: 'TEST',
+        start_time: reportportal.helpers.now(),
+        type: "TEST",
         description: description,
-        tags: event.tags ? event.tags.map(tag => tag.name) : []
-      }, context.launchId, context.featureId)
-      context.scenarioId = launchObj.tempId
-      callback()
-    })
+        tags: [...tagsConf, ...tagsEvent]
+      }, context.launchId, featureId).tempId;
+    });
 
-    this.registerHandler('BeforeStep', (event, callback) => {
-      let args = []
-      if (event.arguments && event.arguments.length) {
-        event.arguments.forEach(arg => {
-          if (arg.constructor.name === 'DocString') {
-            args.push(arg.content)
-          } else if (arg.constructor.name === 'DataTable') {
-            arg.rawTable.map(row => row.join('|').trim()).forEach(line => {
-              args.push('|' + line + '|')
-            })
-          }
+    this.eventBroadcaster.on('test-step-started', (event) => {
+      context.stepStatus = 'failed';
+      context.stepId = null;
+
+      context.stepSourceLocation = context.stepDefinitions.steps[event.index];
+
+      // skip After Hook added by protractor-cucumber-framework
+      if (!context.stepSourceLocation.sourceLocation && context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)) return;
+
+      context.step = findStep(event);
+      context.stepDefinition = findStepDefinition(event);
+
+      // BeforeStep
+      let args = [];
+      if (context.step.argument && context.step.argument.rows.length) {
+        context.step.argument.rows.forEach((row) => {
+          let line = row.cells.map(cell => cell.value);
+          args.push(`|${line.join('|').trim()}|`)
         })
       }
-      let name = event.name ? `${event.keyword} ${event.name}` : event.keyword
-      let launchObj = reportportal.startTestItem({
+
+      let name = context.step.text ? `${context.step.keyword} ${context.step.text}` : context.step.keyword;
+
+      context.stepId = reportportal.startTestItem({
         name: name,
-        type: 'STEP',
-        description: args.length ? args.join('\n').trim() : ''
-      }, context.featureId, context.scenarioId)
-      context.stepId = launchObj.tempId
-      callback()
-    })
-    this.registerHandler('StepResult', (event, callback) => {
-      let sceenshotName = !event.stepDefinition ? 'UNDEFINED STEP' : `Failed at step definition line:${event.stepDefinition.line}`
-      if (event.attachments && event.attachments.length && (event.status === 'passed' || event.status === 'failed')) {
-        event.attachments.forEach(attachment => {
-          switch (attachment.mimeType) {
-            case 'text/plain': {
-              let logMessage = getCuceJSON(attachment.data)
-              let request = {}
-              if (logMessage) {
-                request.level = logMessage.level
-                request.message = logMessage.message
-              } else {
-                request.level = 'DEBUG'
-                request.message = attachment.data
-              }
-              reportportal.sendLog(context.stepId, request)
-              break
-            }
-            case 'image/png': {
-              let request = {
-                level: context.stepStatus === 'passed' ? 'DEBUG' : 'ERROR'
-              }
-              let screenObj = { name: sceenshotName,
-                type: 'image/png'}
-              let pngObj = getCuceJSON(attachment.data)
-              if (pngObj) {
-                request.message = pngObj.message
-                screenObj.content = pngObj.data
-              } else {
-                request.name = sceenshotName
-                request.message = sceenshotName
-                screenObj.content = attachment.data
-              }
-              reportportal.sendLog(context.stepId, request, screenObj)
-              break
-            }
-          }
-        })
-      }
-      switch (event.status) {
+        start_time: reportportal.helpers.now(),
+        type: "STEP",
+        description: args.length ? args.join("\n").trim() : ""
+      }, context.launchId, context.scenarioId).tempId;
+    });
+
+    this.eventBroadcaster.on('test-step-finished', (event) => {
+      // skip After Hook added by protractor-cucumber-framework
+      if (!context.stepSourceLocation.sourceLocation && context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)) return;
+
+      //StepResult
+      let sceenshotName = !context.stepDefinition ? 'UNDEFINED STEP' : `Failed at step definition line:${context.stepDefinition.line}`;
+
+      switch (event.result.status) {
         case 'passed': {
-          context.stepStatus = 'passed'
-          context.scenarioStatus = 'passed'
-          callback()
-          break
+          context.stepStatus = 'passed';
+          context.scenarioStatus = 'passed';
+          break;
         }
         case 'pending': {
           reportportal.sendLog(context.stepId, {
-            level: 'WARN',
+            time: reportportal.helpers.now(),
+            level: "WARN",
             message: "This step is marked as 'pending'"
-          })
-          context.stepStatus = 'not_implemented'
-          context.scenarioStatus = 'failed'
-          context.failedScenarios++
-          callback()
-          break
+          });
+          context.stepStatus = 'not_implemented';
+          context.scenarioStatus = 'failed';
+          countFailedScenarios(event.testCase.sourceLocation.uri);
+          break;
         }
         case 'undefined': {
           reportportal.sendLog(context.stepId, {
-            level: 'ERROR',
-            message: 'There is no step definition found. Please verify and implement it.'
-          })
-          context.stepStatus = 'not_found'
-          context.scenarioStatus = 'failed'
-          context.failedScenarios++
-          callback()
-          break
+            time: reportportal.helpers.now(),
+            level: "ERROR",
+            message: "There is no step definition found. Please verify and implement it."
+          });
+          context.stepStatus = 'not_found';
+          context.scenarioStatus = 'failed';
+          countFailedScenarios(event.testCase.sourceLocation.uri);
+          break;
         }
         case 'ambiguous': {
           reportportal.sendLog(context.stepId, {
-            level: 'ERROR',
-            message: 'There are more than one step implementation. Please verify and reimplement it.'
-          })
-          context.stepStatus = 'not_found'
-          context.scenarioStatus = 'failed'
-          context.failedScenarios++
-          callback()
-          break
+            time: reportportal.helpers.now(),
+            level: "ERROR",
+            message: "There are more than one step implementation. Please verify and reimplement it."
+          });
+          context.stepStatus = 'not_found';
+          context.scenarioStatus = 'failed';
+          countFailedScenarios(event.testCase.sourceLocation.uri);
+          break;
         }
         case 'skipped': {
-          context.stepStatus = 'skipped'
+          context.stepStatus = 'skipped';
           if (context.scenarioStatus === 'failed') {
-            context.scenarioStatus = 'skipped'
+            context.scenarioStatus = 'skipped';
           }
-          callback()
-          break
+          break;
         }
         case 'failed': {
-          context.stepStatus = 'failed'
-          context.failedScenarios++
-          let errorMessage = `${event.stepDefinition.uri}\n ${util.format(event.failureException)}`
-          const errorObj = {
-            level: 'ERROR',
+          context.stepStatus = 'failed';
+          countFailedScenarios(event.testCase.sourceLocation.uri);
+          let errorMessage = `${context.stepDefinition.uri}\n ${event.result.exception.toString()}`;
+          reportportal.sendLog(context.stepId, {
+            time: reportportal.helpers.now(),
+            level: "ERROR",
             message: errorMessage
+          });
+          if ((typeof browser!== 'undefined') &&config.takeScreenshot && (config.takeScreenshot === 'onFailure')) {
+            let request = {
+              time: reportportal.helpers.now(),
+              level: "ERROR",
+              file: {name: sceenshotName},
+              message: sceenshotName
+            }
+            const png = takeScreenshotSync();
+            let fileObj = {
+              name: sceenshotName,
+              type: "image/png",
+              content: png
+            }
+            reportportal.sendLog(context.stepId, request, fileObj)
           }
-          if (browser && config.takeScreenshot && config.takeScreenshot === 'onFailure') {
-            browser.takeScreenshot()
-              .then(png => {
-                reportportal.sendLog(context.stepId,
-                  errorObj, {
-                    name: sceenshotName,
-                    type: 'image/png',
-                    content: png
-                  })
-                callback()
-              })
-          } else {
-            reportportal.sendLog(context.stepId, errorObj)
-            callback()
-          }
-          break
+          break;
         }
       }
-    })
-    this.registerHandler('AfterStep', (event, callback) => {
-      let request = {
-        status: context.stepStatus
-      }
-      if (request.status === 'not_found') {
-        request.status = 'failed'
-        request.issue = {
-          issue_type: 'AUTOMATION_BUG', comment: 'STEP DEFINITION WAS NOT FOUND'
-        }
-      } else if (request.status === 'not_implemented') {
-        request.status = 'skipped'
-        request.issue = {
-          issue_type: 'TO_INVESTIGATE', comment: 'STEP IS PENDING IMPLEMENTATION'
-        }
-      }
-      let launchObj = reportportal.finishTestItem(context.stepId, request)
-      callback()
-    })
-    this.registerHandler('ScenarioResult', (event, callback) => {
-      let launchObj = reportportal.finishTestItem(context.scenarioId, {
-        status: event.status !== 'PASSED' ? 'failed' : 'passed'
-      })
-      context.scenarioStatus = 'failed'
-      context.scenarioId = null
-      callback()
-    })
-    this.registerHandler('AfterFeature', (event, callback) => {
-      let featureStatus = context.failedScenarios > 0 ? 'failed' : 'passed'
-      reportportal.finishTestItem(context.featureId, {
-        status: featureStatus
-      })
 
-      callback()
-    })
-    this.registerHandler('AfterFeatures', (event, callback) => {
-      if (!config.id) {
-        reportportal.finishLaunch(context.launchId, {}).promise.then(() => {
-          context = cleanReportContext()
-          callback()
-        })
-      } else {
-        reportportal.getPromiseFinishAllItems(context.launchId).then(() => {
-          callback()
-        })
+      //AfterStep
+      let request = {
+        status: context.stepStatus,
+        end_time: reportportal.helpers.now()
       }
-    })
+      if ('not_found' === request.status) {
+        request.status = 'failed';
+        request.issue = {
+          issue_type: 'AUTOMATION_BUG', comment: "STEP DEFINITION WAS NOT FOUND"
+        }
+      }
+      else if ('not_implemented' === request.status) {
+        request.status = 'skipped';
+        request.issue = {
+          issue_type: 'TO_INVESTIGATE', comment: "STEP IS PENDING IMPLEMENTATION"
+        }
+      }
+
+      reportportal.finishTestItem(context.stepId, request);
+    });
+
+    this.eventBroadcaster.on('test-step-attachment', (event) => {
+      let sceenshotName = !context.stepDefinition ? 'UNDEFINED STEP' : `Failed at step definition line:${context.stepDefinition.line}`;
+      if (event.data && event.data.length && (context.stepStatus === 'passed' || context.stepStatus === 'failed')) {
+        switch (event.media.type) {
+          case 'text/plain': {
+            let logMessage = getJSON(event.data);
+            let request = {
+              time: reportportal.helpers.now()
+            };
+            if (logMessage) {
+              request.level = logMessage.level;
+              request.message = logMessage.message;
+            } else {
+              request.level = "DEBUG";
+              request.message = event.data;
+            }
+            reportportal.sendLog(context.stepId, request);
+            break;
+          }
+          case 'image/png': {
+            let request = {
+              time: reportportal.helpers.now(),
+              level: context.stepStatus === 'passed' ? "DEBUG" : "ERROR"
+            };
+            let pngObj = getJSON(event.data);
+            if (pngObj) {
+              let fileObj = {
+                name: pngObj.message,
+                type: "image/png",
+                content: pngObj.data
+              }
+              request.file = {name: pngObj.message};
+              request.message = pngObj.message;
+              reportportal.sendLog(context.stepId, request, fileObj);
+            } else {
+              request.file = {name: sceenshotName};
+              request.message = sceenshotName;
+              let fileObj = {
+                name: sceenshotName,
+                type: "image/png",
+                content: attachment.data
+              }
+              reportportal.sendLog(context.stepId, request, fileObj);
+            }
+            break;
+          }
+        }
+      }
+    });
+
+    this.eventBroadcaster.on('test-case-finished', (event) => {
+      //ScenarioResult
+      reportportal.finishTestItem(context.scenarioId, {
+        status: event.result.status !== 'PASSED' ? 'failed' : 'passed',
+        end_time: reportportal.helpers.now()
+      });
+      context.scenarioStatus = 'failed';
+      context.scenarioId = null;
+    });
+
+    this.eventBroadcaster.on('test-run-finished', (event) => {
+      // AfterFeature
+      Object.entries(pickleDocuments).forEach(
+        ([key, value]) => {
+          let featureStatus = context.failedScenarios[key] > 0 ? 'failed' : 'passed';
+          reportportal.finishTestItem(value.featureId, {
+            status: featureStatus,
+            end_time: reportportal.helpers.now()
+          })
+        }
+      );
+
+      // AfterFeatures
+      let promise = reportportal.getPromiseFinishAllItems(context.launchId);
+      resolveReportPortalPromise(promise);
+
+      if (context.launchId) {
+        let promise = reportportal.finishLaunch(context.launchId, {
+          end_time: reportportal.helpers.now()
+        }).promise;
+        resolveReportPortalPromise(promise);
+        context = cleanContext();
+      }
+    });
   }
-  return reportPortalHandlers
-}
+  return reportPortalHandlers;
+};
