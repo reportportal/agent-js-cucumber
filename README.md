@@ -24,7 +24,9 @@ npm install agent-js-cucumber --save-dev
 If you use Protractor you must use protractor-cucumber-framework, bellow you could look at the config example:
 
 ```javascript
-
+   let tempFile = tmp.fileSync();
+   let reportPortalFormatter = path.resolve(process.cwd(), 'features/step_definitions/support/handlers.js');
+   
    exports.config = {
     framework: 'custom',
     getPageTimeout: 4000,
@@ -37,7 +39,7 @@ If you use Protractor you must use protractor-cucumber-framework, bellow you cou
     cucumberOpts: {
         require: './protractor/features/step_definitions/**/*.js',
         tags: false,
-        format: 'pretty',
+        format: ['progress', `${reportPortalFormatter}:${tempFile.name}`],
         profile: false,
         'no-source': true
     },
@@ -95,8 +97,15 @@ defineSupportCode(function({setDefaultTimeout}) {
 ```javascript
     const {CucumberReportPortalHandler} = require('agent-js-cucumber');
     const reportportal = require('../../../rpConfig.json');
-    let {defineSupportCode} = require('cucumber');
-    defineSupportCode(consumer => CucumberReportPortalHandler(reportportal).bind(consumer).call());
+    
+    function eventListeners(options) {
+        let reportPortalEnabled = process.env.REPORTPORTAL;
+        if (reportPortalEnabled === 'true') {
+            CucumberReportPortalHandler(reportportal).call(options);
+        }
+    }
+    
+    module.exports = eventListeners;
 ```
 
 4. Import World for logging into /features/step_definitions/support/world.js
