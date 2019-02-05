@@ -149,7 +149,7 @@ Handler will parse attachments and send corresponding log to the step item.
 ### Launch agent in single thread mode.
 
 If you launch cucmber in single tread mode , just add agent initialization to the handler.js . Without id field.
-. You can see this in the example bellow.
+. You can see this in the example below.
 Update your configuration file as follows:
 #### handlers.js
 ```javascript
