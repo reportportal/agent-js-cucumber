@@ -1,8 +1,14 @@
-const {CucumberReportPortalHandler} = require('../../../../modules')
-const {defineSupportCode} = require('cucumber')
-const config = require('../../../config/rpConfig.json')
-defineSupportCode(consumer => CucumberReportPortalHandler(
-  Object.assign({
+'use strict';
+
+const {CucumberReportPortalHandler} = require('../../../../modules');
+const config = require('../../../config/rpConfig.json');
+
+function eventListeners(options) {
+    const reportportal = Object.assign({
     id: process.env.npm_config_id,
     takeScreenshot: 'onFailure'
-  }, config)).bind(consumer).call())
+    }, config);
+    CucumberReportPortalHandler(reportportal).call(options);
+}
+
+module.exports = eventListeners;

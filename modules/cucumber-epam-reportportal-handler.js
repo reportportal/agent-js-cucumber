@@ -198,8 +198,8 @@ module.exports = (config) => {
         cacheAcceptedPickle(event);
 
         let featureDocument = findFeature(event);
-        let description = featureDocument.description ? featureDocument.description : featureUri;
         let featureUri = getUri(event.uri);
+        let description = featureDocument.description ? featureDocument.description : featureUri;
         let name = featureDocument.name;
         let tagsEvent = featureDocument.tags ? featureDocument.tags.map(tag => tag.name) : [];
 

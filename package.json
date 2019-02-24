@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "chromedriver": "^2.32.2",
+    "cucumber": "4.2.1",
     "cucumber-parallel": "^2.0.3",
     "eslint": "^4.7.2",
     "eslint-config-standard": "^10.2.1",
