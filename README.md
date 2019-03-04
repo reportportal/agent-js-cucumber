@@ -1,5 +1,5 @@
 # agent-js-cucumber
- This cucumber agent works well with cucumber version < 3.0.0
+ This cucumber agent works well with cucumber versions from 3.0.0 to 4.2.1 including
 ## Install agent to your project dir
 ```cmd 
 npm install agent-js-cucumber --save-dev 
