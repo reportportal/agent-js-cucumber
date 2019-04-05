@@ -2,11 +2,13 @@ node {
 
     load "$JENKINS_HOME/jobvars.env"
 
-	stage('Build') {
-		docker.image('node:10').inside('-u root') {
-			
-		}
-	}
+	agent {
+        
+        docker {
+            image 'node:10-alpine' 
+            args '-u root' 
+        }
+    }
 		
 	stage('Install') { 
 		sh 'npm install' 
