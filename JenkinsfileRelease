@@ -2,13 +2,11 @@ node {
 
     load "$JENKINS_HOME/jobvars.env"
 
-	agent {
-        
-        docker {
-            image 'node:10-alpine' 
-            args '-u root' 
-        }
-    }
+	stage('Build') {
+		docker.image('node:10').inside('-u root') {
+			
+		}
+	}
 		
 	stage('Install') { 
 		sh 'npm install' 
@@ -18,6 +16,7 @@ node {
 	
 		 withEnv(["TOKEN=${NPMJS_TOKEN}"]) {
 			
+			sh '-u root'
 			sh 'echo 1111 = ${TOKEN}'
 			sh 'echo "//registry.npmjs.org/:_authToken=${TOKEN}" >> ~/.npmrc'
 			sh 'npm publish' 
