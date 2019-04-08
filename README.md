@@ -2,7 +2,7 @@
  This cucumber agent works well with cucumber versions from 3.0.0 to 4.2.1 including
 ## Install agent to your project dir
 ```cmd 
-npm install agent-js-cucumber --save-dev 
+npm i reportportal-agent-cucumber
 ```
 
 1. Make sure that you required glue code correctly. It is important to make Cucumber see support code.
