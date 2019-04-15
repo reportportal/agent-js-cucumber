@@ -51,6 +51,7 @@ module.exports = (config) => {
       stepStatus: 'failed',
       launchId: null,
       failedScenarios: {},
+      scenariosCount: {},
       lastScenarioDescription: null,
       scenario: null,
       step: null,
@@ -202,6 +203,8 @@ module.exports = (config) => {
         let featureUri = getUri(event.uri);
         let name = featureDocument.name;
         let tagsEvent = featureDocument.tags ? featureDocument.tags.map(tag => tag.name) : [];
+
+        context.scenariosCount[featureUri] = { total: featureDocument.children.length, done: 0 };
 
         //BeforeFeature
         let featureId = reportportal.startTestItem({
@@ -444,20 +447,20 @@ module.exports = (config) => {
       });
       context.scenarioStatus = 'failed';
       context.scenarioId = null;
+
+      const featureUri = event.sourceLocation.uri;
+      context.scenariosCount[featureUri].done++;
+      const { total, done } = context.scenariosCount[featureUri];
+      if (done === total) {
+        const featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
+        reportportal.finishTestItem(pickleDocuments[featureUri].featureId, {
+          status: featureStatus,
+          end_time: reportportal.helpers.now()
+        });
+      }
     });
 
     this.eventBroadcaster.on('test-run-finished', (event) => {
-      // AfterFeature
-      Object.entries(pickleDocuments).forEach(
-        ([key, value]) => {
-          let featureStatus = context.failedScenarios[key] > 0 ? 'failed' : 'passed';
-          reportportal.finishTestItem(value.featureId, {
-            status: featureStatus,
-            end_time: reportportal.helpers.now()
-          })
-        }
-      );
-
       // AfterFeatures
       let promise = reportportal.getPromiseFinishAllItems(context.launchId);
       resolveReportPortalPromise(promise);
