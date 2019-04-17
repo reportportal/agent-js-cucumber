@@ -272,17 +272,11 @@ module.exports = (config) => {
       }
 
       let name = context.step.text ? `${context.step.keyword} ${context.step.text}` : context.step.keyword;
-      let type = 'STEP';
-      if (context.step.keyword === 'Before') {
-        type = 'BEFORE_TEST';
-      } else if (context.step.keyword === 'After') {
-        type = 'AFTER_TEST';
-      }
 
       context.stepId = reportportal.startTestItem({
         name: name,
         start_time: reportportal.helpers.now(),
-        type: type,
+        type: "STEP",
         description: args.length ? args.join("\n").trim() : ""
       }, context.launchId, context.scenarioId).tempId;
     });
