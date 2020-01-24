@@ -4,9 +4,11 @@
   "launch": "LAUNCH_NAME",
   "project": "PROJECT_NAME",
   "mode": "DEFAULT",
-  "tags": [
-    "your",
-    "tags"
+  "attributes": [
+    {
+      "key": "launchK",
+      "value": "launchV"
+    }
   ],
   "description": "DESCRIPTION"
 }

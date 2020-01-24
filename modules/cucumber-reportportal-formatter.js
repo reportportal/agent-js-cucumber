@@ -291,12 +291,12 @@ const createRPFormatterClass = (config) => {
 
       // BeforeStep
       const args = [];
-      if (context.step.arguments && context.step.arguments.rows.length) {
-        context.step.arguments.rows.forEach((row) => {
-          const line = row.cells.map((cell) => cell.value);
-          args.push(`|${line.join('|').trim()}|`);
-        });
-      }
+      // if (context.step.arguments && context.step.arguments.rows.length) { // TODO parameters
+      //   context.step.arguments.rows.forEach((row) => {
+      //     const line = row.cells.map((cell) => cell.value);
+      //     args.push(`|${line.join('|').trim()}|`);
+      //   });
+      // }
 
       const name = context.step.text
         ? `${context.step.keyword} ${context.step.text}`
@@ -421,13 +421,13 @@ const createRPFormatterClass = (config) => {
       if (request.status === 'not_found') {
         request.status = 'failed';
         request.issue = {
-          issueType: 'AUTOMATION_BUG',
+          issueType: 'ab001',
           comment: 'STEP DEFINITION WAS NOT FOUND',
         };
       } else if (request.status === 'not_implemented') {
         request.status = 'skipped';
         request.issue = {
-          issueType: 'TO_INVESTIGATE',
+          issueType: 'ti001',
           comment: 'STEP IS PENDING IMPLEMENTATION',
         };
       }
