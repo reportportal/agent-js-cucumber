@@ -1,8 +1,0 @@
-{
-  "scripts": {
-    "test": "../node_modules/cucumber-parallel/bin/cucumber-parallel ./features -r ./features/step_definitions/ -f json:./reports/report.json",
-    "protractorTest": "protractor protractor.conf.js",
-    "testSingle": "../node_modules/cucumber/bin/cucumber.js ./features/scenarioOutline.feature"
-  }
-}
-
