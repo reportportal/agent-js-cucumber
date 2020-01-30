@@ -58,6 +58,9 @@ const createRPFormatterClass = (config) => {
     tagB.location.line === tagA.location.line &&
     tagB.location.column === tagA.location.column;
 
+  const isNestedStepsEnabled = () =>
+    typeof config.useNestedSteps === 'boolean' ? config.useNestedSteps : false;
+
   const gherkinDocuments = {};
   const pickleDocuments = {};
   const reportportal = new ReportPortalClient(config);
@@ -271,7 +274,7 @@ const createRPFormatterClass = (config) => {
         {
           name,
           startTime: reportportal.helpers.now(),
-          type: 'TEST',
+          type: isNestedStepsEnabled() ? 'STEP' : 'TEST',
           description,
           attributes: eventAttributes,
         },
@@ -321,6 +324,7 @@ const createRPFormatterClass = (config) => {
           startTime: reportportal.helpers.now(),
           type,
           description: args.length ? args.join('\n').trim() : '',
+          hasStats: !isNestedStepsEnabled(),
         },
         context.launchId,
         context.scenarioId,
@@ -503,7 +507,7 @@ const createRPFormatterClass = (config) => {
     onTestCaseFinished(event) {
       // ScenarioResult
       reportportal.finishTestItem(context.scenarioId, {
-        status: event.result.status !== 'PASSED' ? 'failed' : 'passed',
+        status: event.result.status.toUpperCase() !== 'PASSED' ? 'failed' : 'passed',
         endTime: reportportal.helpers.now(),
       });
       context.scenarioStatus = 'failed';
