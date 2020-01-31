@@ -132,6 +132,20 @@ Change config file `examples/config/rpConfig.json`.
 
 Then run npm tasks with `example:` prefix. For example, `example:simple`.
 
+## Rerun
+
+To report [rerun](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md) to the report portal you need to specify the following options:
+
+- rerun - to enable rerun
+- rerunOf - UUID of launch you want to rerun. If not specified, report portal will update the latest launch with the same name
+
+Example:
+
+```json
+  "rerun": true,
+  "rerunOf": "f68f39f9-279c-4e8d-ac38-1216dffcc59c"
+```
+
 # Copyright Notice
 
 Licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0.html)

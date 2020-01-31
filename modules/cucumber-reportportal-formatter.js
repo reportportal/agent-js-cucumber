@@ -174,6 +174,11 @@ const createRPFormatterClass = (config) => {
     constructor(options) {
       super(options);
 
+      const { rerun, rerunOf } = options.parsedArgvOptions || {};
+
+      this.isRerun = rerun || config.rerun;
+      this.rerunOf = rerunOf || config.rerunOf;
+
       options.eventBroadcaster.on('gherkin-document', this.onGherkinDocument.bind(this));
       options.eventBroadcaster.on('pickle-accepted', this.onPickleAccepted.bind(this));
       options.eventBroadcaster.on('test-case-prepared', this.onTestCasePrepared.bind(this));
@@ -195,6 +200,8 @@ const createRPFormatterClass = (config) => {
           startTime: reportportal.helpers.now(),
           description: !config.description ? '' : config.description,
           attributes: attributesConf,
+          rerun: this.isRerun,
+          rerunOf: this.rerunOf,
         });
         context.launchId = launch.tempId;
       }
