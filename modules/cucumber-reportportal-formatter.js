@@ -229,7 +229,7 @@ const createRPFormatterClass = (config) => {
           {
             name,
             startTime: reportportal.helpers.now(),
-            type: 'SUITE',
+            type: isNestedStepsEnabled() ? 'TEST' : 'SUITE',
             description,
             attributes: eventAttributes,
           },

@@ -12,7 +12,7 @@ npm i reportportal-agent-cucumber
    For example:
    Let's say you have project structure like this below
 
-```javascript
+```
  my-project
   L features
       L step_definitions
@@ -23,11 +23,14 @@ npm i reportportal-agent-cucumber
   L package.json
 ```
 
-### Note
+#### Note
 
-Protractor and Cucumber have their own **timeouts** . When protractror start main process that lauches cucumber it would have different timeouts if there not the same they would wait for scripts different time. If cucumbers's timeout less then protractor's it would through wrong exeption. For example if page that has been loaded and hasn't got angular, the next error would be thrown : `javascript Error: function timed out after 10000 milliseconds . . .` . Instead of protractor's :
-`javascript Error: Error while running testForAngular: asynchronous script timeout: result was not received in 4 seconds . . .` .
-So it must be handled manually by setting cucumbers's timeout greater then protractor's is at the hooks.js. For example if you set up protractor's timeout 9000 miliseconds , so cucumber must be at least 1 second greater = 10000 miliseconds . example could example :
+Protractor and Cucumber have their own **timeouts** .
+When protractror start main process that lauches cucumber it would have different timeouts if there not the same they would wait for scripts different time.
+If cucumbers's timeout less then protractor's it would through wrong exeption.
+For example if page that has been loaded and hasn't got angular, the next error would be thrown : `Error: function timed out after 10000 milliseconds . . .` . Instead of protractor's :
+`Error: Error while running testForAngular: asynchronous script timeout: result was not received in 4 seconds . . .` .
+So it must be handled manually by setting cucumbers's timeout greater then protractor's is at the hooks.js. For example if you set up protractor's timeout 9000 miliseconds , so cucumber must be at least 1 second greater = 10000 miliseconds. Example :
 
 ```javascript
 var { setDefaultTimeout } = require('cucumber');
@@ -40,7 +43,7 @@ setDefaultTimeout(10000);
 
    In example below `\${text}` - is used as placeholder for your data. This data you must get from ReportPortal profile.
 
-```javascript
+```json
 {
   "token": "${rp.token}",
   "endpoint": "${rp.endpoint}/api/v1",
@@ -145,6 +148,32 @@ Example:
   "rerun": true,
   "rerunOf": "f68f39f9-279c-4e8d-ac38-1216dffcc59c"
 ```
+
+## Nested steps
+
+By defaut, this agent report the following structure:
+ * feature - SUITE
+ * scenario - TEST
+ * step - STEP
+ 
+You may change this behavior to report steps to the log level by enabling nested steps feature:
+ * feature - TEST
+ * scenario - STEP
+ * step - log item
+
+To report your steps as nested steps (on a log level), you need to pass an additional parameter to the agent config: `"useNestedSteps": true`
+```json
+{
+  "token": "${rp.token}",
+  "endpoint": "${rp.endpoint}/api/v1",
+  "launch": "${rp.launch}",
+  "project": "${rp.your_project}",
+  "takeScreenshot": "onFailure",
+  "useNestedSteps": true
+}
+```
+
+This will report your your steps with logs to a log level without creating statistics for every step.
 
 # Copyright Notice
 
