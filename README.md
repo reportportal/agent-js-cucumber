@@ -149,7 +149,7 @@ Example:
   "rerunOf": "f68f39f9-279c-4e8d-ac38-1216dffcc59c"
 ```
 
-## Nested steps
+## Step reporting configuration
 
 By defaut, this agent report the following structure:
  * feature - SUITE
@@ -161,7 +161,7 @@ You may change this behavior to report steps to the log level by enabling nested
  * scenario - STEP
  * step - log item
 
-To report your steps as nested steps (on a log level), you need to pass an additional parameter to the agent config: `"useNestedSteps": true`
+To report your steps as logs, you need to pass an additional parameter to the agent config: `"useNestedSteps": true`
 ```json
 {
   "token": "${rp.token}",
@@ -174,6 +174,8 @@ To report your steps as nested steps (on a log level), you need to pass an addit
 ```
 
 This will report your your steps with logs to a log level without creating statistics for every step.
+
+Please note, that, although it is called "nested steps", nesting steps in each other is not possible by design: https://github.com/cucumber/cucumber-js/issues/11
 
 # Copyright Notice
 
