@@ -2,6 +2,7 @@
   "scripts": {
     "simpleTest": "cucumber-js features/simpleFeature/ --require=features/simpleFeature/**/*.js",
     "seleniumWebdriverTest": "cucumber-js features/webdriverIntegrationFeature/ --require=features/webdriverIntegrationFeature/**/*.js",
-    "allTests": "cucumber-js features/**/*.feature"
+    "allTests": "cucumber-js features/**/*.feature",
+    "attachmentTest": "cucumber-js features/attachments/ --require=features/attachments/**/*.js"
   }
 }

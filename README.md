@@ -57,7 +57,6 @@ setDefaultTimeout(10000);
     }
   ]
 }
-
 ```
 
 takeScreenshot - if this option is defined then framework will take screenshot with _protractor or webdriver_ API if step has failed
@@ -152,16 +151,19 @@ Example:
 ## Step reporting configuration
 
 By defaut, this agent report the following structure:
- * feature - SUITE
- * scenario - TEST
- * step - STEP
- 
+
+- feature - SUITE
+- scenario - TEST
+- step - STEP
+
 You may change this behavior to report steps to the log level by enabling nested steps feature:
- * feature - TEST
- * scenario - STEP
- * step - log item
+
+- feature - TEST
+- scenario - STEP
+- step - log item
 
 To report your steps as logs, you need to pass an additional parameter to the agent config: `"useNestedSteps": true`
+
 ```json
 {
   "token": "${rp.token}",
@@ -176,6 +178,21 @@ To report your steps as logs, you need to pass an additional parameter to the ag
 This will report your your steps with logs to a log level without creating statistics for every step.
 
 Please note, that, although it is called "nested steps", nesting steps in each other is not possible by design: https://github.com/cucumber/cucumber-js/issues/11
+
+## Attachments
+
+Attachments are being reported as logs. You can either just attach a file using cucumber's `this.attach` or specify log level and message:
+
+```javascript
+this.attach(
+  JSON.stringify({
+    message: `Attachment with ${type}`,
+    level: 'INFO',
+    data: data.toString('base64'),
+  }),
+  type,
+);
+```
 
 # Copyright Notice
 

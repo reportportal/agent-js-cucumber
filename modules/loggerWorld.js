@@ -1,4 +1,4 @@
-class ProtractorCucumberWorld {
+class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {
     this.attach = attach;
     this.parameters = parameters;
@@ -53,4 +53,4 @@ class ProtractorCucumberWorld {
   }
 }
 
-module.exports = ProtractorCucumberWorld;
+module.exports = ReportPortalCucumberLoggerWorld;
