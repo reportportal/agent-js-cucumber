@@ -27,6 +27,7 @@
     "format": "npm run lint -- --fix",
     "example:simple": "cd examples && npm run simpleTest",
     "example:seleniumWebdriver": "cd examples && npm run seleniumWebdriverTest",
+    "example:attachments": "cd examples && npm run attachmentTest",
     "example:all": "cd examples && npm run allTests"
   },
   "repository": {

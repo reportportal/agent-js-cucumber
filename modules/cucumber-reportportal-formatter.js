@@ -447,9 +447,9 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestStepAttachment(event) {
-      const sceenshotName = !context.stepDefinition
+      const fileName = !context.stepDefinition
         ? 'UNDEFINED STEP'
-        : `Failed at step definition line:${context.stepDefinition.line}`;
+        : `Attachment at step definition line:${context.stepDefinition.line}`;
       if (
         event.data &&
         event.data.length &&
@@ -471,35 +471,29 @@ const createRPFormatterClass = (config) => {
             reportportal.sendLog(context.stepId, request);
             break;
           }
-          case 'image/png': {
+          default: {
             const request = {
               time: reportportal.helpers.now(),
               level: context.stepStatus === 'passed' ? 'DEBUG' : 'ERROR',
+              message: fileName,
+              file: {
+                name: fileName,
+              },
             };
-            const pngObj = getJSON(event.data);
-            if (pngObj) {
-              const fileObj = {
-                name: pngObj.message,
-                type: 'image/png',
-                content: pngObj.data,
-              };
-              request.file = { name: pngObj.message };
-              request.message = pngObj.message;
-              reportportal.sendLog(context.stepId, request, fileObj);
-            } else {
-              request.file = { name: sceenshotName };
-              request.message = sceenshotName;
-              const fileObj = {
-                name: sceenshotName,
-                type: 'image/png',
-                content: event.data,
-              };
-              reportportal.sendLog(context.stepId, request, fileObj);
+            const parsedObject = getJSON(event.data);
+            if (parsedObject) {
+              request.level = parsedObject.level;
+              request.message = parsedObject.message;
+              request.file.name = parsedObject.message;
             }
+            const fileObj = {
+              name: fileName,
+              type: event.media.type,
+              content: (parsedObject && parsedObject.data) || event.data,
+            };
+            reportportal.sendLog(context.stepId, request, fileObj);
             break;
           }
-          default:
-            break;
         }
       }
     }
