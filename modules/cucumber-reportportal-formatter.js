@@ -264,23 +264,26 @@ const createRPFormatterClass = (config) => {
       if (context.lastScenarioDescription !== name) {
         context.lastScenarioDescription = name;
         context.outlineRow = 0;
-      } else {
+      } else if (event.attemptNumber < 2) {
         context.outlineRow++;
         name += ` [${context.outlineRow}]`;
       }
 
       // BeforeScenario
-      context.scenarioId = reportportal.startTestItem(
-        {
-          name,
-          startTime: reportportal.helpers.now(),
-          type: isNestedStepsEnabled() ? 'STEP' : 'TEST',
-          description,
-          attributes: eventAttributes,
-        },
-        context.launchId,
-        featureId,
-      ).tempId;
+      if (event.attemptNumber < 2) {
+        context.scenarioId = reportportal.startTestItem(
+          {
+            name,
+            startTime: reportportal.helpers.now(),
+            type: isNestedStepsEnabled() ? 'STEP' : 'TEST',
+            description,
+            attributes: eventAttributes,
+            retry: isNestedStepsEnabled() && event.attemptNumber > 1,
+          },
+          context.launchId,
+          featureId,
+        ).tempId;
+      }
     }
 
     onTestStepStarted(event) {
@@ -325,6 +328,7 @@ const createRPFormatterClass = (config) => {
           type,
           description: args.length ? args.join('\n').trim() : '',
           hasStats: !isNestedStepsEnabled(),
+          retry: !isNestedStepsEnabled() && event.testCase.attemptNumber > 1,
         },
         context.launchId,
         context.scenarioId,
@@ -505,9 +509,13 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
+      if (event.result.retried) {
+        return;
+      }
+      const isFailed = event.result.status.toUpperCase() !== 'PASSED';
       // ScenarioResult
       reportportal.finishTestItem(context.scenarioId, {
-        status: event.result.status.toUpperCase() !== 'PASSED' ? 'failed' : 'passed',
+        status: isFailed ? 'failed' : 'passed',
         endTime: reportportal.helpers.now(),
       });
       context.scenarioStatus = 'failed';
