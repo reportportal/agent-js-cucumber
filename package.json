@@ -26,6 +26,7 @@
     "lint": "eslint ./modules/**/*.js",
     "format": "npm run lint -- --fix",
     "example:simple": "cd examples && npm run simpleTest",
+    "example:simpleWithRetries": "cd examples && npm run simpleTestWithRetries",
     "example:seleniumWebdriver": "cd examples && npm run seleniumWebdriverTest",
     "example:attachments": "cd examples && npm run attachmentTest",
     "example:all": "cd examples && npm run allTests"
