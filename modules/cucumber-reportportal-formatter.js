@@ -270,7 +270,7 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (event.attemptNumber < 2) {
+      if (isNestedStepsEnabled() || event.attemptNumber < 2) {
         context.scenarioId = reportportal.startTestItem(
           {
             name,
@@ -503,7 +503,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (event.result.retried) {
+      if (!isNestedStepsEnabled() && event.result.retried) {
         return;
       }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
@@ -516,7 +516,9 @@ const createRPFormatterClass = (config) => {
       context.scenarioId = null;
 
       const featureUri = event.sourceLocation.uri;
-      context.scenariosCount[featureUri].done++;
+      if (!event.result.retried) {
+        context.scenariosCount[featureUri].done++;
+      }
       const { total, done } = context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
