@@ -156,13 +156,13 @@ By defaut, this agent report the following structure:
 - scenario - TEST
 - step - STEP
 
-You may change this behavior to report steps to the log level by enabling nested steps feature:
+You may change this behavior to report steps to the log level by enabling scenario-based reporting:
 
 - feature - TEST
 - scenario - STEP
 - step - log item
 
-To report your steps as logs, you need to pass an additional parameter to the agent config: `"useNestedSteps": true`
+To report your steps as logs, you need to pass an additional parameter to the agent config: `"scenarioBasedStatistics": true`
 
 ```json
 {
@@ -171,13 +171,11 @@ To report your steps as logs, you need to pass an additional parameter to the ag
   "launch": "${rp.launch}",
   "project": "${rp.your_project}",
   "takeScreenshot": "onFailure",
-  "useNestedSteps": true
+  "scenarioBasedStatistics": true
 }
 ```
 
 This will report your your steps with logs to a log level without creating statistics for every step.
-
-Please note, that, although it is called "nested steps", nesting steps in each other is not possible by design: https://github.com/cucumber/cucumber-js/issues/11
 
 ## Attachments
 

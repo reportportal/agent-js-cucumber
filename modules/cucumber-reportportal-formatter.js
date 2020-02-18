@@ -58,8 +58,8 @@ const createRPFormatterClass = (config) => {
     tagB.location.line === tagA.location.line &&
     tagB.location.column === tagA.location.column;
 
-  const isNestedStepsEnabled = () =>
-    typeof config.useNestedSteps === 'boolean' ? config.useNestedSteps : false;
+  const isScenarioBasedStatistics = () =>
+    typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   const gherkinDocuments = {};
   const pickleDocuments = {};
@@ -229,7 +229,7 @@ const createRPFormatterClass = (config) => {
           {
             name,
             startTime: reportportal.helpers.now(),
-            type: isNestedStepsEnabled() ? 'TEST' : 'SUITE',
+            type: isScenarioBasedStatistics() ? 'TEST' : 'SUITE',
             description,
             attributes: eventAttributes,
           },
@@ -270,15 +270,15 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (isNestedStepsEnabled() || event.attemptNumber < 2) {
+      if (isScenarioBasedStatistics() || event.attemptNumber < 2) {
         context.scenarioId = reportportal.startTestItem(
           {
             name,
             startTime: reportportal.helpers.now(),
-            type: isNestedStepsEnabled() ? 'STEP' : 'TEST',
+            type: isScenarioBasedStatistics() ? 'STEP' : 'TEST',
             description,
             attributes: eventAttributes,
-            retry: isNestedStepsEnabled() && event.attemptNumber > 1,
+            retry: isScenarioBasedStatistics() && event.attemptNumber > 1,
           },
           context.launchId,
           featureId,
@@ -327,8 +327,8 @@ const createRPFormatterClass = (config) => {
           startTime: reportportal.helpers.now(),
           type,
           description: args.length ? args.join('\n').trim() : '',
-          hasStats: !isNestedStepsEnabled(),
-          retry: !isNestedStepsEnabled() && event.testCase.attemptNumber > 1,
+          hasStats: !isScenarioBasedStatistics(),
+          retry: !isScenarioBasedStatistics() && event.testCase.attemptNumber > 1,
         },
         context.launchId,
         context.scenarioId,
@@ -503,7 +503,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!isNestedStepsEnabled() && event.result.retried) {
+      if (!isScenarioBasedStatistics() && event.result.retried) {
         return;
       }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
