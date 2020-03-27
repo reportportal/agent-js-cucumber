@@ -1,4 +1,4 @@
-Feature: Is it Saturday yet?
+Feature: Is it Holiday yet?
   Everybody wants to know when Saturday is
 
   Background: Load Holidays
