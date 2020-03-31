@@ -16,6 +16,10 @@ After(function() {
   this.info('After info log');
 });
 
+Given('list of holidays', function() {
+  this.holidays = ['New Years', 'Martin Luther King, Jr.', 'Presidents', 'Memorial', 'Independence', 'Labor', 'Veterans', 'Thanksgiving', 'Christmas'];
+})
+
 Given('today is {string}', function(givenDay) {
   this.today = givenDay;
 });
@@ -46,3 +50,10 @@ Then('I should be told Yes', function() {
   }
   assert.equal(this.actualAnswer, expectedAnswer);
 });
+
+When("I ask wheter it's Holiday", function() {
+  this.actualAnswer = 'Nope';
+  if (this.holidays.includes(this.today)) {
+    this.actualAnswer = 'Yes';
+  }
+})

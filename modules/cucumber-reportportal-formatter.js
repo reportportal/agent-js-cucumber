@@ -26,6 +26,7 @@ const createRPFormatterClass = (config) => {
     stepId: null,
     stepStatus: 'failed',
     launchId: null,
+    background: null,
     failedScenarios: {},
     scenariosCount: {},
     lastScenarioDescription: null,
@@ -141,6 +142,14 @@ const createRPFormatterClass = (config) => {
     return findOutlineScenario(outlines, location);
   }
 
+  function findBackground(feature) {
+    const background = feature.children
+      ? feature.children.find((child) => child.type === 'Background')
+      : null;
+
+    return background;
+  }
+
   function findStep(event) {
     let stepObj = null;
     const stepSourceLocation = context.stepDefinitions.steps[event.index];
@@ -155,6 +164,17 @@ const createRPFormatterClass = (config) => {
           stepObj = step;
         }
       });
+
+      if (context.background) {
+        context.background.steps.forEach((step) => {
+          if (
+            stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri &&
+            stepSourceLocation.sourceLocation.line === step.location.line
+          ) {
+            stepObj = step;
+          }
+        });
+      }
     } else {
       stepObj = { keyword: context.isBeforeHook ? 'Before' : 'After' };
     }
@@ -222,7 +242,21 @@ const createRPFormatterClass = (config) => {
           ? featureDocument.tags.map((tag) => createAttribute(tag.name))
           : [];
 
-        context.scenariosCount[featureUri] = { total: featureDocument.children.length, done: 0 };
+        let total = featureDocument.children.length;
+        featureDocument.children.forEach((child) => {
+          if (child.examples) {
+            child.examples.forEach((ex) => {
+              total += ex.tableBody.length - 1;
+            });
+          }
+        });
+
+        context.background = findBackground(featureDocument);
+        if (context.background) {
+          total -= 1;
+        }
+
+        context.scenariosCount[featureUri] = { total, done: 0 };
 
         // BeforeFeature
         const featureId = reportportal.startTestItem(
