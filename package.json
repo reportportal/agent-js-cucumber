@@ -5,7 +5,8 @@
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=6.x",
   "dependencies": {
-    "reportportal-client": "^5.5.0"
+    "reportportal-client": "https://github.com/reportportal/client-javascript#master",
+    "cucumber": "5.1.0"
   },
   "devDependencies": {
     "chromedriver": "^79.0.0",
@@ -50,6 +51,9 @@
   },
   "homepage": "https://github.com/reportportal/agent-js-cucumber#readme",
   "jest": {
-    "testPathIgnorePatterns": ["<rootDir>/examples", "<rootDir>/node_modules"]
+    "testPathIgnorePatterns": [
+      "<rootDir>/examples",
+      "<rootDir>/node_modules"
+    ]
   }
 }
