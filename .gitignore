@@ -3,4 +3,4 @@ node_modules
 npmc
 package-lock.json
 debug.log
-coverage/
+coverage

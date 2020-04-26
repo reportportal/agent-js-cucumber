@@ -49,11 +49,5 @@
   "bugs": {
     "url": "https://github.com/reportportal/agent-js-cucumber/issues"
   },
-  "homepage": "https://github.com/reportportal/agent-js-cucumber#readme",
-  "jest": {
-    "testPathIgnorePatterns": [
-      "<rootDir>/examples",
-      "<rootDir>/node_modules"
-    ]
-  }
+  "homepage": "https://github.com/reportportal/agent-js-cucumber#readme"
 }
