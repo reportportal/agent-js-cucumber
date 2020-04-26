@@ -42,7 +42,7 @@ function findOutlineScenario(outlines, location) {
     .find((outline) => !!outline);
 }
 
-export function findBackground(feature) {
+function findBackground(feature) {
   const background = feature.children
     ? feature.children.find((child) => child.type === 'Background')
     : null;
@@ -50,11 +50,11 @@ export function findBackground(feature) {
   return background;
 }
 
-export function findFeature(documents, location) {
+function findFeature(documents, location) {
   return documents[location.uri].feature;
 }
 
-export function findScenario(documents, location) {
+function findScenario(documents, location) {
   const { children } = findFeature(location);
   const scenario = children.find(
     (child) => child.type === 'Scenario' && child.location.line === location.line,
@@ -67,6 +67,13 @@ export function findScenario(documents, location) {
   return findOutlineScenario(outlines, location);
 }
 
-export function findStepDefinition(context, event) {
+function findStepDefinition(context, event) {
   return context.stepDefinitions.steps[event.index].actionLocation;
 }
+
+module.exports = {
+  findBackground,
+  findFeature,
+  findScenario,
+  findStepDefinition,
+};
