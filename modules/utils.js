@@ -51,6 +51,8 @@ const createAttribute = (tag = '') => {
   return attribute;
 };
 
+const createAttributes = (items) => (items ? items.map((item) => createAttribute(item.name)) : []);
+
 const createTagComparator = (tagA) => (tagB) =>
   tagB.name === tagA.name &&
   tagB.location.line === tagA.location.line &&
@@ -59,11 +61,31 @@ const createTagComparator = (tagA) => (tagB) =>
 const isScenarioBasedStatistics = (config) =>
   typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
+const getStepType = (keyword) => {
+  let type;
+
+  switch (keyword) {
+    case 'Before':
+      type = 'BEFORE_TEST';
+      break;
+    case 'After':
+      type = 'AFTER_TEST';
+      break;
+    default:
+      type = 'STEP';
+      break;
+  }
+
+  return type;
+};
+
 module.exports = {
   createTagComparator,
   createAttribute,
+  createAttributes,
   isScenarioBasedStatistics,
   getUri,
   getJSON,
+  getStepType,
   cleanContext,
 };
