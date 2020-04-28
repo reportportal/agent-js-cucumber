@@ -1,7 +1,7 @@
 module.exports = {
   moduleFileExtensions: ['js'],
   testRegex: '/tests/.*\\.spec.(js)$',
-  collectCoverageFrom: ['modules/cucumber-reportportal-formatter.js', '!modules/index.js'],
+  collectCoverageFrom: ['modules/**.js', '!modules/index.js'],
   coverageThreshold: {
     global: {
       branches: 80,
