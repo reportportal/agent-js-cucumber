@@ -47,6 +47,7 @@ const createRPFormatterClass = (config) => {
       this.documentsStorage = documentsStorage;
       this.reportportal = reportportal;
       this.attributesConf = attributesConf;
+      this.isScenarioBasedStatistics = isScenarioBasedStatistics;
 
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
 
@@ -71,7 +72,7 @@ const createRPFormatterClass = (config) => {
       if (!this.contextState.context.launchId) {
         const launch = this.reportportal.startLaunch({
           name: config.launch,
-          startTime: reportportal.helpers.now(),
+          startTime: this.reportportal.helpers.now(),
           description: !config.description ? '' : config.description,
           attributes: [
             ...attributesConf,
@@ -124,7 +125,7 @@ const createRPFormatterClass = (config) => {
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: formatCodeRef(event.uri, name),
             parameters,
             description,
@@ -163,7 +164,7 @@ const createRPFormatterClass = (config) => {
       const description =
         this.contextState.context.scenario.description ||
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const { featureId } = documentsStorage.pickleDocuments[event.sourceLocation.uri];
+      const { featureId } = this.documentsStorage.pickleDocuments[event.sourceLocation.uri];
 
       if (this.contextState.context.lastScenarioDescription !== name) {
         this.contextState.context.lastScenarioDescription = name;
@@ -174,12 +175,12 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
+      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
         this.contextState.context.scenarioId = this.reportportal.startTestItem(
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
+            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
             codeRef: formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.contextState.context.scenario.parameters,
@@ -239,8 +240,8 @@ const createRPFormatterClass = (config) => {
           type,
           codeRef,
           parameters: this.contextState.context.step.parameters,
-          hasStats: !isScenarioBasedStatistics,
-          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
+          hasStats: !this.isScenarioBasedStatistics,
+          retry: !this.isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
         this.contextState.context.launchId,
         this.contextState.context.scenarioId,
@@ -416,7 +417,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!isScenarioBasedStatistics && event.result.retried) {
+      if (!this.isScenarioBasedStatistics && event.result.retried) {
         return;
       }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';

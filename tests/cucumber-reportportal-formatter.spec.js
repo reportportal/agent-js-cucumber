@@ -11,6 +11,7 @@ const utils = require('../modules/utils');
 
 const featureMock = {
   description: 'feature description',
+  keyword: 'ft',
   name: 'feature',
   tags: ['@feature:value'],
   children: [],
@@ -98,7 +99,6 @@ describe('Create ReportPortal formatter class', function() {
       jest.spyOn(itemFinders, 'findBackground').mockReturnValue(null);
       jest.spyOn(utils, 'getUri').mockReturnValue(uriMock);
       jest.spyOn(utils, 'createAttribute').mockReturnValue([{ key: 'feature', value: 'value' }]);
-      jest.spyOn(utils, 'isScenarioBasedStatistics').mockReturnValue(false);
     });
 
     beforeEach(() => {
@@ -135,7 +135,6 @@ describe('Create ReportPortal formatter class', function() {
     });
   });
 
-  // TODO: refactoring!!!
   describe('onTestCaseStarted', () => {
     const uriMock = 'featureUri';
     const documentEvent = {
@@ -148,46 +147,127 @@ describe('Create ReportPortal formatter class', function() {
         uri: uriMock,
       },
     };
+    const pickleTags = [
+      {
+        name: '@feature:value',
+        location: {
+          line: 1,
+          column: 1,
+        },
+      },
+    ];
     let spyFindScenario;
     let spyGetUri;
-    // let spyCreateAttribute;
-    let spyIsScenarioBasedStatistics;
+    let spyCreateAttribute;
+    let spyCreateTagComparator;
 
     beforeAll(() => {
       spyFindScenario = jest
         .spyOn(itemFinders, 'findScenario')
         .mockImplementation(() => featureMock);
       spyGetUri = jest.spyOn(utils, 'getUri').mockReturnValue(uriMock);
-      // spyCreateAttribute = jest
-      //   .spyOn(utils, 'createAttribute')
-      //   .mockReturnValue([{ key: 'feature', value: 'value' }]);
-      spyIsScenarioBasedStatistics = jest
-        .spyOn(utils, 'isScenarioBasedStatistics')
-        .mockReturnValue(false);
+      spyCreateAttribute = jest
+        .spyOn(utils, 'createAttribute')
+        .mockReturnValue({ key: 'feature', value: 'value' });
+      spyCreateTagComparator = jest
+        .spyOn(utils, 'createTagComparator')
+        .mockReturnValue(() => false);
     });
 
     beforeEach(() => {
       formatter.documentsStorage.pickleDocuments[uriMock] = {
-        featureId: 'any',
+        featureId: 'featureId',
+        tags: pickleTags,
+      };
+      formatter.documentsStorage.gherkinDocuments[uriMock] = {
+        feature: {
+          tags: [],
+        },
       };
     });
 
-    test('should call spyFindScenario', function() {
+    test('should call findScenario with gherkinDocuments & sourceLocation', function() {
       formatter.onTestCaseStarted(documentEvent);
 
-      expect(spyFindScenario).toHaveBeenCalled();
+      expect(spyFindScenario).toHaveBeenCalledWith(
+        formatter.documentsStorage.gherkinDocuments,
+        documentEvent.sourceLocation,
+      );
     });
 
-    test('should call spyGetUri', function() {
+    test('should call getUri with uri from event sourceLocation', function() {
       formatter.onTestCaseStarted(documentEvent);
 
-      expect(spyGetUri).toHaveBeenCalled();
+      expect(spyGetUri).toHaveBeenCalledWith(documentEvent.sourceLocation.uri);
     });
 
-    test('should call spyIsScenarioBasedStatistics', function() {
+    test('should call createTagComparator with pickle tag value', function() {
       formatter.onTestCaseStarted(documentEvent);
 
-      expect(spyIsScenarioBasedStatistics).toHaveBeenCalled();
+      expect(spyCreateTagComparator).toHaveBeenCalledWith(pickleTags[0]);
+    });
+
+    test('should call createAttribute with pickle tag name', function() {
+      formatter.onTestCaseStarted(documentEvent);
+
+      expect(spyCreateAttribute).toHaveBeenCalledWith(pickleTags[0].name);
+    });
+
+    test('should call startTestItem method from RPClient if isScenarioBasedStatistics is true', function() {
+      formatter.isScenarioBasedStatistics = true;
+
+      const itemStartObj = {
+        name: 'ft: feature',
+        type: 'STEP',
+        startTime: mockedDate,
+        description: 'feature description',
+        attributes: [{ key: 'feature', value: 'value' }],
+        retry: false,
+      };
+
+      formatter.contextState.context.launchId = 'tempLaunchId';
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestCaseStarted(documentEvent);
+
+      expect(spyStartTestItem).toHaveBeenCalledWith(itemStartObj, 'tempLaunchId', 'featureId');
+    });
+
+    test('should call startTestItem method from RPClient if isScenarioBasedStatistics is false and attemptNumber from event <=2', function() {
+      formatter.isScenarioBasedStatistics = false;
+
+      const itemStartObj = {
+        name: 'ft: feature',
+        type: 'TEST',
+        startTime: mockedDate,
+        description: 'feature description',
+        attributes: [{ key: 'feature', value: 'value' }],
+        retry: false,
+      };
+
+      formatter.contextState.context.launchId = 'tempLaunchId';
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestCaseStarted({
+        ...documentEvent,
+        attemptNumber: 1,
+      });
+
+      expect(spyStartTestItem).toHaveBeenCalledWith(itemStartObj, 'tempLaunchId', 'featureId');
+    });
+
+    test('should not call startTestItem method from RPClient if isScenarioBasedStatistics is false and attemptNumber from event >=2', function() {
+      formatter.isScenarioBasedStatistics = false;
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestCaseStarted({
+        ...documentEvent,
+        attemptNumber: 2,
+      });
+
+      expect(spyStartTestItem).toHaveBeenCalledTimes(0);
     });
   });
 
