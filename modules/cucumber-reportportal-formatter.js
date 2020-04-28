@@ -75,7 +75,7 @@ const createRPFormatterClass = (config) => {
           startTime: this.reportportal.helpers.now(),
           description: !config.description ? '' : config.description,
           attributes: [
-            ...attributesConf,
+            ...this.attributesConf,
             { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
           ],
           rerun: this.isRerun,
@@ -98,9 +98,7 @@ const createRPFormatterClass = (config) => {
         const featureUri = utils.getUri(event.uri);
         const description = featureDocument.description ? featureDocument.description : featureUri;
         const { name } = featureDocument;
-        const eventAttributes = featureDocument.tags
-          ? featureDocument.tags.map((tag) => utils.createAttribute(tag.name))
-          : [];
+        const itemAttributes = utils.createAttributes(featureDocument.tags);
 
         let total = featureDocument.children.length;
         let parameters = [];
@@ -129,7 +127,7 @@ const createRPFormatterClass = (config) => {
             codeRef: formatCodeRef(event.uri, name),
             parameters,
             description,
-            attributes: eventAttributes,
+            attributes: itemAttributes,
           },
           this.contextState.context.launchId,
         ).tempId;
@@ -156,11 +154,10 @@ const createRPFormatterClass = (config) => {
         ? this.contextState.context.scenario.keyword
         : this.contextState.context.scenario.type;
       let name = [keyword, this.contextState.context.scenario.name].join(': ');
-      const eventAttributes = pickle.tags
-        ? pickle.tags
-            .filter((tag) => !featureTags.find(utils.createTagComparator(tag)))
-            .map((tag) => utils.createAttribute(tag.name))
+      const pickleTags = pickle.tags
+        ? pickle.tags.filter((tag) => !featureTags.find(utils.createTagComparator(tag)))
         : [];
+      const itemAttributes = utils.createAttributes(pickleTags);
       const description =
         this.contextState.context.scenario.description ||
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
@@ -184,7 +181,7 @@ const createRPFormatterClass = (config) => {
             description,
             codeRef: formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.contextState.context.scenario.parameters,
-            attributes: eventAttributes,
+            attributes: itemAttributes,
             retry: false,
           },
           this.contextState.context.launchId,
