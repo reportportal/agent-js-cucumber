@@ -2,7 +2,7 @@ const { cleanContext } = require('./utils');
 
 class Context {
   constructor() {
-    this.context = cleanContext();
+    this.resetContext();
   }
 
   findStep(event) {
@@ -42,6 +42,10 @@ class Context {
     } else {
       this.context.failedScenarios[uri] = 1;
     }
+  }
+
+  resetContext() {
+    this.context = cleanContext();
   }
 }
 
