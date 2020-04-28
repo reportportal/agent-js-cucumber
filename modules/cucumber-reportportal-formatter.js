@@ -38,6 +38,7 @@ const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
   const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   const attributesConf = !config.attributes ? [] : config.attributes;
+  const isScenarioBasedStatistics = utils.isScenarioBasedStatistics(config);
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -123,7 +124,7 @@ const createRPFormatterClass = (config) => {
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: utils.isScenarioBasedStatistics() ? 'TEST' : 'SUITE',
+            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: formatCodeRef(event.uri, name),
             parameters,
             description,
@@ -173,12 +174,12 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (utils.isScenarioBasedStatistics() || event.attemptNumber < 2) {
+      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
         this.contextState.context.scenarioId = this.reportportal.startTestItem(
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: utils.isScenarioBasedStatistics() ? 'STEP' : 'TEST',
+            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
             codeRef: formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.contextState.context.scenario.parameters,
@@ -207,7 +208,10 @@ const createRPFormatterClass = (config) => {
         return;
 
       this.contextState.context.step = this.contextState.findStep(event);
-      this.contextState.context.stepDefinition = itemFinders.findStepDefinition(event);
+      this.contextState.context.stepDefinition = itemFinders.findStepDefinition(
+        this.contextState.context,
+        event,
+      );
 
       const name = this.contextState.context.step.text
         ? `${this.contextState.context.step.keyword} ${this.contextState.context.step.text}`
@@ -235,8 +239,8 @@ const createRPFormatterClass = (config) => {
           type,
           codeRef,
           parameters: this.contextState.context.step.parameters,
-          hasStats: !utils.isScenarioBasedStatistics(),
-          retry: !utils.isScenarioBasedStatistics() && event.testCase.attemptNumber > 1,
+          hasStats: !isScenarioBasedStatistics,
+          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
         this.contextState.context.launchId,
         this.contextState.context.scenarioId,
@@ -412,7 +416,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!utils.isScenarioBasedStatistics() && event.result.retried) {
+      if (!isScenarioBasedStatistics && event.result.retried) {
         return;
       }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
@@ -456,7 +460,7 @@ const createRPFormatterClass = (config) => {
             },
           ).promise;
           launchFinishPromise.then(() => {
-            this.contextState.context = utils.cleanContext();
+            this.contextState.resetContext();
           });
         }
       });

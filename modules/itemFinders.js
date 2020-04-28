@@ -55,7 +55,7 @@ function findFeature(documents, location) {
 }
 
 function findScenario(documents, location) {
-  const { children } = findFeature(location);
+  const { children } = findFeature(documents, location);
   const scenario = children.find(
     (child) => child.type === 'Scenario' && child.location.line === location.line,
   );
