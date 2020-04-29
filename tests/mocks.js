@@ -14,6 +14,8 @@ class ContextMock {
     this.countFailedScenarios = jest.fn();
 
     this.getFileName = jest.fn().mockReturnValue('fileName');
+
+    this.resetContext = jest.fn();
   }
 }
 
@@ -58,6 +60,10 @@ class RPClientMock {
     });
 
     this.sendLog = jest.fn().mockReturnValue({
+      promise: Promise.resolve('ok'),
+    });
+
+    this.getPromiseFinishAllItems = jest.fn().mockResolvedValue({
       promise: Promise.resolve('ok'),
     });
   }
