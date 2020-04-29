@@ -402,8 +402,7 @@ describe('Create ReportPortal formatter class', function() {
     let spyCountFailedScenarios;
 
     beforeEach(() => {
-      spyGetFileName = jest
-        .spyOn(formatter.contextState, 'getFileName');
+      spyGetFileName = jest.spyOn(formatter.contextState, 'getFileName');
       spyCountFailedScenarios = jest
         .spyOn(formatter.contextState, 'countFailedScenarios')
         .mockImplementation(() => {});
@@ -617,4 +616,135 @@ describe('Create ReportPortal formatter class', function() {
     });
   });
 
+  describe('onTestStepAttachment', () => {
+    const mockFileObj = {
+      level: 'INFO',
+      message: 'file',
+      data: 'string',
+    };
+    const event = {
+      data: [
+        {
+          item: 'text',
+        },
+      ],
+    };
+
+    const spyGetJSON = jest.spyOn(utils, 'getJSON');
+    let spyGetFileName;
+
+    beforeEach(() => {
+      spyGetFileName = jest
+        .spyOn(formatter.contextState, 'getFileName')
+        .mockImplementation(() => 'fileName');
+
+      formatter.contextState.context.stepStatus = STATUSES.PASSED;
+      formatter.contextState.context.stepId = 'stepId';
+    });
+
+    test('should call spyGetFileName to get name for file', function() {
+      event.media = {
+        type: 'text/plain',
+      };
+      spyGetJSON.mockImplementationOnce(() => mockFileObj);
+      formatter.onTestStepAttachment(event);
+
+      expect(spyGetFileName).toHaveBeenCalledTimes(1);
+    });
+
+    test('should call sendLog method from RPClient to send log with attachment for text media type', function() {
+      event.media = {
+        type: 'text/plain',
+      };
+      spyGetJSON.mockImplementationOnce(() => mockFileObj);
+
+      const request = {
+        level: mockFileObj.level,
+        message: mockFileObj.message,
+        time: mockedDate,
+      };
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      formatter.onTestStepAttachment(event);
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', request);
+    });
+
+    test('should call sendLog method from RPClient with DEBUG level log in case of invalid json data for text media type', function() {
+      event.media = {
+        type: 'text/plain',
+      };
+      spyGetJSON.mockImplementationOnce(() => false);
+
+      const request = {
+        level: 'DEBUG',
+        message: event.data,
+        time: mockedDate,
+      };
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      formatter.onTestStepAttachment(event);
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', request);
+    });
+
+    test('should call sendLog method from RPClient to send log with attachment for other media type', function() {
+      event.media = {
+        type: 'other',
+      };
+      spyGetJSON.mockImplementationOnce(() => mockFileObj);
+
+      const request = {
+        level: mockFileObj.level,
+        message: mockFileObj.message,
+        time: mockedDate,
+        file: {
+          name: mockFileObj.message,
+        },
+      };
+      const fileObj = {
+        name: 'fileName',
+        type: 'other',
+        content: mockFileObj.data,
+      };
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      formatter.onTestStepAttachment(event);
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', request, fileObj);
+    });
+
+    test('should call sendLog method from RPClient with default parameters in case of invalid json data for other media type', function() {
+      event.media = {
+        type: 'other',
+      };
+      spyGetJSON.mockImplementationOnce(() => false);
+
+      const request = {
+        level: 'DEBUG',
+        message: 'fileName',
+        time: mockedDate,
+        file: {
+          name: 'fileName',
+        },
+      };
+      const fileObj = {
+        name: 'fileName',
+        type: 'other',
+        content: event.data,
+      };
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      formatter.onTestStepAttachment(event);
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', request, fileObj);
+    });
+
+  });
+
+  
 });
