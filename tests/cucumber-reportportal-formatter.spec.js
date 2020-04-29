@@ -8,6 +8,7 @@ const {
 } = require('./mocks');
 const itemFinders = require('../modules/itemFinders');
 const utils = require('../modules/utils');
+const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('../modules/constants');
 
 const featureMock = {
   description: 'feature description',
@@ -135,6 +136,19 @@ describe('Create ReportPortal formatter class', function() {
     });
   });
 
+  describe('onTestCasePrepared', () => {
+    test('should set stepDefinitions and isBeforeHook for the context', function() {
+      const event = {
+        data: 'any',
+      };
+
+      formatter.onTestCasePrepared(event);
+
+      expect(formatter.contextState.context.stepDefinitions).toEqual(event);
+      expect(formatter.contextState.context.isBeforeHook).toBe(true);
+    });
+  });
+
   describe('onTestCaseStarted', () => {
     const uriMock = 'featureUri';
     const documentEvent = {
@@ -158,7 +172,7 @@ describe('Create ReportPortal formatter class', function() {
     ];
     let spyFindScenario;
     let spyGetUri;
-    let spyCreateAttribute;
+    let spyCreateAttributes;
     let spyCreateTagComparator;
 
     beforeAll(() => {
@@ -166,9 +180,9 @@ describe('Create ReportPortal formatter class', function() {
         .spyOn(itemFinders, 'findScenario')
         .mockImplementation(() => featureMock);
       spyGetUri = jest.spyOn(utils, 'getUri').mockReturnValue(uriMock);
-      spyCreateAttribute = jest
-        .spyOn(utils, 'createAttribute')
-        .mockReturnValue({ key: 'feature', value: 'value' });
+      spyCreateAttributes = jest
+        .spyOn(utils, 'createAttributes')
+        .mockReturnValue([{ key: 'feature', value: 'value' }]);
       spyCreateTagComparator = jest
         .spyOn(utils, 'createTagComparator')
         .mockReturnValue(() => false);
@@ -207,10 +221,10 @@ describe('Create ReportPortal formatter class', function() {
       expect(spyCreateTagComparator).toHaveBeenCalledWith(pickleTags[0]);
     });
 
-    test('should call createAttribute with pickle tag name', function() {
+    test('should call createAttributes with pickleTags', function() {
       formatter.onTestCaseStarted(documentEvent);
 
-      expect(spyCreateAttribute).toHaveBeenCalledWith(pickleTags[0].name);
+      expect(spyCreateAttributes).toHaveBeenCalledWith(pickleTags);
     });
 
     test('should call startTestItem method from RPClient if isScenarioBasedStatistics is true', function() {
@@ -268,6 +282,338 @@ describe('Create ReportPortal formatter class', function() {
       });
 
       expect(spyStartTestItem).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('onTestStepStarted', () => {
+    const stepMock = {
+      keyword: 'stepExample',
+    };
+    const stepDefinitionMock = {
+      name: 'stepDefinition',
+    };
+    const event = {
+      index: 0,
+      testCase: {
+        attemptNumber: 1,
+      },
+    };
+
+    let spyFindStep;
+    let spyFindStepDefinition;
+    let spyGetStepType;
+
+    beforeAll(() => {
+      spyFindStepDefinition = jest
+        .spyOn(itemFinders, 'findStepDefinition')
+        .mockImplementation(() => stepDefinitionMock);
+      spyGetStepType = jest.spyOn(utils, 'getStepType').mockReturnValue('STEP');
+    });
+
+    beforeEach(() => {
+      spyFindStep = jest
+        .spyOn(formatter.contextState, 'findStep')
+        .mockImplementation(() => stepMock);
+      formatter.contextState.context.stepDefinitions = {
+        steps: [
+          {
+            sourceLocation: {},
+          },
+        ],
+      };
+    });
+
+    test('should call findStep function to find step for context', function() {
+      formatter.onTestStepStarted(event);
+
+      expect(spyFindStep).toHaveBeenCalledWith(event);
+      expect(formatter.contextState.context.step).toEqual(stepMock);
+    });
+
+    test('should call findStepDefinition function to find step definition for context', function() {
+      formatter.onTestStepStarted(event);
+
+      expect(spyFindStepDefinition).toHaveBeenCalledWith(formatter.contextState.context, event);
+      expect(formatter.contextState.context.stepDefinition).toEqual(stepDefinitionMock);
+    });
+
+    test('should call getStepType function to get type for step', function() {
+      formatter.onTestStepStarted(event);
+
+      expect(spyGetStepType).toHaveBeenCalledWith(stepMock.keyword);
+    });
+
+    test('should call startTestItem method from RPClient', function() {
+      formatter.contextState.context.launchId = 'launchId';
+      formatter.contextState.context.scenarioId = 'scenarioId';
+      formatter.isScenarioBasedStatistics = false;
+
+      const itemStartObj = {
+        name: stepMock.keyword,
+        type: 'STEP',
+        startTime: mockedDate,
+        description: '',
+        hasStats: true,
+        retry: false,
+      };
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestStepStarted(event);
+
+      expect(spyStartTestItem).toHaveBeenCalledWith(itemStartObj, 'launchId', 'scenarioId');
+      expect(formatter.contextState.context.stepId).toBe('testItemId');
+    });
+
+    test('should not call startTestItem method and stop function execution', function() {
+      formatter.contextState.context.stepDefinitions = {
+        steps: [
+          {
+            actionLocation: {
+              uri: `uri: ${AFTER_HOOK_URI_TO_SKIP}`,
+            },
+          },
+        ],
+      };
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestStepStarted(event);
+
+      expect(spyFindStep).toHaveBeenCalledTimes(0);
+      expect(spyFindStepDefinition).toHaveBeenCalledTimes(0);
+      expect(spyGetStepType).toHaveBeenCalledTimes(0);
+      expect(spyStartTestItem).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe('onTestStepFinished', () => {
+    const event = {
+      result: {
+        status: 'passed',
+      },
+      testCase: {
+        attemptNumber: 1,
+        sourceLocation: { uri: 'testCaseUri' },
+      },
+    };
+
+    let spyGetFileName;
+    let spyCountFailedScenarios;
+
+    beforeEach(() => {
+      spyGetFileName = jest
+        .spyOn(formatter.contextState, 'getFileName');
+      spyCountFailedScenarios = jest
+        .spyOn(formatter.contextState, 'countFailedScenarios')
+        .mockImplementation(() => {});
+      formatter.contextState.context.stepSourceLocation = { sourceLocation: {} };
+    });
+
+    test('should call spyGetFileName to get name for screenshot', function() {
+      formatter.onTestStepFinished(event);
+
+      expect(spyGetFileName).toHaveBeenCalledTimes(1);
+    });
+
+    test('should set passed status for step and scenario in case of passed result status', function() {
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.PASSED);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.PASSED);
+    });
+
+    test('should call sendLog method from RPClient with WARN level in case of pending result status', function() {
+      event.result.status = STATUSES.PENDING;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', {
+        time: mockedDate,
+        level: 'WARN',
+        message: "This step is marked as 'pending'",
+      });
+    });
+
+    test('should set not_implemented status for step and failed for scenario in case of pending result status', function() {
+      event.result.status = STATUSES.PENDING;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.NOT_IMPLEMENTED);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.FAILED);
+      expect(spyCountFailedScenarios).toHaveBeenCalledWith(event.testCase.sourceLocation.uri);
+    });
+
+    test('should call sendLog method from RPClient with ERROR level in case of undefined result status', function() {
+      event.result.status = STATUSES.UNDEFINED;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', {
+        time: mockedDate,
+        level: 'ERROR',
+        message: 'There is no step definition found. Please verify and implement it.',
+      });
+    });
+
+    test('should set not_found status for step and failed for scenario in case of undefined result status', function() {
+      event.result.status = STATUSES.UNDEFINED;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.NOT_FOUND);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.FAILED);
+      expect(spyCountFailedScenarios).toHaveBeenCalledWith(event.testCase.sourceLocation.uri);
+    });
+
+    test('should call sendLog method from RPClient with ERROR level in case of ambiguous result status', function() {
+      event.result.status = STATUSES.AMBIGUOUS;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', {
+        time: mockedDate,
+        level: 'ERROR',
+        message: 'There are more than one step implementation. Please verify and reimplement it.',
+      });
+    });
+
+    test('should set not_found status for step and failed for scenario in case of ambiguous result status', function() {
+      event.result.status = STATUSES.AMBIGUOUS;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.NOT_FOUND);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.FAILED);
+      expect(spyCountFailedScenarios).toHaveBeenCalledWith(event.testCase.sourceLocation.uri);
+    });
+
+    test('should set skipped status for step in case of skipped result status', function() {
+      event.result.status = STATUSES.SKIPPED;
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.SKIPPED);
+    });
+
+    test('should set skipped status for scenario if it was failed in case of skipped result status', function() {
+      event.result.status = STATUSES.SKIPPED;
+      formatter.contextState.context.scenarioStatus = STATUSES.FAILED;
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.SKIPPED);
+    });
+
+    test('should call sendLog method from RPClient with ERROR level in case of failed result status', function() {
+      event.result.status = STATUSES.FAILED;
+      event.result.exception = 255;
+      const stepDefinitionMock = {
+        uri: 'stepDefinition',
+      };
+
+      formatter.contextState.context.stepDefinition = stepDefinitionMock;
+      formatter.contextState.context.stepId = 'stepId';
+      formatter.onTestStepFinished(event);
+
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      expect(spySendLog).toHaveBeenCalledWith('stepId', {
+        time: mockedDate,
+        level: 'ERROR',
+        message: `${stepDefinitionMock.uri}\n 255`,
+      });
+    });
+
+    test('should set failed status for step in case of failed result status', function() {
+      event.result.status = STATUSES.FAILED;
+      formatter.contextState.context.stepDefinition = {
+        uri: 'stepDefinition',
+      };
+
+      formatter.onTestStepFinished(event);
+
+      expect(formatter.contextState.context.stepStatus).toBe(STATUSES.FAILED);
+      expect(spyCountFailedScenarios).toHaveBeenCalledWith(event.testCase.sourceLocation.uri);
+    });
+
+    test('should call finishTestItem method from RPClient', function() {
+      event.result.status = STATUSES.PASSED;
+      formatter.contextState.context.stepId = 'stepId';
+
+      const itemFinishObj = {
+        status: STATUSES.PASSED,
+        endTime: mockedDate,
+      };
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinished(event);
+
+      expect(spyStartTestItem).toHaveBeenCalledWith('stepId', itemFinishObj);
+    });
+
+    test('should call finishTestItem method from RPClient with ab001 issue in case of not_found step status', function() {
+      event.result.status = STATUSES.UNDEFINED;
+      formatter.contextState.context.stepId = 'stepId';
+
+      const itemFinishObj = {
+        status: STATUSES.FAILED,
+        endTime: mockedDate,
+        issue: {
+          issueType: 'ab001',
+          comment: 'STEP DEFINITION WAS NOT FOUND',
+        },
+      };
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinished(event);
+
+      expect(spyStartTestItem).toHaveBeenCalledWith('stepId', itemFinishObj);
+    });
+
+    test('should call finishTestItem method from RPClient with ti001 issue in case of not_implemented step status', function() {
+      event.result.status = STATUSES.PENDING;
+      formatter.contextState.context.stepId = 'stepId';
+
+      const itemFinishObj = {
+        status: STATUSES.SKIPPED,
+        endTime: mockedDate,
+        issue: {
+          issueType: 'ti001',
+          comment: 'STEP IS PENDING IMPLEMENTATION',
+        },
+      };
+
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinished(event);
+
+      expect(spyStartTestItem).toHaveBeenCalledWith('stepId', itemFinishObj);
+    });
+
+    test('should not call finishTestItem method and stop function execution', function() {
+      formatter.contextState.context.stepSourceLocation = {
+        actionLocation: {
+          uri: `uri: ${AFTER_HOOK_URI_TO_SKIP}`,
+        },
+      };
+
+      const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+      const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+      formatter.onTestStepFinished(event);
+
+      expect(spyGetFileName).toHaveBeenCalledTimes(0);
+      expect(spyCountFailedScenarios).toHaveBeenCalledTimes(0);
+      expect(spySendLog).toHaveBeenCalledTimes(0);
+      expect(spyFinishTestItem).toHaveBeenCalledTimes(0);
     });
   });
 

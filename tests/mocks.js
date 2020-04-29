@@ -12,6 +12,8 @@ class ContextMock {
     });
 
     this.countFailedScenarios = jest.fn();
+
+    this.getFileName = jest.fn().mockReturnValue('fileName');
   }
 }
 
