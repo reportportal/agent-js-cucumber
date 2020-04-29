@@ -743,8 +743,136 @@ describe('Create ReportPortal formatter class', function() {
 
       expect(spySendLog).toHaveBeenCalledWith('stepId', request, fileObj);
     });
-
   });
 
-  
+  describe('onTestCaseFinished', () => {
+    const itemUri = 'itemUri';
+    const event = {
+      sourceLocation: {
+        uri: itemUri,
+      },
+      result: {
+        status: STATUSES.PASSED,
+      },
+    };
+
+    let spyFinishTestItem;
+
+    beforeEach(() => {
+      spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.isScenarioBasedStatistics = false;
+      formatter.contextState.context.scenarioId = 'scenarioId';
+      formatter.contextState.context.scenariosCount[itemUri] = {
+        done: 0,
+        total: 2,
+      };
+
+      formatter.documentsStorage.pickleDocuments[itemUri] = {
+        featureId: 'featureId',
+      };
+    });
+
+    test('should call finishTestItem method from RPClient to finish test item', function() {
+      formatter.onTestCaseFinished(event);
+
+      const itemFinishObj = {
+        status: STATUSES.PASSED,
+        endTime: mockedDate,
+      };
+
+      expect(spyFinishTestItem).toHaveBeenCalledWith('scenarioId', itemFinishObj);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.FAILED);
+      expect(formatter.contextState.context.scenarioId).toBe(null);
+    });
+
+    test('should call finishTestItem method from RPClient and finish test item with failed status in case of result status not passed', function() {
+      event.result.status = STATUSES.SKIPPED;
+      formatter.onTestCaseFinished(event);
+
+      const itemFinishObj = {
+        status: STATUSES.FAILED,
+        endTime: mockedDate,
+      };
+
+      expect(spyFinishTestItem).toHaveBeenCalledWith('scenarioId', itemFinishObj);
+      expect(formatter.contextState.context.scenarioStatus).toBe(STATUSES.FAILED);
+      expect(formatter.contextState.context.scenarioId).toBe(null);
+    });
+
+    test('should increase scenariosCount done in context', function() {
+      event.result.status = STATUSES.PASSED;
+      formatter.onTestCaseFinished(event);
+
+      expect(formatter.contextState.context.scenariosCount[itemUri].done).toBe(1);
+    });
+
+    test('should call finishTestItem method from RPClient twice in case of finishing the item from suite', function() {
+      formatter.contextState.context.scenariosCount[itemUri].total = 1;
+      formatter.contextState.context.failedScenarios[itemUri] = 0;
+
+      event.result.status = STATUSES.PASSED;
+      formatter.onTestCaseFinished(event);
+
+      const finishItemObj = {
+        status: STATUSES.PASSED,
+        endTime: mockedDate,
+      };
+
+      expect(spyFinishTestItem).toHaveBeenCalledTimes(2);
+      expect(spyFinishTestItem).toHaveBeenNthCalledWith(2, 'featureId', finishItemObj);
+    });
+
+    test('should call finishTestItem method from RPClient second time with failed status in case of failed scenarios in suite', function() {
+      formatter.contextState.context.scenariosCount[itemUri].total = 1;
+      formatter.contextState.context.failedScenarios[itemUri] = 1;
+
+      event.result.status = STATUSES.PASSED;
+      formatter.onTestCaseFinished(event);
+
+      const finishItemObj = {
+        status: STATUSES.FAILED,
+        endTime: mockedDate,
+      };
+
+      expect(spyFinishTestItem).toHaveBeenCalledTimes(2);
+      expect(spyFinishTestItem).toHaveBeenNthCalledWith(2, 'featureId', finishItemObj);
+    });
+  });
+
+  describe('onTestRunFinished', () => {
+    let spyGetPromiseFinishAllItems;
+    let spyFinishLaunch;
+
+    beforeEach(() => {
+      spyGetPromiseFinishAllItems = jest.spyOn(formatter.reportportal, 'getPromiseFinishAllItems');
+      spyFinishLaunch = jest.spyOn(formatter.reportportal, 'finishLaunch');
+    });
+
+    test('should call getPromiseFinishAllItems method from RPClient & should not call finishLaunch method for empty launch id', function() {
+      formatter.contextState.context.launchId = null;
+
+      formatter.onTestRunFinished();
+
+      expect(spyGetPromiseFinishAllItems).toHaveBeenCalledWith(null);
+      expect(spyFinishLaunch).toHaveBeenCalledTimes(0);
+    });
+
+    test('should call getPromiseFinishAllItems method from RPClient and should finish launch with corresponding id', async function() {
+      formatter.contextState.context.launchId = 'launchId';
+      await formatter.onTestRunFinished();
+
+      expect(spyGetPromiseFinishAllItems).toHaveBeenCalledWith('launchId');
+      expect(spyFinishLaunch).toHaveBeenCalledWith('launchId', { endTime: mockedDate });
+    });
+
+    test('should call resetContext method from context after finishing launch', async function() {
+      formatter.contextState.context.launchId = 'launchId';
+      const spyResetContext = jest.spyOn(formatter.contextState, 'resetContext');
+
+      await formatter.onTestRunFinished();
+
+      expect(spyResetContext).toHaveBeenCalledTimes(1);
+    });
+  });
 });

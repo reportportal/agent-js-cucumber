@@ -167,7 +167,7 @@ const createRPFormatterClass = (config) => {
         this.contextState.context.lastScenarioDescription = name;
         this.contextState.context.outlineRow = 0;
       } else if (event.attemptNumber < 2) {
-        this.contextState.context.outlineRow++;
+        this.contextState.context.outlineRow += 1;
         name += ` [${this.contextState.context.outlineRow}]`;
       }
 
@@ -429,7 +429,7 @@ const createRPFormatterClass = (config) => {
 
       const featureUri = event.sourceLocation.uri;
       if (!event.result.retried) {
-        this.contextState.context.scenariosCount[featureUri].done++;
+        this.contextState.context.scenariosCount[featureUri].done += 1;
       }
       const { total, done } = this.contextState.context.scenariosCount[featureUri];
       if (done === total) {
@@ -452,7 +452,7 @@ const createRPFormatterClass = (config) => {
       const promise = this.reportportal.getPromiseFinishAllItems(
         this.contextState.context.launchId,
       );
-      promise.then(() => {
+      return promise.then(() => {
         if (this.contextState.context.launchId) {
           const launchFinishPromise = this.reportportal.finishLaunch(
             this.contextState.context.launchId,
