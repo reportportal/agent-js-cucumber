@@ -5,7 +5,7 @@
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=6.x",
   "dependencies": {
-    "reportportal-client": "https://github.com/reportportal/client-javascript#master"
+    "reportportal-client": "^5.5.0"
   },
   "devDependencies": {
     "chromedriver": "^79.0.0",
@@ -18,8 +18,7 @@
     "eslint-plugin-promise": "^3.5.0",
     "jest": "^25.4.0",
     "prettier": "^1.19.1",
-    "selenium-webdriver": "^3.5.0",
-    "cucumber": "6.0.5"
+    "selenium-webdriver": "^3.5.0"
   },
   "peerDependencies": {
     "cucumber": "4.x - 6.x"
