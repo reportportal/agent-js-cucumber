@@ -368,8 +368,8 @@ const createRPFormatterClass = (config) => {
       if (
         event.data &&
         event.data.length &&
-        (this.contextState.context.stepStatus === 'passed' ||
-          this.contextState.context.stepStatus === 'failed')
+        (this.contextState.context.stepStatus === STATUSES.PASSED ||
+          this.contextState.context.stepStatus === STATUSES.FAILED)
       ) {
         switch (event.media.type) {
           case 'text/plain': {
@@ -390,7 +390,7 @@ const createRPFormatterClass = (config) => {
           default: {
             const request = {
               time: this.reportportal.helpers.now(),
-              level: this.contextState.context.stepStatus === 'passed' ? 'DEBUG' : 'ERROR',
+              level: this.contextState.context.stepStatus === STATUSES.PASSED ? 'DEBUG' : 'ERROR',
               message: fileName,
               file: {
                 name: fileName,
