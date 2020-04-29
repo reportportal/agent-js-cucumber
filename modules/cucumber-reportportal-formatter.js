@@ -32,7 +32,7 @@ const getParameters = (header, body) => {
   }));
 };
 
-const afterHookURIToSkip = 'protractor-cucumber-framework';
+const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('./constants');
 
 const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
@@ -142,7 +142,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseStarted(event) {
-      const featureDocument = itemFinders.findFeature(documentsStorage.gherkinDocuments, event.sourceLocation);
+      const featureDocument = itemFinders.findFeature(this.documentsStorage.gherkinDocuments, event.sourceLocation);
       this.contextState.context.scenario = itemFinders.findScenario(
         this.documentsStorage.gherkinDocuments,
         event.sourceLocation,
@@ -201,7 +201,9 @@ const createRPFormatterClass = (config) => {
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.contextState.context.stepSourceLocation.sourceLocation &&
-        this.contextState.context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)
+        this.contextState.context.stepSourceLocation.actionLocation.uri.includes(
+          AFTER_HOOK_URI_TO_SKIP,
+        )
       )
         return;
 
@@ -249,64 +251,64 @@ const createRPFormatterClass = (config) => {
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.contextState.context.stepSourceLocation.sourceLocation &&
-        this.contextState.context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)
+        this.contextState.context.stepSourceLocation.actionLocation.uri.includes(
+          AFTER_HOOK_URI_TO_SKIP,
+        )
       )
         return;
 
       // StepResult
-      const sceenshotName = !this.contextState.context.stepDefinition
-        ? 'UNDEFINED STEP'
-        : `Failed at step definition line:${this.contextState.context.stepDefinition.line}`;
+      const sceenshotName = this.contextState.getFileName();
 
       switch (event.result.status) {
-        case 'passed': {
-          this.contextState.context.stepStatus = 'passed';
-          this.contextState.context.scenarioStatus = 'passed';
+        case STATUSES.PASSED: {
+          this.contextState.context.stepStatus = STATUSES.PASSED;
+          this.contextState.context.scenarioStatus = STATUSES.PASSED;
           break;
         }
-        case 'pending': {
+        case STATUSES.PENDING: {
           this.reportportal.sendLog(this.contextState.context.stepId, {
             time: this.reportportal.helpers.now(),
             level: 'WARN',
             message: "This step is marked as 'pending'",
           });
-          this.contextState.context.stepStatus = 'not_implemented';
-          this.contextState.context.scenarioStatus = 'failed';
+          this.contextState.context.stepStatus = STATUSES.NOT_IMPLEMENTED;
+          this.contextState.context.scenarioStatus = STATUSES.FAILED;
           this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'undefined': {
+        case STATUSES.UNDEFINED: {
           this.reportportal.sendLog(this.contextState.context.stepId, {
             time: this.reportportal.helpers.now(),
             level: 'ERROR',
             message: 'There is no step definition found. Please verify and implement it.',
           });
-          this.contextState.context.stepStatus = 'not_found';
-          this.contextState.context.scenarioStatus = 'failed';
+          this.contextState.context.stepStatus = STATUSES.NOT_FOUND;
+          this.contextState.context.scenarioStatus = STATUSES.FAILED;
           this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'ambiguous': {
+        case STATUSES.AMBIGUOUS: {
           this.reportportal.sendLog(this.contextState.context.stepId, {
             time: this.reportportal.helpers.now(),
             level: 'ERROR',
             message:
               'There are more than one step implementation. Please verify and reimplement it.',
           });
-          this.contextState.context.stepStatus = 'not_found';
-          this.contextState.context.scenarioStatus = 'failed';
+          this.contextState.context.stepStatus = STATUSES.NOT_FOUND;
+          this.contextState.context.scenarioStatus = STATUSES.FAILED;
           this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'skipped': {
-          this.contextState.context.stepStatus = 'skipped';
-          if (this.contextState.context.scenarioStatus === 'failed') {
-            this.contextState.context.scenarioStatus = 'skipped';
+        case STATUSES.SKIPPED: {
+          this.contextState.context.stepStatus = STATUSES.SKIPPED;
+          if (this.contextState.context.scenarioStatus === STATUSES.FAILED) {
+            this.contextState.context.scenarioStatus = STATUSES.SKIPPED;
           }
           break;
         }
-        case 'failed': {
-          this.contextState.context.stepStatus = 'failed';
+        case STATUSES.FAILED: {
+          this.contextState.context.stepStatus = STATUSES.FAILED;
           this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
           const errorMessage = `${
             this.contextState.context.stepDefinition.uri
@@ -343,14 +345,14 @@ const createRPFormatterClass = (config) => {
         status: this.contextState.context.stepStatus,
         endTime: this.reportportal.helpers.now(),
       };
-      if (request.status === 'not_found') {
-        request.status = 'failed';
+      if (request.status === STATUSES.NOT_FOUND) {
+        request.status = STATUSES.FAILED;
         request.issue = {
           issueType: 'ab001',
           comment: 'STEP DEFINITION WAS NOT FOUND',
         };
-      } else if (request.status === 'not_implemented') {
-        request.status = 'skipped';
+      } else if (request.status === STATUSES.NOT_IMPLEMENTED) {
+        request.status = STATUSES.SKIPPED;
         request.issue = {
           issueType: 'ti001',
           comment: 'STEP IS PENDING IMPLEMENTATION',
@@ -361,9 +363,8 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestStepAttachment(event) {
-      const fileName = !this.contextState.context.stepDefinition
-        ? 'UNDEFINED STEP'
-        : `Attachment at step definition line:${this.contextState.context.stepDefinition.line}`;
+      const fileName = this.contextState.getFileName();
+
       if (
         event.data &&
         event.data.length &&
@@ -420,10 +421,10 @@ const createRPFormatterClass = (config) => {
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
       // ScenarioResult
       this.reportportal.finishTestItem(this.contextState.context.scenarioId, {
-        status: isFailed ? 'failed' : 'passed',
+        status: isFailed ? STATUSES.FAILED : STATUSES.PASSED,
         endTime: this.reportportal.helpers.now(),
       });
-      this.contextState.context.scenarioStatus = 'failed';
+      this.contextState.context.scenarioStatus = STATUSES.FAILED;
       this.contextState.context.scenarioId = null;
 
       const featureUri = event.sourceLocation.uri;
@@ -433,7 +434,9 @@ const createRPFormatterClass = (config) => {
       const { total, done } = this.contextState.context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus =
-          this.contextState.context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
+          this.contextState.context.failedScenarios[featureUri] > 0
+            ? STATUSES.FAILED
+            : STATUSES.PASSED;
         this.reportportal.finishTestItem(
           this.documentsStorage.pickleDocuments[featureUri].featureId,
           {

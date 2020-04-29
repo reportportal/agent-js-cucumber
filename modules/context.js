@@ -5,6 +5,14 @@ class Context {
     this.resetContext();
   }
 
+  getFileName() {
+    const fileName = this.context.stepDefinition
+      ? `Failed at step definition line:${this.context.stepDefinition.line}`
+      : 'UNDEFINED STEP';
+
+    return fileName;
+  }
+
   findStep(event) {
     let stepObj = null;
     const stepSourceLocation = this.context.stepDefinitions.steps[event.index];
