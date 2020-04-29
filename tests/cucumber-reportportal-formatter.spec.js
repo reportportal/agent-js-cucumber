@@ -838,6 +838,15 @@ describe('Create ReportPortal formatter class', function() {
       expect(spyFinishTestItem).toHaveBeenCalledTimes(2);
       expect(spyFinishTestItem).toHaveBeenNthCalledWith(2, 'featureId', finishItemObj);
     });
+
+    test('should not call finishTestItem method and stop function execution', function() {
+      formatter.isScenarioBasedStatistics = false;
+      event.result.retried = true;
+
+      formatter.onTestCaseFinished(event);
+
+      expect(spyFinishTestItem).toHaveBeenCalledTimes(0);
+    });
   });
 
   describe('onTestRunFinished', () => {
