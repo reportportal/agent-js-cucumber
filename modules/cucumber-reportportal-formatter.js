@@ -223,7 +223,10 @@ const createRPFormatterClass = (config) => {
           name: config.launch,
           startTime: reportportal.helpers.now(),
           description: !config.description ? '' : config.description,
-          attributes: attributesConf,
+          attributes: [
+            ...attributesConf,
+            { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
+          ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
         });
