@@ -1,6 +1,7 @@
 const { Formatter } = require('cucumber');
 const ReportPortalClient = require('reportportal-client');
 const Path = require('path');
+const pjson = require('../package.json');
 
 const createRPFormatterClass = (config) => {
   const getJSON = (json) => {
@@ -64,7 +65,7 @@ const createRPFormatterClass = (config) => {
 
   const gherkinDocuments = {};
   const pickleDocuments = {};
-  const reportportal = new ReportPortalClient(config);
+  const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   let context = cleanContext();
   const attributesConf = !config.attributes ? [] : config.attributes;
   const afterHookURIToSkip = 'protractor-cucumber-framework';
