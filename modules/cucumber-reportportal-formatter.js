@@ -3,6 +3,12 @@ const ReportPortalClient = require('reportportal-client');
 const Path = require('path');
 const pjson = require('../package.json');
 
+const formatCodeRef = (path, itemName) => {
+  const codeRef = path.replace(/\\/g, '/');
+
+  return itemName ? `${codeRef}/${itemName}` : codeRef;
+};
+
 const createRPFormatterClass = (config) => {
   const getJSON = (json) => {
     try {
@@ -268,6 +274,7 @@ const createRPFormatterClass = (config) => {
             name,
             startTime: reportportal.helpers.now(),
             type: isScenarioBasedStatistics() ? 'TEST' : 'SUITE',
+            codeRef: formatCodeRef(event.uri, name),
             description,
             attributes: eventAttributes,
           },
@@ -296,7 +303,7 @@ const createRPFormatterClass = (config) => {
         : [];
       const description =
         context.scenario.description ||
-        [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':'); // TODO codeRef
+        [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
       const { featureId } = pickleDocuments[event.sourceLocation.uri];
 
       if (context.lastScenarioDescription !== name) {
@@ -315,6 +322,7 @@ const createRPFormatterClass = (config) => {
             startTime: reportportal.helpers.now(),
             type: isScenarioBasedStatistics() ? 'STEP' : 'TEST',
             description,
+            codeRef: formatCodeRef(event.sourceLocation.uri, name),
             attributes: eventAttributes,
             retry: isScenarioBasedStatistics() && event.attemptNumber > 1,
           },
@@ -353,17 +361,27 @@ const createRPFormatterClass = (config) => {
         ? `${context.step.keyword} ${context.step.text}`
         : context.step.keyword;
       let type = 'STEP';
+      let isHook = false;
       if (context.step.keyword === 'Before') {
         type = 'BEFORE_TEST';
+        isHook = true;
       } else if (context.step.keyword === 'After') {
         type = 'AFTER_TEST';
+        isHook = true;
       }
+
+      // hooks are described in cucumber's library core
+      const codeRef =
+        context.stepDefinition && !isHook
+          ? formatCodeRef(context.stepDefinition.uri, name)
+          : undefined;
 
       context.stepId = reportportal.startTestItem(
         {
           name,
           startTime: reportportal.helpers.now(),
           type,
+          codeRef,
           description: args.length ? args.join('\n').trim() : '',
           hasStats: !isScenarioBasedStatistics(),
           retry: !isScenarioBasedStatistics() && event.testCase.attemptNumber > 1,
