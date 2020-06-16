@@ -291,8 +291,10 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseStarted(event) {
+      const featureDocument = findFeature(event.sourceLocation);
+      context.background = findBackground(featureDocument);
       context.scenario = findScenario(event.sourceLocation);
-      const featureTags = findFeature(event.sourceLocation).tags;
+      const featureTags = featureDocument.tags;
       const pickle = pickleDocuments[getUri(event.sourceLocation.uri)];
       const keyword = context.scenario.keyword ? context.scenario.keyword : context.scenario.type;
       let name = [keyword, context.scenario.name].join(': ');
