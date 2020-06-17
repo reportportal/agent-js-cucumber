@@ -9,6 +9,26 @@ const formatCodeRef = (path, itemName) => {
   return itemName ? `${codeRef}/${itemName}` : codeRef;
 };
 
+const getParameters = (header, body) => {
+  const keys = header ? header.cells.map((cell) => cell.value) : [];
+
+  if (Array.isArray(body)) {
+    return body.reduce((acc, item) => {
+      const params = item.cells.map((cell, index) => ({
+        key: keys[index],
+        value: cell.value,
+      }));
+
+      return acc.concat(params);
+    }, []);
+  }
+
+  return body.cells.map((cell, index) => ({
+    key: keys[index],
+    value: cell.value,
+  }));
+};
+
 const createRPFormatterClass = (config) => {
   const getJSON = (json) => {
     try {
@@ -90,10 +110,15 @@ const createRPFormatterClass = (config) => {
 
   function createSteps(header, row, steps) {
     return steps.map((step) => {
-      const modified = { ...step };
+      const modified = { ...step, parameters: [] };
 
       header.cells.forEach((varable, index) => {
+        const isParameterPresents = modified.text.indexOf(`<${varable.value}>`) !== -1;
         modified.text = modified.text.replace(`<${varable.value}>`, row.cells[index].value);
+
+        if (isParameterPresents) {
+          modified.parameters.push({ key: varable.value, value: row.cells[index].value });
+        }
       });
 
       return modified;
@@ -102,12 +127,14 @@ const createRPFormatterClass = (config) => {
 
   function createScenarioFromOutlineExample(outline, example, location) {
     const found = example.tableBody.find((row) => row.location.line === location.line);
+    const parameters = getParameters(example.tableHeader, found);
 
     if (!found) return null;
 
     return {
       type: 'Scenario',
       steps: createSteps(example.tableHeader, found, outline.steps),
+      parameters,
       name: outline.name,
       location: found.location,
       description: outline.description,
@@ -253,10 +280,12 @@ const createRPFormatterClass = (config) => {
           : [];
 
         let total = featureDocument.children.length;
+        let parameters = [];
         featureDocument.children.forEach((child) => {
           if (child.examples) {
             child.examples.forEach((ex) => {
               total += ex.tableBody.length - 1;
+              parameters = parameters.concat(getParameters(ex.tableHeader, ex.tableBody));
             });
           }
         });
@@ -275,6 +304,7 @@ const createRPFormatterClass = (config) => {
             startTime: reportportal.helpers.now(),
             type: isScenarioBasedStatistics() ? 'TEST' : 'SUITE',
             codeRef: formatCodeRef(event.uri, name),
+            parameters,
             description,
             attributes: eventAttributes,
           },
@@ -325,6 +355,7 @@ const createRPFormatterClass = (config) => {
             type: isScenarioBasedStatistics() ? 'STEP' : 'TEST',
             description,
             codeRef: formatCodeRef(event.sourceLocation.uri, name),
+            parameters: context.scenario.parameters,
             attributes: eventAttributes,
             retry: isScenarioBasedStatistics() && event.attemptNumber > 1,
           },
@@ -349,15 +380,6 @@ const createRPFormatterClass = (config) => {
 
       context.step = findStep(event);
       context.stepDefinition = findStepDefinition(event);
-
-      // BeforeStep
-      const args = [];
-      // if (context.step.arguments && context.step.arguments.rows.length) { // TODO parameters
-      //   context.step.arguments.rows.forEach((row) => {
-      //     const line = row.cells.map((cell) => cell.value);
-      //     args.push(`|${line.join('|').trim()}|`);
-      //   });
-      // }
 
       const name = context.step.text
         ? `${context.step.keyword} ${context.step.text}`
@@ -384,7 +406,7 @@ const createRPFormatterClass = (config) => {
           startTime: reportportal.helpers.now(),
           type,
           codeRef,
-          description: args.length ? args.join('\n').trim() : '',
+          parameters: context.step.parameters,
           hasStats: !isScenarioBasedStatistics(),
           retry: !isScenarioBasedStatistics() && event.testCase.attemptNumber > 1,
         },

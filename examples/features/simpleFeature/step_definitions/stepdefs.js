@@ -17,8 +17,18 @@ After(function() {
 });
 
 Given('list of holidays', function() {
-  this.holidays = ['New Years', 'Martin Luther King, Jr.', 'Presidents', 'Memorial', 'Independence', 'Labor', 'Veterans', 'Thanksgiving', 'Christmas'];
-})
+  this.holidays = [
+    'New Years',
+    'Martin Luther King, Jr.',
+    'Presidents',
+    'Memorial',
+    'Independence',
+    'Labor',
+    'Veterans',
+    'Thanksgiving',
+    'Christmas',
+  ];
+});
 
 Given('today is {string}', function(givenDay) {
   this.today = givenDay;
@@ -56,4 +66,4 @@ When("I ask wheter it's Holiday", function() {
   if (this.holidays.includes(this.today)) {
     this.actualAnswer = 'Yes';
   }
-})
+});
