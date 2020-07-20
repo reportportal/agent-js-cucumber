@@ -1,9 +1,16 @@
+const utils = require('./utils');
+
 function createSteps(header, row, steps) {
   return steps.map((step) => {
-    const modified = { ...step };
+    const modified = { ...step, parameters: [] };
 
     header.cells.forEach((varable, index) => {
+      const isParameterPresents = modified.text.indexOf(`<${varable.value}>`) !== -1;
       modified.text = modified.text.replace(`<${varable.value}>`, row.cells[index].value);
+
+      if (isParameterPresents) {
+        modified.parameters.push({ key: varable.value, value: row.cells[index].value });
+      }
     });
 
     return modified;
@@ -12,12 +19,14 @@ function createSteps(header, row, steps) {
 
 function createScenarioFromOutlineExample(outline, example, location) {
   const found = example.tableBody.find((row) => row.location.line === location.line);
+  const parameters = utils.getParameters(example.tableHeader, found);
 
   if (!found) return null;
 
   return {
     type: 'Scenario',
     steps: createSteps(example.tableHeader, found, outline.steps),
+    parameters,
     name: outline.name,
     location: found.location,
     description: outline.description,

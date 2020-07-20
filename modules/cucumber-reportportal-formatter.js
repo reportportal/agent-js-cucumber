@@ -5,33 +5,6 @@ const Context = require('./context');
 const DocumentStorage = require('./documents-storage');
 const itemFinders = require('./itemFinders');
 const pjson = require('../package.json');
-
-const formatCodeRef = (path, itemName) => {
-  const codeRef = path.replace(/\\/g, '/');
-
-  return itemName ? `${codeRef}/${itemName}` : codeRef;
-};
-
-const getParameters = (header, body) => {
-  const keys = header ? header.cells.map((cell) => cell.value) : [];
-
-  if (Array.isArray(body)) {
-    return body.reduce((acc, item) => {
-      const params = item.cells.map((cell, index) => ({
-        key: keys[index],
-        value: cell.value,
-      }));
-
-      return acc.concat(params);
-    }, []);
-  }
-
-  return body.cells.map((cell, index) => ({
-    key: keys[index],
-    value: cell.value,
-  }));
-};
-
 const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('./constants');
 
 const createRPFormatterClass = (config) => {
@@ -106,7 +79,7 @@ const createRPFormatterClass = (config) => {
           if (child.examples) {
             child.examples.forEach((ex) => {
               total += ex.tableBody.length - 1;
-              parameters = parameters.concat(getParameters(ex.tableHeader, ex.tableBody));
+              parameters = parameters.concat(utils.getParameters(ex.tableHeader, ex.tableBody));
             });
           }
         });
@@ -124,7 +97,7 @@ const createRPFormatterClass = (config) => {
             name,
             startTime: this.reportportal.helpers.now(),
             type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
-            codeRef: formatCodeRef(event.uri, name),
+            codeRef: utils.formatCodeRef(event.uri, name),
             parameters,
             description,
             attributes: itemAttributes,
@@ -179,7 +152,7 @@ const createRPFormatterClass = (config) => {
             startTime: this.reportportal.helpers.now(),
             type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
-            codeRef: formatCodeRef(event.sourceLocation.uri, name),
+            codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.contextState.context.scenario.parameters,
             attributes: itemAttributes,
             retry: false,
@@ -229,7 +202,7 @@ const createRPFormatterClass = (config) => {
       // hooks are described in cucumber's library core
       const codeRef =
         this.contextState.context.stepDefinition && !isHook
-          ? formatCodeRef(this.contextState.context.stepDefinition.uri, name)
+          ? utils.formatCodeRef(this.contextState.context.stepDefinition.uri, name)
           : undefined;
 
       this.contextState.context.stepId = this.reportportal.startTestItem(

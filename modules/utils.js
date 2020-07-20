@@ -61,6 +61,32 @@ const createTagComparator = (tagA) => (tagB) =>
 const isScenarioBasedStatistics = (config) =>
   typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
+const formatCodeRef = (path, itemName) => {
+  const codeRef = path.replace(/\\/g, '/');
+
+  return itemName ? `${codeRef}/${itemName}` : codeRef;
+};
+
+const getParameters = (header, body) => {
+  const keys = header ? header.cells.map((cell) => cell.value) : [];
+
+  if (Array.isArray(body)) {
+    return body.reduce((acc, item) => {
+      const params = item.cells.map((cell, index) => ({
+        key: keys[index],
+        value: cell.value,
+      }));
+
+      return acc.concat(params);
+    }, []);
+  }
+
+  return body.cells.map((cell, index) => ({
+    key: keys[index],
+    value: cell.value,
+  }));
+};
+
 const getStepType = (keyword) => {
   let type;
 
@@ -87,5 +113,7 @@ module.exports = {
   getUri,
   getJSON,
   getStepType,
+  getParameters,
+  formatCodeRef,
   cleanContext,
 };
