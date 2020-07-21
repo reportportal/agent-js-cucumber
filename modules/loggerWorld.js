@@ -1,3 +1,21 @@
+/*
+ *  Copyright 2020 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+const { LOG_LEVELS, RP_ENTITY_LAUNCH } = require('./constants');
+
 class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {
     this.attach = attach;
@@ -7,7 +25,7 @@ class ReportPortalCucumberLoggerWorld {
   info(logMessage) {
     this.attach(
       JSON.stringify({
-        level: 'INFO',
+        level: LOG_LEVELS.INFO,
         message: logMessage,
       }),
       'text/plain',
@@ -17,7 +35,7 @@ class ReportPortalCucumberLoggerWorld {
   debug(logMessage) {
     this.attach(
       JSON.stringify({
-        level: 'DEBUG',
+        level: LOG_LEVELS.DEBUG,
         message: logMessage,
       }),
       'text/plain',
@@ -27,14 +45,118 @@ class ReportPortalCucumberLoggerWorld {
   error(logMessage) {
     this.attach(
       JSON.stringify({
-        level: 'ERROR',
+        level: LOG_LEVELS.ERROR,
         message: logMessage,
       }),
       'text/plain',
     );
   }
 
+  warn(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.WARN,
+        message: logMessage,
+      }),
+      'text/plain',
+    );
+  }
+
+  trace(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.TRACE,
+        message: logMessage,
+      }),
+      'text/plain',
+    );
+  }
+
+  fatal(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.FATAL,
+        message: logMessage,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchInfo(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.INFO,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchDebug(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.DEBUG,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchError(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.ERROR,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchWarn(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.WARN,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchTrace(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.TRACE,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchFatal(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.FATAL,
+        message: logMessage,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
   screenshot(logMessage) {
+    return this.createScreenshot(logMessage);
+  }
+
+  launchScreenshot(logMessage) {
+    return this.createScreenshot(logMessage, RP_ENTITY_LAUNCH);
+  }
+
+  createScreenshot(message, entity) {
     if (!global.browser && !this.browser) {
       // eslint-disable-line no-undef
       return Promise.reject(new Error('No "browser" object defined'));
@@ -44,8 +166,9 @@ class ReportPortalCucumberLoggerWorld {
       .then((png) =>
         this.attach(
           JSON.stringify({
-            message: logMessage,
+            message,
             data: png,
+            entity,
           }),
           'image/png',
         ),

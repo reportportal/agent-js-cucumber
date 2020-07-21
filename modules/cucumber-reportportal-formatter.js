@@ -1,11 +1,27 @@
+/*
+ *  Copyright 2020 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 const { Formatter } = require('cucumber');
-const ReportPortalClient = require('reportportal-client');
+const ReportPortalClient = require('@reportportal/client-javascript');
 const utils = require('./utils');
 const Context = require('./context');
 const DocumentStorage = require('./documents-storage');
 const itemFinders = require('./itemFinders');
 const pjson = require('../package.json');
-const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('./constants');
+const { AFTER_HOOK_URI_TO_SKIP, RP_ENTITY_LAUNCH, STATUSES, LOG_LEVELS } = require('./constants');
 
 const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
@@ -115,7 +131,10 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseStarted(event) {
-      const featureDocument = itemFinders.findFeature(this.documentsStorage.gherkinDocuments, event.sourceLocation);
+      const featureDocument = itemFinders.findFeature(
+        this.documentsStorage.gherkinDocuments,
+        event.sourceLocation,
+      );
       this.contextState.context.scenario = itemFinders.findScenario(
         this.documentsStorage.gherkinDocuments,
         event.sourceLocation,
@@ -346,41 +365,52 @@ const createRPFormatterClass = (config) => {
       ) {
         switch (event.media.type) {
           case 'text/plain': {
-            const logMessage = utils.getJSON(event.data);
+            const logObj = utils.getJSON(event.data);
             const request = {
               time: this.reportportal.helpers.now(),
             };
-            if (logMessage) {
-              request.level = logMessage.level;
-              request.message = logMessage.message;
+            let itemId = this.contextState.context.stepId;
+            if (logObj) {
+              request.level = logObj.level;
+              request.message = logObj.message;
+              if (logObj.entity === RP_ENTITY_LAUNCH) {
+                itemId = this.contextState.context.launchId;
+              }
             } else {
-              request.level = 'DEBUG';
+              request.level = LOG_LEVELS.DEBUG;
               request.message = event.data;
             }
-            this.reportportal.sendLog(this.contextState.context.stepId, request);
+            this.reportportal.sendLog(itemId, request);
             break;
           }
           default: {
+            const logObj = utils.getJSON(event.data);
             const request = {
               time: this.reportportal.helpers.now(),
-              level: this.contextState.context.stepStatus === STATUSES.PASSED ? 'DEBUG' : 'ERROR',
+              level:
+                this.contextState.context.stepStatus === STATUSES.PASSED
+                  ? LOG_LEVELS.DEBUG
+                  : LOG_LEVELS.ERROR,
               message: fileName,
               file: {
                 name: fileName,
               },
             };
-            const parsedObject = utils.getJSON(event.data);
-            if (parsedObject) {
-              request.level = parsedObject.level;
-              request.message = parsedObject.message;
-              request.file.name = parsedObject.message;
+            let itemId = this.contextState.context.stepId;
+            if (logObj) {
+              request.level = logObj.level;
+              request.message = logObj.message;
+              request.file.name = logObj.message;
+              if (logObj.entity === RP_ENTITY_LAUNCH) {
+                itemId = this.contextState.context.launchId;
+              }
             }
             const fileObj = {
               name: fileName,
               type: event.media.type,
-              content: (parsedObject && parsedObject.data) || event.data,
+              content: (logObj && logObj.data) || event.data,
             };
-            this.reportportal.sendLog(this.contextState.context.stepId, request, fileObj);
+            this.reportportal.sendLog(itemId, request, fileObj);
             break;
           }
         }
