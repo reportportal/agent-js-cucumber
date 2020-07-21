@@ -10,6 +10,7 @@ function isItFriday(today) {
 
 Before(function() {
   this.info('Before info log');
+  this.launchWarn('This is a warn launch log');
 });
 
 After(function() {
