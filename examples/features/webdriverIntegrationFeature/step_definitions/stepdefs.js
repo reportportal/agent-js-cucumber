@@ -18,6 +18,7 @@ Given(/^I am on the Cucumber.js GitHub repository/, function(callback) {
         .catch((err) => callback(err));
     })
     .catch((err) => callback(err));
+  this.setTestCaseId('itemTestCaseId');
 });
 
 When(/^I click on '(.*)'/, function(text, callback) {

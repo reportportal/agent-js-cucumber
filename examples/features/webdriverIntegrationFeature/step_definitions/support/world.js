@@ -2,9 +2,9 @@ require('chromedriver');
 const cucumber = require('cucumber');
 const { Builder } = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
-const { Logger } = require('../../../../../modules');
+const { RPWorld } = require('../../../../../modules');
 
-class CustomLogger extends Logger {
+class CustomWorld extends RPWorld {
   constructor(...args) {
     super(...args);
 
@@ -15,4 +15,4 @@ class CustomLogger extends Logger {
   }
 }
 
-cucumber.setWorldConstructor(CustomLogger);
+cucumber.setWorldConstructor(CustomWorld);
