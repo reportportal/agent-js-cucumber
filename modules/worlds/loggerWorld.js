@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const { LOG_LEVELS, RP_ENTITY_LAUNCH } = require('./constants');
+const { LOG_LEVELS, RP_ENTITY_LAUNCH } = require('../constants');
 
 class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {

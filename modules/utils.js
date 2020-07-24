@@ -49,6 +49,7 @@ const cleanContext = () => ({
   stepDefinitions: null,
   stepDefinition: null,
   isBeforeHook: true,
+  itemsParams: {},
 });
 
 const createAttribute = (tag = '') => {

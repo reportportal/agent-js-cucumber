@@ -14,11 +14,17 @@
  *  limitations under the License.
  */
 
-const { createRPFormatterClass } = require('./cucumber-reportportal-formatter');
-const { Logger, RPWorld } = require('./worlds');
+const LoggerWorld = require('./loggerWorld');
 
-module.exports = {
-  Logger,
-  RPWorld,
-  createRPFormatterClass,
-};
+class ReportPortalCucumberWorld extends LoggerWorld {
+  setTestCaseId(testCaseId) {
+    this.attach(
+      JSON.stringify({
+        testCaseId,
+      }),
+      'rp/testCaseId',
+    );
+  }
+}
+
+module.exports = ReportPortalCucumberWorld;
