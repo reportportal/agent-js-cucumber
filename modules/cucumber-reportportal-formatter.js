@@ -332,10 +332,13 @@ const createRPFormatterClass = (config) => {
           break;
       }
 
+      const itemParams = this.contextState.context.itemsParams[this.contextState.context.stepId];
+
       // AfterStep
       const request = {
         status: this.contextState.context.stepStatus,
         endTime: this.reportportal.helpers.now(),
+        ...itemParams,
       };
       if (request.status === STATUSES.NOT_FOUND) {
         request.status = STATUSES.FAILED;
@@ -356,7 +359,6 @@ const createRPFormatterClass = (config) => {
 
     onTestStepAttachment(event) {
       const fileName = this.contextState.getFileName();
-
       if (
         event.data &&
         event.data.length &&
@@ -364,6 +366,12 @@ const createRPFormatterClass = (config) => {
           this.contextState.context.stepStatus === STATUSES.FAILED)
       ) {
         switch (event.media.type) {
+          case 'rp/testCaseId': {
+            const dataObj = utils.getJSON(event.data);
+            const itemId = this.contextState.context.stepId;
+            this.contextState.context.itemsParams[itemId] = { testCaseId: dataObj.testCaseId };
+            break;
+          }
           case 'text/plain': {
             const logObj = utils.getJSON(event.data);
             const request = {
