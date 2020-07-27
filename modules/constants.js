@@ -37,9 +37,28 @@ const LOG_LEVELS = {
 
 const RP_ENTITY_LAUNCH = 'launch';
 
+const CUCUMBER_EVENTS = {
+  GHERKIN_DOCUMENT: 'gherkin-document',
+  PICKLE_ACCEPTED: 'pickle-accepted',
+  TEST_CASE_PREPARED: 'test-case-prepared',
+  TEST_CASE_STARTED: 'test-case-started',
+  TEST_CASE_FINISHED: 'test-case-finished',
+  TEST_STEP_STARTED: 'test-step-started',
+  TEST_STEP_FINISHED: 'test-step-finished',
+  TEST_STEP_ATTACHMENT: 'test-step-attachment',
+  TEST_RUN_FINISHED: 'test-run-finished',
+};
+
+const RP_EVENTS = {
+  TEST_CASE_ID: 'rp/testCaseId',
+  ATTRIBUTES: 'rp/attributes',
+};
+
 module.exports = {
   AFTER_HOOK_URI_TO_SKIP,
   RP_ENTITY_LAUNCH,
   STATUSES,
   LOG_LEVELS,
+  CUCUMBER_EVENTS,
+  RP_EVENTS,
 };
