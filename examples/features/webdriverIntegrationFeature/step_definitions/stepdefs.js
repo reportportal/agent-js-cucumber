@@ -23,6 +23,7 @@ Given(/^I am on the Cucumber.js GitHub repository/, function(callback) {
 
 When(/^I click on '(.*)'/, function(text, callback) {
   this.info('Click at the element');
+  this.addAttributes([{ key: 'browser', value: 'chrome' }]);
   global.browser.findElement({ linkText: text }).then(
     (element) => {
       element.click().then(() => {

@@ -15,6 +15,7 @@
  */
 
 const LoggerWorld = require('./loggerWorld');
+const { RP_EVENTS } = require('../constants');
 
 class ReportPortalCucumberWorld extends LoggerWorld {
   setTestCaseId(testCaseId) {
@@ -22,7 +23,16 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         testCaseId,
       }),
-      'rp/testCaseId',
+      RP_EVENTS.TEST_CASE_ID,
+    );
+  }
+
+  addAttributes(attributes) {
+    this.attach(
+      JSON.stringify({
+        attributes,
+      }),
+      RP_EVENTS.ATTRIBUTES,
     );
   }
 }
