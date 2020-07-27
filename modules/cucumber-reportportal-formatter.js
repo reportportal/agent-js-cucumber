@@ -21,7 +21,14 @@ const Context = require('./context');
 const DocumentStorage = require('./documents-storage');
 const itemFinders = require('./itemFinders');
 const pjson = require('../package.json');
-const { AFTER_HOOK_URI_TO_SKIP, RP_ENTITY_LAUNCH, STATUSES, LOG_LEVELS } = require('./constants');
+const {
+  AFTER_HOOK_URI_TO_SKIP,
+  RP_ENTITY_LAUNCH,
+  STATUSES,
+  LOG_LEVELS,
+  CUCUMBER_EVENTS,
+  RP_EVENTS,
+} = require('./constants');
 
 const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
@@ -43,15 +50,46 @@ const createRPFormatterClass = (config) => {
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
 
-      options.eventBroadcaster.on('gherkin-document', this.onGherkinDocument.bind(this));
-      options.eventBroadcaster.on('pickle-accepted', this.onPickleAccepted.bind(this));
-      options.eventBroadcaster.on('test-case-prepared', this.onTestCasePrepared.bind(this));
-      options.eventBroadcaster.on('test-case-started', this.onTestCaseStarted.bind(this));
-      options.eventBroadcaster.on('test-step-started', this.onTestStepStarted.bind(this));
-      options.eventBroadcaster.on('test-step-finished', this.onTestStepFinished.bind(this));
-      options.eventBroadcaster.on('test-step-attachment', this.onTestStepAttachment.bind(this));
-      options.eventBroadcaster.on('test-case-finished', this.onTestCaseFinished.bind(this));
-      options.eventBroadcaster.on('test-run-finished', this.onTestRunFinished.bind(this));
+      this.registerListeners(options.eventBroadcaster);
+    }
+
+    registerListeners(eventBroadcaster) {
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.GHERKIN_DOCUMENT,
+        this.onGherkinDocument.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.PICKLE_ACCEPTED,
+        this.onPickleAccepted.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_CASE_PREPARED,
+        this.onTestCasePrepared.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_CASE_STARTED,
+        this.onTestCaseStarted.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_STEP_STARTED,
+        this.onTestStepStarted.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_STEP_FINISHED,
+        this.onTestStepFinished.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_STEP_ATTACHMENT,
+        this.onTestStepAttachment.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_CASE_FINISHED,
+        this.onTestCaseFinished.bind(this),
+      );
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_RUN_FINISHED,
+        this.onTestRunFinished.bind(this),
+      );
     }
 
     onGherkinDocument(event) {
@@ -357,6 +395,13 @@ const createRPFormatterClass = (config) => {
       this.reportportal.finishTestItem(this.contextState.context.stepId, request);
     }
 
+    updateItemParams(id, newParams) {
+      this.contextState.context.itemsParams[id] = {
+        ...this.contextState.context.itemsParams[id],
+        ...newParams,
+      };
+    }
+
     onTestStepAttachment(event) {
       const fileName = this.contextState.getFileName();
       if (
@@ -366,10 +411,16 @@ const createRPFormatterClass = (config) => {
           this.contextState.context.stepStatus === STATUSES.FAILED)
       ) {
         switch (event.media.type) {
-          case 'rp/testCaseId': {
+          case RP_EVENTS.TEST_CASE_ID: {
             const dataObj = utils.getJSON(event.data);
             const itemId = this.contextState.context.stepId;
-            this.contextState.context.itemsParams[itemId] = { testCaseId: dataObj.testCaseId };
+            this.updateItemParams(itemId, { testCaseId: dataObj.testCaseId });
+            break;
+          }
+          case RP_EVENTS.ATTRIBUTES: {
+            const dataObj = utils.getJSON(event.data);
+            const itemId = this.contextState.context.stepId;
+            this.updateItemParams(itemId, { attributes: dataObj.attributes });
             break;
           }
           case 'text/plain': {
