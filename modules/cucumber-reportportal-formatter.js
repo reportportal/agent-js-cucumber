@@ -410,29 +410,26 @@ const createRPFormatterClass = (config) => {
         (this.contextState.context.stepStatus === STATUSES.PASSED ||
           this.contextState.context.stepStatus === STATUSES.FAILED)
       ) {
+        const dataObj = utils.getJSON(event.data);
+        let itemId = this.contextState.context.stepId;
+
         switch (event.media.type) {
           case RP_EVENTS.TEST_CASE_ID: {
-            const dataObj = utils.getJSON(event.data);
-            const itemId = this.contextState.context.stepId;
             this.updateItemParams(itemId, { testCaseId: dataObj.testCaseId });
             break;
           }
           case RP_EVENTS.ATTRIBUTES: {
-            const dataObj = utils.getJSON(event.data);
-            const itemId = this.contextState.context.stepId;
             this.updateItemParams(itemId, { attributes: dataObj.attributes });
             break;
           }
           case 'text/plain': {
-            const logObj = utils.getJSON(event.data);
             const request = {
               time: this.reportportal.helpers.now(),
             };
-            let itemId = this.contextState.context.stepId;
-            if (logObj) {
-              request.level = logObj.level;
-              request.message = logObj.message;
-              if (logObj.entity === RP_ENTITY_LAUNCH) {
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
                 itemId = this.contextState.context.launchId;
               }
             } else {
@@ -443,7 +440,6 @@ const createRPFormatterClass = (config) => {
             break;
           }
           default: {
-            const logObj = utils.getJSON(event.data);
             const request = {
               time: this.reportportal.helpers.now(),
               level:
@@ -455,19 +451,18 @@ const createRPFormatterClass = (config) => {
                 name: fileName,
               },
             };
-            let itemId = this.contextState.context.stepId;
-            if (logObj) {
-              request.level = logObj.level;
-              request.message = logObj.message;
-              request.file.name = logObj.message;
-              if (logObj.entity === RP_ENTITY_LAUNCH) {
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              request.file.name = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
                 itemId = this.contextState.context.launchId;
               }
             }
             const fileObj = {
               name: fileName,
               type: event.media.type,
-              content: (logObj && logObj.data) || event.data,
+              content: (dataObj && dataObj.data) || event.data,
             };
             this.reportportal.sendLog(itemId, request, fileObj);
             break;
