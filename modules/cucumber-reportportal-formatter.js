@@ -1,5 +1,5 @@
-const { Formatter } = require('cucumber');
-const ReportPortalClient = require('reportportal-client');
+const {Formatter} = require('cucumber');
+const ReportPortalClient = require('@reportportal/client-javascript');
 const Path = require('path');
 const pjson = require('../package.json');
 
@@ -91,7 +91,7 @@ const createRPFormatterClass = (config) => {
 
   const gherkinDocuments = {};
   const pickleDocuments = {};
-  const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
+  const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
   let context = cleanContext();
   const attributesConf = !config.attributes ? [] : config.attributes;
   const afterHookURIToSkip = 'protractor-cucumber-framework';
@@ -110,14 +110,14 @@ const createRPFormatterClass = (config) => {
 
   function createSteps(header, row, steps) {
     return steps.map((step) => {
-      const modified = { ...step, parameters: [] };
+      const modified = {...step, parameters: []};
 
-      header.cells.forEach((varable, index) => {
-        const isParameterPresents = modified.text.indexOf(`<${varable.value}>`) !== -1;
-        modified.text = modified.text.replace(`<${varable.value}>`, row.cells[index].value);
+      header.cells.forEach((variable, index) => {
+        const isParameterPresents = modified.text.indexOf(`<${variable.value}>`) !== -1;
+        modified.text = replaceParameter(modified.text, variable.value, row.cells[index].value);
 
         if (isParameterPresents) {
-          modified.parameters.push({ key: varable.value, value: row.cells[index].value });
+          modified.parameters.push({key: variable.value, value: row.cells[index].value});
         }
       });
 
@@ -125,17 +125,24 @@ const createRPFormatterClass = (config) => {
     });
   }
 
+  function replaceParameter(originalString, name, value) {
+    return originalString.replace(`<${name}>`, value);
+  }
+
   function createScenarioFromOutlineExample(outline, example, location) {
     const found = example.tableBody.find((row) => row.location.line === location.line);
     const parameters = getParameters(example.tableHeader, found);
+    let outlineName = outline.name;
 
     if (!found) return null;
+
+    parameters.forEach(param => outlineName = replaceParameter(outlineName, param.key, param.value));
 
     return {
       type: 'Scenario',
       steps: createSteps(example.tableHeader, found, outline.steps),
       parameters,
-      name: outline.name,
+      name: outlineName,
       location: found.location,
       description: outline.description,
     };
@@ -164,7 +171,7 @@ const createRPFormatterClass = (config) => {
   }
 
   function findScenario(location) {
-    const { children } = findFeature(location);
+    const {children} = findFeature(location);
     const scenario = children.find(
       (child) => child.type === 'Scenario' && child.location.line === location.line,
     );
@@ -210,7 +217,7 @@ const createRPFormatterClass = (config) => {
         });
       }
     } else {
-      stepObj = { keyword: context.isBeforeHook ? 'Before' : 'After' };
+      stepObj = {keyword: context.isBeforeHook ? 'Before' : 'After'};
     }
     return stepObj;
   }
@@ -231,7 +238,7 @@ const createRPFormatterClass = (config) => {
     constructor(options) {
       super(options);
 
-      const { rerun, rerunOf } = options.parsedArgvOptions || {};
+      const {rerun, rerunOf} = options.parsedArgvOptions || {};
 
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
@@ -258,7 +265,7 @@ const createRPFormatterClass = (config) => {
           description: !config.description ? '' : config.description,
           attributes: [
             ...attributesConf,
-            { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
+            {key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true},
           ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
@@ -274,7 +281,7 @@ const createRPFormatterClass = (config) => {
         const featureDocument = findFeature(event);
         const featureUri = getUri(event.uri);
         const description = featureDocument.description ? featureDocument.description : featureUri;
-        const { name } = featureDocument;
+        const {name} = featureDocument;
         const eventAttributes = featureDocument.tags
           ? featureDocument.tags.map((tag) => createAttribute(tag.name))
           : [];
@@ -295,7 +302,7 @@ const createRPFormatterClass = (config) => {
           total -= 1;
         }
 
-        context.scenariosCount[featureUri] = { total, done: 0 };
+        context.scenariosCount[featureUri] = {total, done: 0};
 
         // BeforeFeature
         const featureId = reportportal.startTestItem(
@@ -330,13 +337,13 @@ const createRPFormatterClass = (config) => {
       let name = [keyword, context.scenario.name].join(': ');
       const eventAttributes = pickle.tags
         ? pickle.tags
-            .filter((tag) => !featureTags.find(createTagComparator(tag)))
-            .map((tag) => createAttribute(tag.name))
+          .filter((tag) => !featureTags.find(createTagComparator(tag)))
+          .map((tag) => createAttribute(tag.name))
         : [];
       const description =
         context.scenario.description ||
         [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const { featureId } = pickleDocuments[event.sourceLocation.uri];
+      const {featureId} = pickleDocuments[event.sourceLocation.uri];
 
       if (context.lastScenarioDescription !== name) {
         context.lastScenarioDescription = name;
@@ -490,7 +497,7 @@ const createRPFormatterClass = (config) => {
             const request = {
               time: reportportal.helpers.now(),
               level: 'ERROR',
-              file: { name: sceenshotName },
+              file: {name: sceenshotName},
               message: sceenshotName,
             };
             global.browser.takeScreenshot().then((png) => {
@@ -599,7 +606,7 @@ const createRPFormatterClass = (config) => {
       if (!event.result.retried) {
         context.scenariosCount[featureUri].done++;
       }
-      const { total, done } = context.scenariosCount[featureUri];
+      const {total, done} = context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
         reportportal.finishTestItem(pickleDocuments[featureUri].featureId, {
@@ -626,4 +633,4 @@ const createRPFormatterClass = (config) => {
   };
 };
 
-module.exports = { createRPFormatterClass };
+module.exports = {createRPFormatterClass};
