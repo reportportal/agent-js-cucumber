@@ -290,10 +290,8 @@ const createRPFormatterClass = (config) => {
         let parameters = [];
         featureDocument.children.forEach((child) => {
           if (child.examples) {
-            child.examples.forEach((ex) => {
-              total += ex.tableBody.length - 1;
-              parameters = parameters.concat(getParameters(ex.tableHeader, ex.tableBody));
-            });
+            total -= 1
+            child.examples.forEach(ex => total += ex.tableBody.length);
           }
         });
 
