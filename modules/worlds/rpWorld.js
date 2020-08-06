@@ -35,6 +35,15 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       RP_EVENTS.ATTRIBUTES,
     );
   }
+
+  addDescription(description) {
+    this.attach(
+      JSON.stringify({
+        description,
+      }),
+      RP_EVENTS.DESCRIPTION,
+    );
+  }
 }
 
 module.exports = ReportPortalCucumberWorld;

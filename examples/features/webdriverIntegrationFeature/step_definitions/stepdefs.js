@@ -2,38 +2,37 @@ const { Given, When, Then } = require('cucumber');
 const { until } = require('selenium-webdriver');
 
 Given(/^I am on the Cucumber.js GitHub repository/, function(callback) {
+  this.addDescription('This test should load GitHub cucumber-js page and take the screenshot!');
   this.info('Going to the GitHub');
   global.browser
     .get('https://github.com/cucumber/cucumber-js/tree/master')
     .then(() => {
-      this.screenshot('Test screen')
-        .then(() => {
-          callback();
-        })
-        .catch((err) => callback(err));
-      this.launchScreenshot('Test screen for launch')
-        .then(() => {
-          callback();
-        })
-        .catch((err) => callback(err));
+      this.setTestCaseId('itemTestCaseId');
+      return this.screenshot('Test screen');
+    })
+    .then(() => {
+      this.addDescription('Screenshot taken!');
+      callback();
     })
     .catch((err) => callback(err));
-  this.setTestCaseId('itemTestCaseId');
 });
 
 When(/^I click on '(.*)'/, function(text, callback) {
   this.info('Click at the element');
   this.addAttributes([{ key: 'browser', value: 'chrome' }]);
-  global.browser.findElement({ linkText: text }).then(
-    (element) => {
-      element.click().then(() => {
-        callback();
-      });
-    },
-    (err) => {
-      callback(err);
-    },
-  );
+  global.browser
+    .findElement({ linkText: text })
+    .then((element) => {
+      return element.click();
+    })
+    .then(() => {
+      return this.launchScreenshot('Test screen for launch');
+    })
+    .then(() => {
+      this.addDescription('Screenshot for launch taken!');
+      callback();
+    })
+    .catch((err) => callback(err));
 });
 
 Then(/^I should see '(.*)'/, function(text, callback) {
