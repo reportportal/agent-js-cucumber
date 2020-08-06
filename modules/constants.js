@@ -52,6 +52,7 @@ const CUCUMBER_EVENTS = {
 const RP_EVENTS = {
   TEST_CASE_ID: 'rp/testCaseId',
   ATTRIBUTES: 'rp/attributes',
+  DESCRIPTION: 'rp/description',
 };
 
 module.exports = {

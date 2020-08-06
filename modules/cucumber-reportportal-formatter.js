@@ -402,6 +402,10 @@ const createRPFormatterClass = (config) => {
       };
     }
 
+    getItemParams(id) {
+      return this.contextState.context.itemsParams[id] || {};
+    }
+
     onTestStepAttachment(event) {
       const fileName = this.contextState.getFileName();
       if (
@@ -419,7 +423,19 @@ const createRPFormatterClass = (config) => {
             break;
           }
           case RP_EVENTS.ATTRIBUTES: {
-            this.updateItemParams(itemId, { attributes: dataObj.attributes });
+            const savedAttributes = this.getItemParams(itemId).attributes || [];
+            this.updateItemParams(itemId, {
+              attributes: savedAttributes.concat(dataObj.attributes),
+            });
+            break;
+          }
+          case RP_EVENTS.DESCRIPTION: {
+            const savedDescription = this.getItemParams(itemId).description || '';
+            this.updateItemParams(itemId, {
+              description: savedDescription
+                ? `${savedDescription}<br/>${dataObj.description}`
+                : dataObj.description,
+            });
             break;
           }
           case 'text/plain': {
