@@ -15,7 +15,7 @@
  */
 
 const LoggerWorld = require('./loggerWorld');
-const { RP_EVENTS } = require('../constants');
+const { RP_EVENTS, STATUSES, RP_ENTITY_LAUNCH } = require('../constants');
 
 class ReportPortalCucumberWorld extends LoggerWorld {
   setTestCaseId(testCaseId) {
@@ -42,6 +42,158 @@ class ReportPortalCucumberWorld extends LoggerWorld {
         description,
       }),
       RP_EVENTS.DESCRIPTION,
+    );
+  }
+
+  setStatusPassed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.PASSED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusFailed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.FAILED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusSkipped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.SKIPPED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusStopped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.STOPPED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusInterrupted() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INTERRUPTED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusCancelled() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.CANCELLED,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusInfo() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INFO,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setStatusWarn() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.WARN,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusPassed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.PASSED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusFailed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.FAILED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusSkipped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.SKIPPED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusStopped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.STOPPED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusInterrupted() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INTERRUPTED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusCancelled() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.CANCELLED,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusInfo() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INFO,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
+    );
+  }
+
+  setLaunchStatusWarn() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.WARN,
+        entity: RP_ENTITY_LAUNCH,
+      }),
+      RP_EVENTS.STATUS,
     );
   }
 }

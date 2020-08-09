@@ -19,6 +19,11 @@ const STATUSES = {
   PASSED: 'passed',
   FAILED: 'failed',
   SKIPPED: 'skipped',
+  STOPPED: 'stopped',
+  INTERRUPTED: 'interrupted',
+  CANCELLED: 'cancelled',
+  INFO: 'info',
+  WARN: 'warn',
   PENDING: 'pending',
   NOT_IMPLEMENTED: 'not_implemented',
   UNDEFINED: 'undefined',
@@ -53,6 +58,7 @@ const RP_EVENTS = {
   TEST_CASE_ID: 'rp/testCaseId',
   ATTRIBUTES: 'rp/attributes',
   DESCRIPTION: 'rp/description',
+  STATUS: 'rp/status',
 };
 
 module.exports = {
