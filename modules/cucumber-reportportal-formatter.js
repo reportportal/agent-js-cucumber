@@ -1,6 +1,6 @@
 const {Formatter} = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
-const Path = require('path');
+const path = require('path');
 const pjson = require('../package.json');
 
 const formatCodeRef = (path, itemName) => {
@@ -42,7 +42,7 @@ const createRPFormatterClass = (config) => {
     return false;
   };
 
-  const getUri = (uri) => uri.replace(process.cwd() + Path.sep, '');
+  const getUri = (uri) => uri.replace(process.cwd() + path.sep, '');
 
   const cleanContext = () => ({
     outlineRow: 0,
@@ -90,7 +90,7 @@ const createRPFormatterClass = (config) => {
     typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   const gherkinDocuments = {};
-  const pickleDocuments = {};
+  const featureData = {};
   const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
   let context = cleanContext();
   const attributesConf = !config.attributes ? [] : config.attributes;
@@ -100,12 +100,12 @@ const createRPFormatterClass = (config) => {
     gherkinDocuments[gherkinDocument.uri] = gherkinDocument.document;
   }
 
-  function cacheAcceptedPickle(event) {
-    pickleDocuments[event.uri] = event.pickle;
+  function createCachedFeature(uri) {
+    featureData[uri] = {};
   }
 
-  function isAcceptedPickleCached(event) {
-    return !!pickleDocuments[event.uri];
+  function isFeatureDataCached(uri) {
+    return !!featureData[uri];
   }
 
   function createSteps(header, row, steps) {
@@ -129,35 +129,36 @@ const createRPFormatterClass = (config) => {
     return originalString.replace(`<${name}>`, value);
   }
 
-  function createScenarioFromOutlineExample(outline, example, location) {
-    const found = example.tableBody.find((row) => row.location.line === location.line);
-    const parameters = getParameters(example.tableHeader, found);
+  function createScenarioFromOutlineExample(outline, example, row) {
+    const parameters = getParameters(example.tableHeader, row);
     let outlineName = outline.name;
 
-    if (!found) return null;
 
     parameters.forEach(param => outlineName = replaceParameter(outlineName, param.key, param.value));
 
     return {
       type: 'Scenario',
-      steps: createSteps(example.tableHeader, found, outline.steps),
-      parameters,
+      tags: example.tags,
+      location: row.location,
+      keyword: 'Scenario',
       name: outlineName,
-      location: found.location,
+      steps: createSteps(example.tableHeader, row, outline.steps),
+      parameters,
       description: outline.description,
     };
   }
 
   function createScenarioFromOutline(outline, location) {
+    let foundRow;
     const foundExample = outline.examples.find((example) => {
-      const foundRow = example.tableBody.find((row) => row.location.line === location.line);
+      foundRow = example.tableBody.find((row) => row.location.line === location.line);
 
       return !!foundRow;
     });
 
-    if (!foundExample) return null;
+    if (!foundRow) return null;
 
-    return createScenarioFromOutlineExample(outline, foundExample, location);
+    return createScenarioFromOutlineExample(outline, foundExample, foundRow);
   }
 
   function findOutlineScenario(outlines, location) {
@@ -275,32 +276,33 @@ const createRPFormatterClass = (config) => {
     }
 
     onPickleAccepted(event) {
-      if (!isAcceptedPickleCached(event)) {
-        cacheAcceptedPickle(event);
+      const featureUri = getUri(event.uri);
+      if (!isFeatureDataCached(featureUri)) {
+        createCachedFeature(featureUri);
 
         const featureDocument = findFeature(event);
-        const featureUri = getUri(event.uri);
         const description = featureDocument.description ? featureDocument.description : featureUri;
         const {name} = featureDocument;
         const eventAttributes = featureDocument.tags
           ? featureDocument.tags.map((tag) => createAttribute(tag.name))
           : [];
 
-        let total = featureDocument.children.length;
         let parameters = [];
+
+        let total = featureDocument.children.length;
         featureDocument.children.forEach((child) => {
+          // Don't count background as a child in the total count
+          if (child.type === 'Background') {
+            total -= 1;
+          }
+          // Add to total for each example in scenario outline
           if (child.examples) {
-            total -= 1
+            total -= 1;
             child.examples.forEach(ex => total += ex.tableBody.length);
           }
         });
 
-        context.background = findBackground(featureDocument);
-        if (context.background) {
-          total -= 1;
-        }
-
-        context.scenariosCount[featureUri] = {total, done: 0};
+        featureData[getUri(event.uri)].scenariosCount = {total, done: 0};
 
         // BeforeFeature
         const featureId = reportportal.startTestItem(
@@ -316,7 +318,7 @@ const createRPFormatterClass = (config) => {
           context.launchId,
         ).tempId;
 
-        pickleDocuments[event.uri].featureId = featureId;
+        featureData[getUri(event.uri)].featureId = featureId;
       }
     }
 
@@ -330,18 +332,17 @@ const createRPFormatterClass = (config) => {
       context.background = findBackground(featureDocument);
       context.scenario = findScenario(event.sourceLocation);
       const featureTags = featureDocument.tags;
-      const pickle = pickleDocuments[getUri(event.sourceLocation.uri)];
       const keyword = context.scenario.keyword ? context.scenario.keyword : context.scenario.type;
       let name = [keyword, context.scenario.name].join(': ');
-      const eventAttributes = pickle.tags
-        ? pickle.tags
+      const eventAttributes = context.scenario.tags
+        ? context.scenario.tags
           .filter((tag) => !featureTags.find(createTagComparator(tag)))
           .map((tag) => createAttribute(tag.name))
         : [];
       const description =
         context.scenario.description ||
         [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const {featureId} = pickleDocuments[event.sourceLocation.uri];
+      const {featureId} = featureData[event.sourceLocation.uri];
 
       if (context.lastScenarioDescription !== name) {
         context.lastScenarioDescription = name;
@@ -602,12 +603,12 @@ const createRPFormatterClass = (config) => {
 
       const featureUri = event.sourceLocation.uri;
       if (!event.result.retried) {
-        context.scenariosCount[featureUri].done++;
+        featureData[getUri(featureUri)].scenariosCount.done++;
       }
-      const {total, done} = context.scenariosCount[featureUri];
+      const {total, done} = featureData[featureUri].scenariosCount;
       if (done === total) {
         const featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
-        reportportal.finishTestItem(pickleDocuments[featureUri].featureId, {
+        reportportal.finishTestItem(featureData[featureUri].featureId, {
           status: featureStatus,
           endTime: reportportal.helpers.now(),
         });
