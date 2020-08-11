@@ -438,6 +438,16 @@ const createRPFormatterClass = (config) => {
             });
             break;
           }
+          case RP_EVENTS.STATUS: {
+            if (dataObj.entity !== RP_ENTITY_LAUNCH) {
+              this.updateItemParams(itemId, {
+                status: dataObj.status,
+              });
+            } else {
+              this.contextState.context.launchStatus = dataObj.status;
+            }
+            break;
+          }
           case 'text/plain': {
             const request = {
               time: this.reportportal.helpers.now(),
