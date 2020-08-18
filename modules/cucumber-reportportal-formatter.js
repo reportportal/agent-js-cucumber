@@ -331,6 +331,7 @@ const createRPFormatterClass = (config) => {
       const featureDocument = findFeature(event.sourceLocation);
       context.background = findBackground(featureDocument);
       context.scenario = findScenario(event.sourceLocation);
+      context.scenarioStatus = 'started';
       const featureTags = featureDocument.tags;
       const keyword = context.scenario.keyword ? context.scenario.keyword : context.scenario.type;
       let name = [keyword, context.scenario.name].join(': ');
@@ -437,7 +438,9 @@ const createRPFormatterClass = (config) => {
       switch (event.result.status) {
         case 'passed': {
           context.stepStatus = 'passed';
-          context.scenarioStatus = 'passed';
+          if (context.scenarioStatus !== 'failed') {
+            context.scenarioStatus = 'passed';
+          }
           break;
         }
         case 'pending': {
@@ -476,13 +479,19 @@ const createRPFormatterClass = (config) => {
         }
         case 'skipped': {
           context.stepStatus = 'skipped';
-          if (context.scenarioStatus === 'failed') {
+          if (context.scenarioStatus === 'started' || context.scenarioStatus === 'passed') {
             context.scenarioStatus = 'skipped';
+          } else {
+            context.scenarioStatus = 'failed';
+            if (config.hasOwnProperty('reportSkippedCucumberStepsOnFailedTest') && !config.reportSkippedCucumberStepsOnFailedTest) {
+              context.stepStatus = 'cancelled';
+            }
           }
           break;
         }
         case 'failed': {
           context.stepStatus = 'failed';
+          context.scenarioStatus = 'failed';
           countFailedScenarios(event.testCase.sourceLocation.uri);
           const errorMessage = `${
             context.stepDefinition.uri
@@ -598,7 +607,6 @@ const createRPFormatterClass = (config) => {
         status: isFailed ? 'failed' : 'passed',
         endTime: reportportal.helpers.now(),
       });
-      context.scenarioStatus = 'failed';
       context.scenarioId = null;
 
       const featureUri = event.sourceLocation.uri;

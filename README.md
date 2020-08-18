@@ -150,7 +150,7 @@ Example:
 
 ## Step reporting configuration
 
-By defaut, this agent report the following structure:
+By default, this agent reports the following structure:
 
 - feature - SUITE
 - scenario - TEST
@@ -176,6 +176,28 @@ To report your steps as logs, you need to pass an additional parameter to the ag
 ```
 
 This will report your your steps with logs to a log level without creating statistics for every step.
+
+## Reporting skipped cucumber steps as failed
+
+By default, cucumber marks steps which follow a failed step as `skipped`. 
+When `scenarioBasedStatistics` is set to `false` (the default behavior) 
+Report Portal reports these steps as failures to investigate. 
+
+To change this behavior and instead mark skipped steps which follow a failed step as `cancelled`, 
+you need to add an additional parameter to the agent config: `"reportSkippedCucumberStepsOnFailedTest": false`
+
+```json
+{
+  "token": "${rp.token}",
+  "endpoint": "${rp.endpoint}/api/v1",
+  "launch": "${rp.launch}",
+  "project": "${rp.your_project}",
+  "takeScreenshot": "onFailure",
+  "reportSkippedCucumberStepsOnFailedTest": false
+}
+```
+
+Steps which are marked as `skipped` that do not follow a failed step will continue to mark the step and the scenario as `skipped`. 
 
 ## Attachments
 
