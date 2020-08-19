@@ -577,6 +577,9 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
+      if (!isScenarioBasedStatistics && event.result.retried) {
+        return;
+      }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
       // ScenarioResult
       reportportal.finishTestItem(context.scenarioId, {
