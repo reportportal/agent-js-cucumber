@@ -55,7 +55,6 @@ const createRPFormatterClass = (config) => {
     launchId: null,
     background: null,
     failedScenarios: {},
-    scenariosCount: {},
     lastScenarioDescription: null,
     scenario: null,
     step: null,
@@ -86,8 +85,7 @@ const createRPFormatterClass = (config) => {
     tagB.location.line === tagA.location.line &&
     tagB.location.column === tagA.location.column;
 
-  const isScenarioBasedStatistics = () =>
-    typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
+  const isScenarioBasedStatistics = typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   const gherkinDocuments = {};
   const featureData = {};
@@ -227,12 +225,8 @@ const createRPFormatterClass = (config) => {
     return context.stepDefinitions.steps[event.index].actionLocation;
   }
 
-  function countFailedScenarios(uri) {
-    if (context.failedScenarios[uri]) {
-      context.failedScenarios[uri]++;
-    } else {
-      context.failedScenarios[uri] = 1;
-    }
+  function incrementFailedScenariosCount(uri) {
+    context.failedScenarios[uri] = context.failedScenarios[uri] ? context.failedScenarios[uri] + 1 : 1;
   }
 
   return class CucumberReportPortalFormatter extends Formatter {
@@ -289,27 +283,12 @@ const createRPFormatterClass = (config) => {
 
         let parameters = [];
 
-        let total = featureDocument.children.length;
-        featureDocument.children.forEach((child) => {
-          // Don't count background as a child in the total count
-          if (child.type === 'Background') {
-            total -= 1;
-          }
-          // Add to total for each example in scenario outline
-          if (child.examples) {
-            total -= 1;
-            child.examples.forEach(ex => total += ex.tableBody.length);
-          }
-        });
-
-        featureData[getUri(event.uri)].scenariosCount = {total, done: 0};
-
         // BeforeFeature
         const featureId = reportportal.startTestItem(
           {
             name,
             startTime: reportportal.helpers.now(),
-            type: isScenarioBasedStatistics() ? 'TEST' : 'SUITE',
+            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: formatCodeRef(event.uri, name),
             parameters,
             description,
@@ -354,17 +333,17 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (isScenarioBasedStatistics() || event.attemptNumber < 2) {
+      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
         context.scenarioId = reportportal.startTestItem(
           {
             name,
             startTime: reportportal.helpers.now(),
-            type: isScenarioBasedStatistics() ? 'STEP' : 'TEST',
+            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
             codeRef: formatCodeRef(event.sourceLocation.uri, name),
             parameters: context.scenario.parameters,
             attributes: eventAttributes,
-            retry: isScenarioBasedStatistics() && event.attemptNumber > 1,
+            retry: isScenarioBasedStatistics && event.attemptNumber > 1,
           },
           context.launchId,
           featureId,
@@ -414,8 +393,8 @@ const createRPFormatterClass = (config) => {
           type,
           codeRef,
           parameters: context.step.parameters,
-          hasStats: !isScenarioBasedStatistics(),
-          retry: !isScenarioBasedStatistics() && event.testCase.attemptNumber > 1,
+          hasStats: !isScenarioBasedStatistics,
+          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
         context.launchId,
         context.scenarioId,
@@ -451,7 +430,7 @@ const createRPFormatterClass = (config) => {
           });
           context.stepStatus = 'not_implemented';
           context.scenarioStatus = 'failed';
-          countFailedScenarios(event.testCase.sourceLocation.uri);
+          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case 'undefined': {
@@ -462,7 +441,7 @@ const createRPFormatterClass = (config) => {
           });
           context.stepStatus = 'not_found';
           context.scenarioStatus = 'failed';
-          countFailedScenarios(event.testCase.sourceLocation.uri);
+          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case 'ambiguous': {
@@ -474,7 +453,7 @@ const createRPFormatterClass = (config) => {
           });
           context.stepStatus = 'not_found';
           context.scenarioStatus = 'failed';
-          countFailedScenarios(event.testCase.sourceLocation.uri);
+          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case 'skipped': {
@@ -492,7 +471,7 @@ const createRPFormatterClass = (config) => {
         case 'failed': {
           context.stepStatus = 'failed';
           context.scenarioStatus = 'failed';
-          countFailedScenarios(event.testCase.sourceLocation.uri);
+          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           const errorMessage = `${
             context.stepDefinition.uri
           }\n ${event.result.exception.toString()}`;
@@ -598,9 +577,6 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!isScenarioBasedStatistics() && event.result.retried) {
-        return;
-      }
       const isFailed = event.result.status.toUpperCase() !== 'PASSED';
       // ScenarioResult
       reportportal.finishTestItem(context.scenarioId, {
@@ -610,20 +586,16 @@ const createRPFormatterClass = (config) => {
       context.scenarioId = null;
 
       const featureUri = event.sourceLocation.uri;
-      if (!event.result.retried) {
-        featureData[getUri(featureUri)].scenariosCount.done++;
-      }
-      const {total, done} = featureData[featureUri].scenariosCount;
-      if (done === total) {
-        const featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
-        reportportal.finishTestItem(featureData[featureUri].featureId, {
-          status: featureStatus,
-          endTime: reportportal.helpers.now(),
-        });
-      }
+      featureData[featureUri].featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
     }
 
     onTestRunFinished() {
+      Object.keys(featureData).forEach(feature => {
+        reportportal.finishTestItem(featureData[feature].featureId, {
+          status: featureData[feature].featureStatus,
+          endTime: reportportal.helpers.now(),
+        });
+      });
       // AfterFeatures
       const promise = reportportal.getPromiseFinishAllItems(context.launchId);
       promise.then(() => {
