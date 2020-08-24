@@ -1,7 +1,21 @@
 const {Formatter} = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
 const path = require('path');
+const Table = require('cli-table3'),
+  /** @see https://github.com/Automattic/cli-table#custom-styles */
+  table = {
+    chars: {
+      top: '', 'top-left': '', 'top-mid': '', 'top-right': '',
+      mid: '', 'left-mid': '', 'mid-mid': '', 'right-mid': '',
+      bottom: '', 'bottom-left': '', 'bottom-mid': '', 'bottom-right': ''
+    },
+    style: {
+      head: [],
+      border: []
+    }
+  };
 const pjson = require('../package.json');
+
 
 const formatCodeRef = (path, itemName) => {
   const codeRef = path.replace(/\\/g, '/');
@@ -371,10 +385,32 @@ const createRPFormatterClass = (config) => {
 
       context.step = findStep(event);
       context.stepDefinition = findStepDefinition(event);
-
-      const name = context.step.text
+      let description = '';
+      let name = context.step.text
         ? `${context.step.keyword} ${context.step.text}`
         : context.step.keyword;
+
+      if (context.step.argument) {
+        let stepArguments;
+        if (context.step.argument.content) {
+          stepArguments = `"""\n${context.step.argument.content}\n"""`;
+        }
+
+        if (context.step.argument.rows) {
+          let rows = context.step.argument.rows.map(row => row.cells.map(cell => {
+            context.scenario.parameters.forEach(parameter => {
+              if (cell.value === `<${parameter.key}>`) {
+                cell.value = replaceParameter(cell.value, parameter.key, parameter.value)
+              }
+            });
+            return cell.value
+          }));
+          const datatable = new Table(table);
+          datatable.push(...rows);
+          stepArguments = datatable.toString();
+        }
+        isScenarioBasedStatistics ? name += `\n${stepArguments}` : description = stepArguments;
+      }
       let type = 'STEP';
       let isHook = false;
       if (context.step.keyword === 'Before') {
@@ -394,6 +430,7 @@ const createRPFormatterClass = (config) => {
       context.stepId = reportportal.startTestItem(
         {
           name,
+          description: description,
           startTime: reportportal.helpers.now(),
           type,
           codeRef,

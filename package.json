@@ -5,7 +5,8 @@
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=6.x",
   "dependencies": {
-    "@reportportal/client-javascript": "5.0.0"
+    "@reportportal/client-javascript": "5.0.0",
+    "cli-table3": "^0.6.0"
   },
   "devDependencies": {
     "chromedriver": "^79.0.0",
