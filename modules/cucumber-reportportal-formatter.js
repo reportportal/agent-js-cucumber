@@ -61,7 +61,6 @@ const createRPFormatterClass = (config) => {
     stepSourceLocation: null,
     stepDefinitions: null,
     stepDefinition: null,
-    isBeforeHook: true,
   });
 
   const createAttribute = (tag = '') => {
@@ -192,14 +191,15 @@ const createRPFormatterClass = (config) => {
 
   function findStep(event) {
     let stepObj = null;
-    const stepSourceLocation = context.stepDefinitions.steps[event.index];
+    const stepDefinition = context.stepDefinitions.steps[event.index];
 
-    if (stepSourceLocation.sourceLocation) {
-      context.isBeforeHook = false;
+    if (stepDefinition.hookType) {
+      stepObj = {keyword: stepDefinition.hookType};
+    } else {
       context.scenario.steps.forEach((step) => {
         if (
-          stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-          stepSourceLocation.sourceLocation.line === step.location.line
+          stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
+          stepDefinition.sourceLocation.line === step.location.line
         ) {
           stepObj = step;
         }
@@ -208,15 +208,13 @@ const createRPFormatterClass = (config) => {
       if (context.background) {
         context.background.steps.forEach((step) => {
           if (
-            stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-            stepSourceLocation.sourceLocation.line === step.location.line
+            stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
+            stepDefinition.sourceLocation.line === step.location.line
           ) {
             stepObj = step;
           }
         });
       }
-    } else {
-      stepObj = {keyword: context.isBeforeHook ? 'Before' : 'After'};
     }
     return stepObj;
   }
@@ -303,7 +301,14 @@ const createRPFormatterClass = (config) => {
 
     onTestCasePrepared(event) {
       context.stepDefinitions = event;
-      context.isBeforeHook = true;
+      let hookType = 'Before';
+      context.stepDefinitions.steps.forEach((step) => {
+        if (step.sourceLocation) {
+          hookType = 'After';
+          return;
+        }
+        step.hookType = hookType
+      });
     }
 
     onTestCaseStarted(event) {
