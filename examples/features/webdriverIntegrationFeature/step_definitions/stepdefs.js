@@ -14,7 +14,10 @@ Given(/^I am on the Cucumber.js GitHub repository/, function(callback) {
       this.addDescription('Screenshot taken!');
       callback();
     })
-    .catch((err) => callback(err));
+    .catch((err) => {
+      this.addDescription('Error occurred!');
+      callback(err);
+    });
 });
 
 When(/^I click on '(.*)'/, function(text, callback) {
@@ -30,6 +33,7 @@ When(/^I click on '(.*)'/, function(text, callback) {
     })
     .then(() => {
       this.addDescription('Screenshot for launch taken!');
+      this.setStatusPassed();
       callback();
     })
     .catch((err) => callback(err));
