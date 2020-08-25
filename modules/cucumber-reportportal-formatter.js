@@ -537,11 +537,17 @@ const createRPFormatterClass = (config) => {
       );
       return promise.then(() => {
         if (this.contextState.context.launchId) {
+          const finishLaunchRQ = {
+            endTime: this.reportportal.helpers.now(),
+          };
+
+          if (this.contextState.context.launchStatus) {
+            finishLaunchRQ.status = this.contextState.context.launchStatus;
+          }
+
           const launchFinishPromise = this.reportportal.finishLaunch(
             this.contextState.context.launchId,
-            {
-              endTime: this.reportportal.helpers.now(),
-            },
+            finishLaunchRQ,
           ).promise;
           launchFinishPromise.then(() => {
             this.contextState.resetContext();
