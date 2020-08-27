@@ -162,31 +162,27 @@ const createRPFormatterClass = (config) => {
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
       const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
 
-      if (this.contextState.context.lastScenarioDescription !== name) {
-        this.contextState.context.lastScenarioDescription = name;
-        this.contextState.context.outlineRow = 0;
-      } else if (event.attemptNumber < 2) {
-        this.contextState.context.outlineRow += 1;
-        name += ` [${this.contextState.context.outlineRow}]`;
+      if (!(name in this.contextState.context.scenarioNames)) {
+        this.contextState.context.scenarioNames[name] = 1;
+      } else {
+        this.contextState.context.scenarioNames[name] += 1;
+        name += ` [${this.contextState.context.scenarioNames[name]}]`;
       }
 
-      // BeforeScenario
-      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
-        this.contextState.context.scenarioId = this.reportportal.startTestItem(
-          {
-            name,
-            startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
-            description,
-            codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
-            parameters: this.contextState.context.scenario.parameters,
-            attributes: itemAttributes,
-            retry: false,
-          },
-          this.contextState.context.launchId,
-          featureId,
-        ).tempId;
-      }
+      this.contextState.context.scenarioId = this.reportportal.startTestItem(
+        {
+          name,
+          startTime: this.reportportal.helpers.now(),
+          type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
+          description,
+          codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
+          parameters: this.contextState.context.scenario.parameters,
+          attributes: itemAttributes,
+          retry: false,
+        },
+        this.contextState.context.launchId,
+        featureId,
+      ).tempId;
     }
 
     onTestStepStarted(event) {

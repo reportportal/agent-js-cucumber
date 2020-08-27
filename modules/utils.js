@@ -42,6 +42,7 @@ const cleanContext = () => ({
   background: null,
   failedScenarios: {},
   scenariosCount: {},
+  scenarioNames: {},
   lastScenarioDescription: null,
   scenario: null,
   step: null,
