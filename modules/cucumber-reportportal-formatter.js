@@ -16,6 +16,7 @@
 
 const { Formatter } = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
+const Table = require('cli-table3');
 const utils = require('./utils');
 const Context = require('./context');
 const DocumentStorage = require('./documents-storage');
@@ -28,6 +29,7 @@ const {
   LOG_LEVELS,
   CUCUMBER_EVENTS,
   RP_EVENTS,
+  TABLE_CONFIG,
 } = require('./constants');
 
 const createRPFormatterClass = (config) => {
@@ -54,42 +56,18 @@ const createRPFormatterClass = (config) => {
     }
 
     registerListeners(eventBroadcaster) {
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.GHERKIN_DOCUMENT,
-        this.onGherkinDocument.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.PICKLE_ACCEPTED,
-        this.onPickleAccepted.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_CASE_PREPARED,
-        this.onTestCasePrepared.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_CASE_STARTED,
-        this.onTestCaseStarted.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_STEP_STARTED,
-        this.onTestStepStarted.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_STEP_FINISHED,
-        this.onTestStepFinished.bind(this),
-      );
+      eventBroadcaster.on(CUCUMBER_EVENTS.GHERKIN_DOCUMENT, this.onGherkinDocument.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.PICKLE_ACCEPTED, this.onPickleAccepted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_PREPARED, this.onTestCasePrepared.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_STARTED, this.onTestCaseStarted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_STEP_STARTED, this.onTestStepStarted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_STEP_FINISHED, this.onTestStepFinished.bind(this));
       eventBroadcaster.on(
         CUCUMBER_EVENTS.TEST_STEP_ATTACHMENT,
         this.onTestStepAttachment.bind(this),
       );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_CASE_FINISHED,
-        this.onTestCaseFinished.bind(this),
-      );
-      eventBroadcaster.on(
-        CUCUMBER_EVENTS.TEST_RUN_FINISHED,
-        this.onTestRunFinished.bind(this),
-      );
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_FINISHED, this.onTestCaseFinished.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_RUN_FINISHED, this.onTestRunFinished.bind(this));
     }
 
     onGherkinDocument(event) {
@@ -113,37 +91,19 @@ const createRPFormatterClass = (config) => {
     }
 
     onPickleAccepted(event) {
-      const isPickleCached = this.documentsStorage.isAcceptedPickleCached(event);
-
-      if (!isPickleCached) {
-        this.documentsStorage.cacheAcceptedPickle(event);
+      const featureUri = utils.getUri(event.uri);
+      if (!this.documentsStorage.isFeatureDataCached(featureUri)) {
+        this.documentsStorage.createCachedFeature(featureUri);
 
         const featureDocument = itemFinders.findFeature(
           this.documentsStorage.gherkinDocuments,
           event,
         );
-        const featureUri = utils.getUri(event.uri);
         const description = featureDocument.description ? featureDocument.description : featureUri;
         const { name } = featureDocument;
         const itemAttributes = utils.createAttributes(featureDocument.tags);
 
-        let total = featureDocument.children.length;
-        let parameters = [];
-        featureDocument.children.forEach((child) => {
-          if (child.examples) {
-            child.examples.forEach((ex) => {
-              total += ex.tableBody.length - 1;
-              parameters = parameters.concat(utils.getParameters(ex.tableHeader, ex.tableBody));
-            });
-          }
-        });
-
-        this.contextState.context.background = itemFinders.findBackground(featureDocument);
-        if (this.contextState.context.background) {
-          total -= 1;
-        }
-
-        this.contextState.context.scenariosCount[featureUri] = { total, done: 0 };
+        this.contextState.context.countTotalScenarios(featureDocument, featureUri);
 
         // BeforeFeature
         const featureId = this.reportportal.startTestItem(
@@ -152,20 +112,27 @@ const createRPFormatterClass = (config) => {
             startTime: this.reportportal.helpers.now(),
             type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: utils.formatCodeRef(event.uri, name),
-            parameters,
             description,
             attributes: itemAttributes,
           },
           this.contextState.context.launchId,
         ).tempId;
 
-        this.documentsStorage.pickleDocuments[event.uri].featureId = featureId;
+        this.documentsStorage.featureData[utils.getUri(event.uri)].featureId = featureId;
       }
     }
 
     onTestCasePrepared(event) {
       this.contextState.context.stepDefinitions = event;
-      this.contextState.context.isBeforeHook = true;
+      let hookType = 'Before';
+      this.contextState.context.stepDefinitions.steps.forEach((step) => {
+        if (step.sourceLocation) {
+          hookType = 'After';
+          return;
+        }
+        // eslint-disable-next-line no-param-reassign
+        step.hookType = hookType;
+      });
     }
 
     onTestCaseStarted(event) {
@@ -177,21 +144,23 @@ const createRPFormatterClass = (config) => {
         this.documentsStorage.gherkinDocuments,
         event.sourceLocation,
       );
+      this.contextState.context.scenarioStatus = STATUSES.STARTED;
       this.contextState.context.background = itemFinders.findBackground(featureDocument);
       const featureTags = featureDocument.tags;
-      const pickle = this.documentsStorage.pickleDocuments[utils.getUri(event.sourceLocation.uri)];
       const keyword = this.contextState.context.scenario.keyword
         ? this.contextState.context.scenario.keyword
         : this.contextState.context.scenario.type;
       let name = [keyword, this.contextState.context.scenario.name].join(': ');
-      const pickleTags = pickle.tags
-        ? pickle.tags.filter((tag) => !featureTags.find(utils.createTagComparator(tag)))
+      const eventTags = this.contextState.context.scenario.tags
+        ? this.contextState.context.scenario.tags.filter(
+            (tag) => !featureTags.find(utils.createTagComparator(tag)),
+          )
         : [];
-      const itemAttributes = utils.createAttributes(pickleTags);
+      const itemAttributes = utils.createAttributes(eventTags);
       const description =
         this.contextState.context.scenario.description ||
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const { featureId } = this.documentsStorage.pickleDocuments[event.sourceLocation.uri];
+      const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
 
       if (this.contextState.context.lastScenarioDescription !== name) {
         this.contextState.context.lastScenarioDescription = name;
@@ -221,7 +190,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestStepStarted(event) {
-      this.contextState.context.stepStatus = 'failed';
+      this.contextState.context.stepStatus = STATUSES.FAILED;
       this.contextState.context.stepId = null;
 
       this.contextState.context.stepSourceLocation = this.contextState.context.stepDefinitions.steps[
@@ -243,9 +212,40 @@ const createRPFormatterClass = (config) => {
         event,
       );
 
-      const name = this.contextState.context.step.text
+      let description;
+      let name = this.contextState.context.step.text
         ? `${this.contextState.context.step.keyword} ${this.contextState.context.step.text}`
         : this.contextState.context.step.keyword;
+
+      if (this.contextState.context.step.argument) {
+        let stepArguments;
+        if (this.contextState.context.step.argument.content) {
+          stepArguments = `"""\n${this.contextState.context.step.argument.content}\n"""`;
+        }
+
+        if (this.contextState.context.step.argument.rows) {
+          const rows = this.contextState.context.step.argument.rows.map((row) =>
+            row.cells.map((cell) => {
+              this.contextState.context.scenario.parameters.forEach((parameter) => {
+                if (cell.value === `<${parameter.key}>`) {
+                  // eslint-disable-next-line no-param-reassign
+                  cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
+                }
+              });
+              return cell.value;
+            }),
+          );
+          const datatable = new Table(TABLE_CONFIG);
+          datatable.push(...rows);
+          stepArguments = datatable.toString();
+        }
+        if (this.isScenarioBasedStatistics) {
+          name += `\n${stepArguments}`;
+        } else {
+          description = stepArguments;
+        }
+      }
+
       let type = 'STEP';
       let isHook = false;
       if (this.contextState.context.step.keyword === 'Before') {
@@ -265,6 +265,7 @@ const createRPFormatterClass = (config) => {
       this.contextState.context.stepId = this.reportportal.startTestItem(
         {
           name,
+          description,
           startTime: this.reportportal.helpers.now(),
           type,
           codeRef,
@@ -293,7 +294,9 @@ const createRPFormatterClass = (config) => {
       switch (event.result.status) {
         case STATUSES.PASSED: {
           this.contextState.context.stepStatus = STATUSES.PASSED;
-          this.contextState.context.scenarioStatus = STATUSES.PASSED;
+          if (this.contextState.context.scenarioStatus !== STATUSES.FAILED) {
+            this.contextState.context.scenarioStatus = STATUSES.PASSED;
+          }
           break;
         }
         case STATUSES.PENDING: {
@@ -304,7 +307,7 @@ const createRPFormatterClass = (config) => {
           });
           this.contextState.context.stepStatus = STATUSES.NOT_IMPLEMENTED;
           this.contextState.context.scenarioStatus = STATUSES.FAILED;
-          this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
+          this.contextState.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case STATUSES.UNDEFINED: {
@@ -315,7 +318,7 @@ const createRPFormatterClass = (config) => {
           });
           this.contextState.context.stepStatus = STATUSES.NOT_FOUND;
           this.contextState.context.scenarioStatus = STATUSES.FAILED;
-          this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
+          this.contextState.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case STATUSES.AMBIGUOUS: {
@@ -327,7 +330,7 @@ const createRPFormatterClass = (config) => {
           });
           this.contextState.context.stepStatus = STATUSES.NOT_FOUND;
           this.contextState.context.scenarioStatus = STATUSES.FAILED;
-          this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
+          this.contextState.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
         case STATUSES.SKIPPED: {
@@ -335,11 +338,30 @@ const createRPFormatterClass = (config) => {
           if (this.contextState.context.scenarioStatus === STATUSES.FAILED) {
             this.contextState.context.scenarioStatus = STATUSES.SKIPPED;
           }
+
+          this.contextState.context.stepStatus = STATUSES.SKIPPED;
+          if (
+            this.contextState.context.scenarioStatus === STATUSES.STARTED ||
+            this.contextState.context.scenarioStatus === STATUSES.PASSED
+          ) {
+            this.contextState.context.scenarioStatus = STATUSES.SKIPPED;
+          } else {
+            this.contextState.context.scenarioStatus = STATUSES.FAILED;
+            if (
+              // eslint-disable-next-line no-prototype-builtins
+              config.hasOwnProperty('reportSkippedCucumberStepsOnFailedTest') &&
+              !config.reportSkippedCucumberStepsOnFailedTest
+            ) {
+              this.contextState.context.stepStatus = STATUSES.CANCELLED;
+            }
+          }
+
           break;
         }
         case STATUSES.FAILED: {
           this.contextState.context.stepStatus = STATUSES.FAILED;
-          this.contextState.countFailedScenarios(event.testCase.sourceLocation.uri);
+          this.contextState.context.scenarioStatus = STATUSES.FAILED;
+          this.contextState.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           const errorMessage = `${
             this.contextState.context.stepDefinition.uri
           }\n ${event.result.exception.toString()}`;
@@ -501,32 +523,29 @@ const createRPFormatterClass = (config) => {
       if (!this.isScenarioBasedStatistics && event.result.retried) {
         return;
       }
-      const isFailed = event.result.status.toUpperCase() !== 'PASSED';
+      const isFailed = event.result.status.toUpperCase() !== STATUSES.PASSED;
       // ScenarioResult
       this.reportportal.finishTestItem(this.contextState.context.scenarioId, {
         status: isFailed ? STATUSES.FAILED : STATUSES.PASSED,
         endTime: this.reportportal.helpers.now(),
       });
-      this.contextState.context.scenarioStatus = STATUSES.FAILED;
       this.contextState.context.scenarioId = null;
-
       const featureUri = event.sourceLocation.uri;
+
       if (!event.result.retried) {
-        this.contextState.context.scenariosCount[featureUri].done += 1;
+        this.contextState.context.scenariosCount[featureUri].done++;
       }
+
       const { total, done } = this.contextState.context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus =
           this.contextState.context.failedScenarios[featureUri] > 0
             ? STATUSES.FAILED
             : STATUSES.PASSED;
-        this.reportportal.finishTestItem(
-          this.documentsStorage.pickleDocuments[featureUri].featureId,
-          {
-            status: featureStatus,
-            endTime: this.reportportal.helpers.now(),
-          },
-        );
+        this.reportportal.finishTestItem(this.documentsStorage.featureData[featureUri].featureId, {
+          status: featureStatus,
+          endTime: this.reportportal.helpers.now(),
+        });
       }
     }
 

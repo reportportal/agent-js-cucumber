@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const Path = require('path');
+const path = require('path');
 
 const getJSON = (json) => {
   try {
@@ -28,7 +28,7 @@ const getJSON = (json) => {
   return false;
 };
 
-const getUri = (uri) => uri.replace(process.cwd() + Path.sep, '');
+const getUri = (uri) => uri.replace(process.cwd() + path.sep, '');
 
 const cleanContext = () => ({
   outlineRow: 0,
@@ -48,7 +48,6 @@ const cleanContext = () => ({
   stepSourceLocation: null,
   stepDefinitions: null,
   stepDefinition: null,
-  isBeforeHook: true,
   itemsParams: {},
 });
 
@@ -78,8 +77,8 @@ const createTagComparator = (tagA) => (tagB) =>
 const isScenarioBasedStatistics = (config) =>
   typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
-const formatCodeRef = (path, itemName) => {
-  const codeRef = path.replace(/\\/g, '/');
+const formatCodeRef = (pathName, itemName) => {
+  const codeRef = pathName.replace(/\\/g, '/');
 
   return itemName ? `${codeRef}/${itemName}` : codeRef;
 };
@@ -103,6 +102,10 @@ const getParameters = (header, body) => {
     value: cell.value,
   }));
 };
+
+function replaceParameter(originalString, name, value) {
+  return originalString.replace(`<${name}>`, value);
+}
 
 const getStepType = (keyword) => {
   let type;
@@ -132,5 +135,6 @@ module.exports = {
   getStepType,
   getParameters,
   formatCodeRef,
+  replaceParameter,
   cleanContext,
 };

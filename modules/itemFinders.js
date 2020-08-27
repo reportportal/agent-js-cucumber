@@ -20,12 +20,12 @@ function createSteps(header, row, steps) {
   return steps.map((step) => {
     const modified = { ...step, parameters: [] };
 
-    header.cells.forEach((varable, index) => {
-      const isParameterPresents = modified.text.indexOf(`<${varable.value}>`) !== -1;
-      modified.text = modified.text.replace(`<${varable.value}>`, row.cells[index].value);
+    header.cells.forEach((variable, index) => {
+      const isParameterPresents = modified.text.indexOf(`<${variable.value}>`) !== -1;
+      modified.text = utils.replaceParameter(modified.text, variable.value, row.cells[index].value);
 
       if (isParameterPresents) {
-        modified.parameters.push({ key: varable.value, value: row.cells[index].value });
+        modified.parameters.push({ key: variable.value, value: row.cells[index].value });
       }
     });
 
@@ -33,32 +33,37 @@ function createSteps(header, row, steps) {
   });
 }
 
-function createScenarioFromOutlineExample(outline, example, location) {
-  const found = example.tableBody.find((row) => row.location.line === location.line);
-  const parameters = utils.getParameters(example.tableHeader, found);
+function createScenarioFromOutlineExample(outline, example, row) {
+  const parameters = utils.getParameters(example.tableHeader, row);
+  let outlineName = outline.name;
 
-  if (!found) return null;
+  parameters.forEach((param) => {
+    outlineName = utils.replaceParameter(outlineName, param.key, param.value);
+  });
 
   return {
     type: 'Scenario',
-    steps: createSteps(example.tableHeader, found, outline.steps),
+    tags: example.tags,
+    location: row.location,
+    keyword: 'Scenario',
+    name: outlineName,
+    steps: createSteps(example.tableHeader, row, outline.steps),
     parameters,
-    name: outline.name,
-    location: found.location,
     description: outline.description,
   };
 }
 
 function createScenarioFromOutline(outline, location) {
+  let foundRow;
   const foundExample = outline.examples.find((example) => {
-    const foundRow = example.tableBody.find((row) => row.location.line === location.line);
+    foundRow = example.tableBody.find((row) => row.location.line === location.line);
 
     return !!foundRow;
   });
 
-  if (!foundExample) return null;
+  if (!foundRow) return null;
 
-  return createScenarioFromOutlineExample(outline, foundExample, location);
+  return createScenarioFromOutlineExample(outline, foundExample, foundRow);
 }
 
 function findOutlineScenario(outlines, location) {
@@ -68,11 +73,7 @@ function findOutlineScenario(outlines, location) {
 }
 
 function findBackground(feature) {
-  const background = feature.children
-    ? feature.children.find((child) => child.type === 'Background')
-    : null;
-
-  return background;
+  return feature.children ? feature.children.find((child) => child.type === 'Background') : null;
 }
 
 function findFeature(documents, location) {
