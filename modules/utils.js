@@ -30,28 +30,6 @@ const getJSON = (json) => {
 
 const getUri = (uri) => uri.replace(process.cwd() + path.sep, '');
 
-const cleanContext = () => ({
-  outlineRow: 0,
-  scenarioStatus: 'failed',
-  forcedIssue: null,
-  featureId: null,
-  scenarioId: null,
-  stepId: null,
-  stepStatus: 'failed',
-  launchId: null,
-  background: null,
-  failedScenarios: {},
-  scenariosCount: {},
-  scenarioNames: {},
-  lastScenarioDescription: null,
-  scenario: null,
-  step: null,
-  stepSourceLocation: null,
-  stepDefinitions: null,
-  stepDefinition: null,
-  itemsParams: {},
-});
-
 const createAttribute = (tag = '') => {
   const parsedTag = tag.replace('@', '').split(':');
   let attribute = null;
@@ -137,5 +115,4 @@ module.exports = {
   getParameters,
   formatCodeRef,
   replaceParameter,
-  cleanContext,
 };
