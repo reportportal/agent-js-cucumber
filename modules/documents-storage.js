@@ -17,19 +17,19 @@
 class DocumentsStorage {
   constructor() {
     this.gherkinDocuments = {};
-    this.pickleDocuments = {};
+    this.featureData = {};
   }
 
   cacheDocument(gherkinDocument) {
     this.gherkinDocuments[gherkinDocument.uri] = gherkinDocument.document;
   }
 
-  cacheAcceptedPickle(event) {
-    this.pickleDocuments[event.uri] = event.pickle;
+  createCachedFeature(uri) {
+    this.featureData[uri] = {};
   }
 
-  isAcceptedPickleCached(event) {
-    return !!this.pickleDocuments[event.uri];
+  isFeatureDataCached(uri) {
+    return !!this.featureData[uri];
   }
 }
 

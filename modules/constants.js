@@ -24,6 +24,7 @@ const STATUSES = {
   CANCELLED: 'cancelled',
   INFO: 'info',
   WARN: 'warn',
+  STARTED: 'started',
   PENDING: 'pending',
   NOT_IMPLEMENTED: 'not_implemented',
   UNDEFINED: 'undefined',
@@ -61,6 +62,28 @@ const RP_EVENTS = {
   STATUS: 'rp/status',
 };
 
+// @see https://github.com/Automattic/cli-table#custom-styles
+const TABLE_CONFIG = {
+  chars: {
+    top: '',
+    'top-left': '',
+    'top-mid': '',
+    'top-right': '',
+    mid: '',
+    'left-mid': '',
+    'mid-mid': '',
+    'right-mid': '',
+    bottom: '',
+    'bottom-left': '',
+    'bottom-mid': '',
+    'bottom-right': '',
+  },
+  style: {
+    head: [],
+    border: [],
+  },
+};
+
 module.exports = {
   AFTER_HOOK_URI_TO_SKIP,
   RP_ENTITY_LAUNCH,
@@ -68,4 +91,5 @@ module.exports = {
   LOG_LEVELS,
   CUCUMBER_EVENTS,
   RP_EVENTS,
+  TABLE_CONFIG,
 };

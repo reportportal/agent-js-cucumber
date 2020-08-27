@@ -15,6 +15,7 @@
  */
 
 const { cleanContext } = require('./utils');
+const itemFinders = require('./itemFinders');
 
 class Context {
   constructor() {
@@ -31,14 +32,15 @@ class Context {
 
   findStep(event) {
     let stepObj = null;
-    const stepSourceLocation = this.context.stepDefinitions.steps[event.index];
+    const stepDefinition = this.context.stepDefinitions.steps[event.index];
 
-    if (stepSourceLocation.sourceLocation) {
-      this.context.isBeforeHook = false;
+    if (stepDefinition.hookType) {
+      stepObj = { keyword: stepDefinition.hookType };
+    } else {
       this.context.scenario.steps.forEach((step) => {
         if (
-          stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-          stepSourceLocation.sourceLocation.line === step.location.line
+          stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
+          stepDefinition.sourceLocation.line === step.location.line
         ) {
           stepObj = step;
         }
@@ -47,25 +49,38 @@ class Context {
       if (this.context.background) {
         this.context.background.steps.forEach((step) => {
           if (
-            stepSourceLocation.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-            stepSourceLocation.sourceLocation.line === step.location.line
+            stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
+            stepDefinition.sourceLocation.line === step.location.line
           ) {
             stepObj = step;
           }
         });
       }
-    } else {
-      stepObj = { keyword: this.context.isBeforeHook ? 'Before' : 'After' };
     }
     return stepObj;
   }
 
-  countFailedScenarios(uri) {
-    if (this.context.failedScenarios[uri]) {
-      this.context.failedScenarios[uri]++;
-    } else {
-      this.context.failedScenarios[uri] = 1;
+  countTotalScenarios(feature, featureUri) {
+    let total = feature.children.length;
+    feature.children.forEach((child) => {
+      if (child.examples) {
+        child.examples.forEach((ex) => {
+          total += ex.tableBody.length - 1;
+        });
+      }
+    });
+    this.context.background = itemFinders.findBackground(feature);
+    if (this.context.background) {
+      total -= 1;
     }
+
+    this.context.scenariosCount[featureUri] = { total, done: 0 };
+  }
+
+  incrementFailedScenariosCount(uri) {
+    this.context.failedScenarios[uri] = this.context.failedScenarios[uri]
+      ? this.context.failedScenarios[uri] + 1
+      : 1;
   }
 
   resetContext() {
