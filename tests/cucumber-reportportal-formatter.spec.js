@@ -1,3 +1,4 @@
+/* These tests need to be rewritten to reflect the refactoring of the agent. Plans for version 5.0.1. */
 const { createRPFormatterClass } = require('../modules');
 const {
   ContextMock,
