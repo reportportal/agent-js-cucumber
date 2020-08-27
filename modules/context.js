@@ -14,12 +14,34 @@
  *  limitations under the License.
  */
 
-const { cleanContext } = require('./utils');
+const { STATUSES } = require('./constants');
 const itemFinders = require('./itemFinders');
 
 class Context {
   constructor() {
-    this.resetContext();
+    this.initContext();
+  }
+
+  initContext() {
+    this.outlineRow = 0;
+    this.scenarioStatus = STATUSES.FAILED;
+    this.forcedIssue = null;
+    this.featureId = null;
+    this.scenarioId = null;
+    this.stepId = null;
+    this.stepStatus = STATUSES.FAILED;
+    this.launchId = null;
+    this.background = null;
+    this.failedScenarios = {};
+    this.scenariosCount = {};
+    this.scenarioNames = {};
+    this.lastScenarioDescription = null;
+    this.scenario = null;
+    this.step = null;
+    this.stepSourceLocation = null;
+    this.stepDefinitions = null;
+    this.stepDefinition = null;
+    this.itemsParams = {};
   }
 
   getFileName() {
@@ -84,7 +106,7 @@ class Context {
   }
 
   resetContext() {
-    this.context = cleanContext();
+    this.initContext();
   }
 }
 
