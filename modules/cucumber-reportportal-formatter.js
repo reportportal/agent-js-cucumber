@@ -162,27 +162,31 @@ const createRPFormatterClass = (config) => {
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
       const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
 
-      if (!(name in this.context.scenarioNames)) {
-        this.context.scenarioNames[name] = 1;
-      } else {
-        this.context.scenarioNames[name] += 1;
-        name += ` [${this.context.scenarioNames[name]}]`;
+      if (this.context.lastScenarioDescription !== name) {
+        this.context.lastScenarioDescription = name;
+        this.context.outlineRow = 0;
+      } else if (event.attemptNumber < 2) {
+        this.context.outlineRow += 1;
+        name += ` [${this.context.outlineRow}]`;
       }
 
-      this.context.scenarioId = this.reportportal.startTestItem(
-        {
-          name,
-          startTime: this.reportportal.helpers.now(),
-          type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
-          description,
-          codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
-          parameters: this.context.scenario.parameters,
-          attributes: itemAttributes,
-          retry: false,
-        },
-        this.context.launchId,
-        featureId,
-      ).tempId;
+      // BeforeScenario
+      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
+        this.context.scenarioId = this.reportportal.startTestItem(
+          {
+            name,
+            startTime: this.reportportal.helpers.now(),
+            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
+            description,
+            codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
+            parameters: this.context.scenario.parameters,
+            attributes: itemAttributes,
+            retry: false,
+          },
+          this.context.launchId,
+          featureId,
+        ).tempId;
+      }
     }
 
     onTestStepStarted(event) {
@@ -202,7 +206,7 @@ const createRPFormatterClass = (config) => {
       )
         return;
 
-      this.context.step = this.findStep(event);
+      this.context.step = this.context.findStep(event);
       this.context.stepDefinition = itemFinders.findStepDefinition(
         this.context,
         event,
@@ -213,6 +217,7 @@ const createRPFormatterClass = (config) => {
         ? `${this.context.step.keyword} ${this.context.step.text}`
         : this.context.step.keyword;
 
+      // console.log(this.context.step);
       if (this.context.step.argument) {
         let stepArguments;
         if (this.context.step.argument.content) {
@@ -285,7 +290,7 @@ const createRPFormatterClass = (config) => {
         return;
 
       // StepResult
-      const sceenshotName = this.getFileName();
+      const sceenshotName = this.context.getFileName();
 
       switch (event.result.status) {
         case STATUSES.PASSED: {
@@ -535,9 +540,7 @@ const createRPFormatterClass = (config) => {
       const { total, done } = this.context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus =
-          this.context.failedScenarios[featureUri] > 0
-            ? STATUSES.FAILED
-            : STATUSES.PASSED;
+          this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
         this.reportportal.finishTestItem(this.documentsStorage.featureData[featureUri].featureId, {
           status: featureStatus,
           endTime: this.reportportal.helpers.now(),

@@ -34,7 +34,6 @@ class Context {
     this.background = null;
     this.failedScenarios = {};
     this.scenariosCount = {};
-    this.scenarioNames = {};
     this.lastScenarioDescription = null;
     this.scenario = null;
     this.step = null;
@@ -45,8 +44,8 @@ class Context {
   }
 
   getFileName() {
-    const fileName = this.context.stepDefinition
-      ? `Failed at step definition line:${this.context.stepDefinition.line}`
+    const fileName = this.stepDefinition
+      ? `Failed at step definition line:${this.stepDefinition.line}`
       : 'UNDEFINED STEP';
 
     return fileName;
@@ -54,12 +53,12 @@ class Context {
 
   findStep(event) {
     let stepObj = null;
-    const stepDefinition = this.context.stepDefinitions.steps[event.index];
+    const stepDefinition = this.stepDefinitions.steps[event.index];
 
     if (stepDefinition.hookType) {
       stepObj = { keyword: stepDefinition.hookType };
     } else {
-      this.context.scenario.steps.forEach((step) => {
+      this.scenario.steps.forEach((step) => {
         if (
           stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
           stepDefinition.sourceLocation.line === step.location.line
@@ -68,8 +67,8 @@ class Context {
         }
       });
 
-      if (this.context.background) {
-        this.context.background.steps.forEach((step) => {
+      if (this.background) {
+        this.background.steps.forEach((step) => {
           if (
             stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
             stepDefinition.sourceLocation.line === step.location.line
@@ -91,17 +90,17 @@ class Context {
         });
       }
     });
-    this.context.background = itemFinders.findBackground(feature);
-    if (this.context.background) {
+    this.background = itemFinders.findBackground(feature);
+    if (this.background) {
       total -= 1;
     }
 
-    this.context.scenariosCount[featureUri] = { total, done: 0 };
+    this.scenariosCount[featureUri] = { total, done: 0 };
   }
 
   incrementFailedScenariosCount(uri) {
-    this.context.failedScenarios[uri] = this.context.failedScenarios[uri]
-      ? this.context.failedScenarios[uri] + 1
+    this.failedScenarios[uri] = this.failedScenarios[uri]
+      ? this.failedScenarios[uri] + 1
       : 1;
   }
 
