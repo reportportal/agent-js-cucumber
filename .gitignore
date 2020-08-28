@@ -1,6 +1,5 @@
 .idea
 node_modules
-npmc
-package-lock.json
+.npmrc
 debug.log
 coverage
