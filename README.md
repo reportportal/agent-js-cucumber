@@ -108,7 +108,7 @@ npm install --save-dev @reportportal/agent-js-cucumber
     It will allow you send logs and screenshots to RP directly from step definitions.
     **All this logs would be attached to test data and could be viewed at the Report Portal**.<br/>
     Also you will be able to specify additional info for test items (e.g. description, attributes, testCaseId, status).
-    See [API](## API) section for more information.
+    See [API](#api) section for more information.
 
 5. Run cucumber-js
 
