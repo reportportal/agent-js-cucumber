@@ -1,7 +1,7 @@
 {
   "name": "@reportportal/agent-js-cucumber",
   "version": "4.0.0",
-  "description": "Agent that connects cucumber-js with report portal ",
+  "description": "Agent that connects cucumber-js with Report Portal",
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=6.x",
   "dependencies": {
@@ -9,7 +9,6 @@
     "cli-table3": "^0.6.0"
   },
   "devDependencies": {
-    "chromedriver": "^83.0.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-prettier": "^6.9.0",
@@ -18,8 +17,7 @@
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-promise": "^3.5.0",
     "jest": "^25.4.0",
-    "prettier": "^1.19.1",
-    "selenium-webdriver": "^3.5.0"
+    "prettier": "^1.19.1"
   },
   "peerDependencies": {
     "cucumber": "4.x - 6.x"
@@ -28,12 +26,7 @@
     "lint": "eslint ./modules/**/*.js",
     "format": "npm run lint -- --fix",
     "test": "exit 0",
-    "test:coverage": "exit 0",
-    "example:simple": "cd examples && npm run simpleTest",
-    "example:simpleWithRetries": "cd examples && npm run simpleTestWithRetries",
-    "example:seleniumWebdriver": "cd examples && npm run seleniumWebdriverTest",
-    "example:attachments": "cd examples && npm run attachmentTest",
-    "example:all": "cd examples && npm run allTests"
+    "test:coverage": "exit 0"
   },
   "repository": {
     "type": "git",
