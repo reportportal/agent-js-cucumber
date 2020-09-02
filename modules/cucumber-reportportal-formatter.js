@@ -1,532 +1,381 @@
-const {Formatter} = require('cucumber');
+/*
+ *  Copyright 2020 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+const { Formatter } = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
-const path = require('path');
-const Table = require('cli-table3'),
-  /** @see https://github.com/Automattic/cli-table#custom-styles */
-  table = {
-    chars: {
-      top: '', 'top-left': '', 'top-mid': '', 'top-right': '',
-      mid: '', 'left-mid': '', 'mid-mid': '', 'right-mid': '',
-      bottom: '', 'bottom-left': '', 'bottom-mid': '', 'bottom-right': ''
-    },
-    style: {
-      head: [],
-      border: []
-    }
-  };
+const Table = require('cli-table3');
+const utils = require('./utils');
+const Context = require('./context');
+const DocumentStorage = require('./documents-storage');
+const itemFinders = require('./itemFinders');
 const pjson = require('../package.json');
-
-
-const formatCodeRef = (path, itemName) => {
-  const codeRef = path.replace(/\\/g, '/');
-
-  return itemName ? `${codeRef}/${itemName}` : codeRef;
-};
-
-const getParameters = (header, body) => {
-  const keys = header ? header.cells.map((cell) => cell.value) : [];
-
-  if (Array.isArray(body)) {
-    return body.reduce((acc, item) => {
-      const params = item.cells.map((cell, index) => ({
-        key: keys[index],
-        value: cell.value,
-      }));
-
-      return acc.concat(params);
-    }, []);
-  }
-
-  return body.cells.map((cell, index) => ({
-    key: keys[index],
-    value: cell.value,
-  }));
-};
+const {
+  AFTER_HOOK_URI_TO_SKIP,
+  RP_ENTITY_LAUNCH,
+  STATUSES,
+  LOG_LEVELS,
+  CUCUMBER_EVENTS,
+  RP_EVENTS,
+  TABLE_CONFIG,
+} = require('./constants');
 
 const createRPFormatterClass = (config) => {
-  const getJSON = (json) => {
-    try {
-      const jsonObject = JSON.parse(json);
-      if (jsonObject && typeof jsonObject === 'object') {
-        return jsonObject;
-      }
-    } catch (error) {
-      // eslint-disable-line no-empty
-    }
-    return false;
-  };
-
-  const getUri = (uri) => uri.replace(process.cwd() + path.sep, '');
-
-  const cleanContext = () => ({
-    outlineRow: 0,
-    scenarioStatus: 'failed',
-    forcedIssue: null,
-    featureId: null,
-    scenarioId: null,
-    stepId: null,
-    stepStatus: 'failed',
-    launchId: null,
-    background: null,
-    failedScenarios: {},
-    lastScenarioDescription: null,
-    scenario: null,
-    step: null,
-    stepSourceLocation: null,
-    stepDefinitions: null,
-    stepDefinition: null,
-  });
-
-  const createAttribute = (tag = '') => {
-    const parsedTag = tag.replace('@', '').split(':');
-    let attribute = null;
-    if (parsedTag.length > 1) {
-      attribute = {
-        key: parsedTag[0],
-        value: parsedTag[1],
-      };
-    } else {
-      attribute = {
-        value: parsedTag[0],
-      };
-    }
-    return attribute;
-  };
-
-  const createTagComparator = (tagA) => (tagB) =>
-    tagB.name === tagA.name &&
-    tagB.location.line === tagA.location.line &&
-    tagB.location.column === tagA.location.column;
-
-  const isScenarioBasedStatistics = typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
-
-  const gherkinDocuments = {};
-  const featureData = {};
-  const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
-  let context = cleanContext();
+  const documentsStorage = new DocumentStorage();
+  const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   const attributesConf = !config.attributes ? [] : config.attributes;
-  const afterHookURIToSkip = 'protractor-cucumber-framework';
-
-  function cacheDocument(gherkinDocument) {
-    gherkinDocuments[gherkinDocument.uri] = gherkinDocument.document;
-  }
-
-  function createCachedFeature(uri) {
-    featureData[uri] = {};
-  }
-
-  function isFeatureDataCached(uri) {
-    return !!featureData[uri];
-  }
-
-  function createSteps(header, row, steps) {
-    return steps.map((step) => {
-      const modified = {...step, parameters: []};
-
-      header.cells.forEach((variable, index) => {
-        const isParameterPresents = modified.text.indexOf(`<${variable.value}>`) !== -1;
-        modified.text = replaceParameter(modified.text, variable.value, row.cells[index].value);
-
-        if (isParameterPresents) {
-          modified.parameters.push({key: variable.value, value: row.cells[index].value});
-        }
-      });
-
-      return modified;
-    });
-  }
-
-  function replaceParameter(originalString, name, value) {
-    return originalString.replace(`<${name}>`, value);
-  }
-
-  function createScenarioFromOutlineExample(outline, example, row) {
-    const parameters = getParameters(example.tableHeader, row);
-    let outlineName = outline.name;
-
-
-    parameters.forEach(param => outlineName = replaceParameter(outlineName, param.key, param.value));
-
-    return {
-      type: 'Scenario',
-      tags: example.tags,
-      location: row.location,
-      keyword: 'Scenario',
-      name: outlineName,
-      steps: createSteps(example.tableHeader, row, outline.steps),
-      parameters,
-      description: outline.description,
-    };
-  }
-
-  function createScenarioFromOutline(outline, location) {
-    let foundRow;
-    const foundExample = outline.examples.find((example) => {
-      foundRow = example.tableBody.find((row) => row.location.line === location.line);
-
-      return !!foundRow;
-    });
-
-    if (!foundRow) return null;
-
-    return createScenarioFromOutlineExample(outline, foundExample, foundRow);
-  }
-
-  function findOutlineScenario(outlines, location) {
-    return outlines
-      .map((child) => createScenarioFromOutline(child, location))
-      .find((outline) => !!outline);
-  }
-
-  function findFeature(location) {
-    return gherkinDocuments[location.uri].feature;
-  }
-
-  function findScenario(location) {
-    const {children} = findFeature(location);
-    const scenario = children.find(
-      (child) => child.type === 'Scenario' && child.location.line === location.line,
-    );
-    if (scenario) {
-      return scenario;
-    }
-
-    const outlines = children.filter((child) => child.type === 'ScenarioOutline');
-    return findOutlineScenario(outlines, location);
-  }
-
-  function findBackground(feature) {
-    const background = feature.children
-      ? feature.children.find((child) => child.type === 'Background')
-      : null;
-
-    return background;
-  }
-
-  function findStep(event) {
-    let stepObj = null;
-    const stepDefinition = context.stepDefinitions.steps[event.index];
-
-    if (stepDefinition.hookType) {
-      stepObj = {keyword: stepDefinition.hookType};
-    } else {
-      context.scenario.steps.forEach((step) => {
-        if (
-          stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-          stepDefinition.sourceLocation.line === step.location.line
-        ) {
-          stepObj = step;
-        }
-      });
-
-      if (context.background) {
-        context.background.steps.forEach((step) => {
-          if (
-            stepDefinition.sourceLocation.uri === event.testCase.sourceLocation.uri &&
-            stepDefinition.sourceLocation.line === step.location.line
-          ) {
-            stepObj = step;
-          }
-        });
-      }
-    }
-    return stepObj;
-  }
-
-  function findStepDefinition(event) {
-    return context.stepDefinitions.steps[event.index].actionLocation;
-  }
-
-  function incrementFailedScenariosCount(uri) {
-    context.failedScenarios[uri] = context.failedScenarios[uri] ? context.failedScenarios[uri] + 1 : 1;
-  }
+  const isScenarioBasedStatistics = utils.isScenarioBasedStatistics(config);
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
       super(options);
+      this.context = new Context();
+      this.documentsStorage = documentsStorage;
+      this.reportportal = reportportal;
+      this.attributesConf = attributesConf;
+      this.isScenarioBasedStatistics = isScenarioBasedStatistics;
 
-      const {rerun, rerunOf} = options.parsedArgvOptions || {};
+      const { rerun, rerunOf } = options.parsedArgvOptions || {};
 
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
 
-      options.eventBroadcaster.on('gherkin-document', this.onGherkinDocument.bind(this));
-      options.eventBroadcaster.on('pickle-accepted', this.onPickleAccepted.bind(this));
-      options.eventBroadcaster.on('test-case-prepared', this.onTestCasePrepared.bind(this));
-      options.eventBroadcaster.on('test-case-started', this.onTestCaseStarted.bind(this));
-      options.eventBroadcaster.on('test-step-started', this.onTestStepStarted.bind(this));
-      options.eventBroadcaster.on('test-step-finished', this.onTestStepFinished.bind(this));
-      options.eventBroadcaster.on('test-step-attachment', this.onTestStepAttachment.bind(this));
-      options.eventBroadcaster.on('test-case-finished', this.onTestCaseFinished.bind(this));
-      options.eventBroadcaster.on('test-run-finished', this.onTestRunFinished.bind(this));
+      this.registerListeners(options.eventBroadcaster);
+    }
+
+    registerListeners(eventBroadcaster) {
+      eventBroadcaster.on(CUCUMBER_EVENTS.GHERKIN_DOCUMENT, this.onGherkinDocument.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.PICKLE_ACCEPTED, this.onPickleAccepted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_PREPARED, this.onTestCasePrepared.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_STARTED, this.onTestCaseStarted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_STEP_STARTED, this.onTestStepStarted.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_STEP_FINISHED, this.onTestStepFinished.bind(this));
+      eventBroadcaster.on(
+        CUCUMBER_EVENTS.TEST_STEP_ATTACHMENT,
+        this.onTestStepAttachment.bind(this),
+      );
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_FINISHED, this.onTestCaseFinished.bind(this));
+      eventBroadcaster.on(CUCUMBER_EVENTS.TEST_RUN_FINISHED, this.onTestRunFinished.bind(this));
     }
 
     onGherkinDocument(event) {
-      cacheDocument(event);
+      this.documentsStorage.cacheDocument(event);
 
       // BeforeFeatures
-      if (!context.launchId) {
-        const launch = reportportal.startLaunch({
+      if (!this.context.launchId) {
+        const launch = this.reportportal.startLaunch({
           name: config.launch,
-          startTime: reportportal.helpers.now(),
+          startTime: this.reportportal.helpers.now(),
           description: !config.description ? '' : config.description,
           attributes: [
-            ...attributesConf,
-            {key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true},
+            ...this.attributesConf,
+            { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
           ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
         });
-        context.launchId = launch.tempId;
+        this.context.launchId = launch.tempId;
       }
     }
 
     onPickleAccepted(event) {
-      const featureUri = getUri(event.uri);
-      if (!isFeatureDataCached(featureUri)) {
-        createCachedFeature(featureUri);
+      const featureUri = utils.getUri(event.uri);
+      if (!this.documentsStorage.isFeatureDataCached(featureUri)) {
+        this.documentsStorage.createCachedFeature(featureUri);
 
-        const featureDocument = findFeature(event);
+        const featureDocument = itemFinders.findFeature(
+          this.documentsStorage.gherkinDocuments,
+          event,
+        );
         const description = featureDocument.description ? featureDocument.description : featureUri;
-        const {name} = featureDocument;
-        const eventAttributes = featureDocument.tags
-          ? featureDocument.tags.map((tag) => createAttribute(tag.name))
-          : [];
+        const { name } = featureDocument;
+        const itemAttributes = utils.createAttributes(featureDocument.tags);
 
-        let parameters = [];
+        this.context.countTotalScenarios(featureDocument, featureUri);
 
         // BeforeFeature
-        const featureId = reportportal.startTestItem(
+        const featureId = this.reportportal.startTestItem(
           {
             name,
-            startTime: reportportal.helpers.now(),
-            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
-            codeRef: formatCodeRef(event.uri, name),
-            parameters,
+            startTime: this.reportportal.helpers.now(),
+            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+            codeRef: utils.formatCodeRef(event.uri, name),
             description,
-            attributes: eventAttributes,
+            attributes: itemAttributes,
           },
-          context.launchId,
+          this.context.launchId,
         ).tempId;
 
-        featureData[getUri(event.uri)].featureId = featureId;
+        this.documentsStorage.featureData[utils.getUri(event.uri)].featureId = featureId;
       }
     }
 
     onTestCasePrepared(event) {
-      context.stepDefinitions = event;
+      this.context.stepDefinitions = event;
       let hookType = 'Before';
-      context.stepDefinitions.steps.forEach((step) => {
+      this.context.stepDefinitions.steps.forEach((step) => {
         if (step.sourceLocation) {
           hookType = 'After';
           return;
         }
-        step.hookType = hookType
+        // eslint-disable-next-line no-param-reassign
+        step.hookType = hookType;
       });
     }
 
     onTestCaseStarted(event) {
-      const featureDocument = findFeature(event.sourceLocation);
-      context.background = findBackground(featureDocument);
-      context.scenario = findScenario(event.sourceLocation);
-      context.scenarioStatus = 'started';
+      const featureDocument = itemFinders.findFeature(
+        this.documentsStorage.gherkinDocuments,
+        event.sourceLocation,
+      );
+      this.context.scenario = itemFinders.findScenario(
+        this.documentsStorage.gherkinDocuments,
+        event.sourceLocation,
+      );
+      this.context.scenarioStatus = STATUSES.STARTED;
+      this.context.background = itemFinders.findBackground(featureDocument);
       const featureTags = featureDocument.tags;
-      const keyword = context.scenario.keyword ? context.scenario.keyword : context.scenario.type;
-      let name = [keyword, context.scenario.name].join(': ');
-      const eventAttributes = context.scenario.tags
-        ? context.scenario.tags
-          .filter((tag) => !featureTags.find(createTagComparator(tag)))
-          .map((tag) => createAttribute(tag.name))
+      const keyword = this.context.scenario.keyword
+        ? this.context.scenario.keyword
+        : this.context.scenario.type;
+      let name = [keyword, this.context.scenario.name].join(': ');
+      const eventTags = this.context.scenario.tags
+        ? this.context.scenario.tags.filter(
+            (tag) => !featureTags.find(utils.createTagComparator(tag)),
+          )
         : [];
+      const itemAttributes = utils.createAttributes(eventTags);
       const description =
-        context.scenario.description ||
-        [getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const {featureId} = featureData[event.sourceLocation.uri];
+        this.context.scenario.description ||
+        [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
+      const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
 
-      if (context.lastScenarioDescription !== name) {
-        context.lastScenarioDescription = name;
-        context.outlineRow = 0;
+      if (this.context.lastScenarioDescription !== name) {
+        this.context.lastScenarioDescription = name;
+        this.context.outlineRow = 0;
       } else if (event.attemptNumber < 2) {
-        context.outlineRow++;
-        name += ` [${context.outlineRow}]`;
+        this.context.outlineRow += 1;
+        name += ` [${this.context.outlineRow}]`;
       }
 
       // BeforeScenario
-      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
-        context.scenarioId = reportportal.startTestItem(
+      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
+        this.context.scenarioId = this.reportportal.startTestItem(
           {
             name,
-            startTime: reportportal.helpers.now(),
-            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
+            startTime: this.reportportal.helpers.now(),
+            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
-            codeRef: formatCodeRef(event.sourceLocation.uri, name),
-            parameters: context.scenario.parameters,
-            attributes: eventAttributes,
-            retry: isScenarioBasedStatistics && event.attemptNumber > 1,
+            codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
+            parameters: this.context.scenario.parameters,
+            attributes: itemAttributes,
+            retry: false,
           },
-          context.launchId,
+          this.context.launchId,
           featureId,
         ).tempId;
       }
     }
 
     onTestStepStarted(event) {
-      context.stepStatus = 'failed';
-      context.stepId = null;
+      this.context.stepStatus = STATUSES.FAILED;
+      this.context.stepId = null;
 
-      context.stepSourceLocation = context.stepDefinitions.steps[event.index];
+      this.context.stepSourceLocation = this.context.stepDefinitions.steps[
+        event.index
+      ];
 
       // skip After Hook added by protractor-cucumber-framework
       if (
-        !context.stepSourceLocation.sourceLocation &&
-        context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)
+        !this.context.stepSourceLocation.sourceLocation &&
+        this.context.stepSourceLocation.actionLocation.uri.includes(
+          AFTER_HOOK_URI_TO_SKIP,
+        )
       )
         return;
 
-      context.step = findStep(event);
-      context.stepDefinition = findStepDefinition(event);
-      let description = '';
-      let name = context.step.text
-        ? `${context.step.keyword} ${context.step.text}`
-        : context.step.keyword;
+      this.context.step = this.context.findStep(event);
+      this.context.stepDefinition = itemFinders.findStepDefinition(
+        this.context,
+        event,
+      );
 
-      if (context.step.argument) {
+      let description;
+      let name = this.context.step.text
+        ? `${this.context.step.keyword} ${this.context.step.text}`
+        : this.context.step.keyword;
+
+      // console.log(this.context.step);
+      if (this.context.step.argument) {
         let stepArguments;
-        if (context.step.argument.content) {
-          stepArguments = `"""\n${context.step.argument.content}\n"""`;
+        if (this.context.step.argument.content) {
+          stepArguments = `"""\n${this.context.step.argument.content}\n"""`;
         }
 
-        if (context.step.argument.rows) {
-          let rows = context.step.argument.rows.map(row => row.cells.map(cell => {
-            context.scenario.parameters.forEach(parameter => {
-              if (cell.value === `<${parameter.key}>`) {
-                cell.value = replaceParameter(cell.value, parameter.key, parameter.value)
-              }
-            });
-            return cell.value
-          }));
-          const datatable = new Table(table);
+        if (this.context.step.argument.rows) {
+          const rows = this.context.step.argument.rows.map((row) =>
+            row.cells.map((cell) => {
+              this.context.scenario.parameters.forEach((parameter) => {
+                if (cell.value === `<${parameter.key}>`) {
+                  // eslint-disable-next-line no-param-reassign
+                  cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
+                }
+              });
+              return cell.value;
+            }),
+          );
+          const datatable = new Table(TABLE_CONFIG);
           datatable.push(...rows);
           stepArguments = datatable.toString();
         }
-        isScenarioBasedStatistics ? name += `\n${stepArguments}` : description = stepArguments;
+        if (this.isScenarioBasedStatistics) {
+          name += `\n${stepArguments}`;
+        } else {
+          description = stepArguments;
+        }
       }
+
       let type = 'STEP';
       let isHook = false;
-      if (context.step.keyword === 'Before') {
+      if (this.context.step.keyword === 'Before') {
         type = 'BEFORE_TEST';
         isHook = true;
-      } else if (context.step.keyword === 'After') {
+      } else if (this.context.step.keyword === 'After') {
         type = 'AFTER_TEST';
         isHook = true;
       }
 
       // hooks are described in cucumber's library core
       const codeRef =
-        context.stepDefinition && !isHook
-          ? formatCodeRef(context.stepDefinition.uri, name)
+        this.context.stepDefinition && !isHook
+          ? utils.formatCodeRef(this.context.stepDefinition.uri, name)
           : undefined;
 
-      context.stepId = reportportal.startTestItem(
+      this.context.stepId = this.reportportal.startTestItem(
         {
           name,
-          description: description,
-          startTime: reportportal.helpers.now(),
+          description,
+          startTime: this.reportportal.helpers.now(),
           type,
           codeRef,
-          parameters: context.step.parameters,
-          hasStats: !isScenarioBasedStatistics,
-          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
+          parameters: this.context.step.parameters,
+          hasStats: !this.isScenarioBasedStatistics,
+          retry: !this.isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
-        context.launchId,
-        context.scenarioId,
+        this.context.launchId,
+        this.context.scenarioId,
       ).tempId;
     }
 
     onTestStepFinished(event) {
       // skip After Hook added by protractor-cucumber-framework
       if (
-        !context.stepSourceLocation.sourceLocation &&
-        context.stepSourceLocation.actionLocation.uri.includes(afterHookURIToSkip)
+        !this.context.stepSourceLocation.sourceLocation &&
+        this.context.stepSourceLocation.actionLocation.uri.includes(
+          AFTER_HOOK_URI_TO_SKIP,
+        )
       )
         return;
 
       // StepResult
-      const sceenshotName = !context.stepDefinition
-        ? 'UNDEFINED STEP'
-        : `Failed at step definition line:${context.stepDefinition.line}`;
+      const sceenshotName = this.context.getFileName();
 
       switch (event.result.status) {
-        case 'passed': {
-          context.stepStatus = 'passed';
-          if (context.scenarioStatus !== 'failed') {
-            context.scenarioStatus = 'passed';
+        case STATUSES.PASSED: {
+          this.context.stepStatus = STATUSES.PASSED;
+          if (this.context.scenarioStatus !== STATUSES.FAILED) {
+            this.context.scenarioStatus = STATUSES.PASSED;
           }
           break;
         }
-        case 'pending': {
-          reportportal.sendLog(context.stepId, {
-            time: reportportal.helpers.now(),
+        case STATUSES.PENDING: {
+          this.reportportal.sendLog(this.context.stepId, {
+            time: this.reportportal.helpers.now(),
             level: 'WARN',
             message: "This step is marked as 'pending'",
           });
-          context.stepStatus = 'not_implemented';
-          context.scenarioStatus = 'failed';
-          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
+          this.context.stepStatus = STATUSES.NOT_IMPLEMENTED;
+          this.context.scenarioStatus = STATUSES.FAILED;
+          this.context.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'undefined': {
-          reportportal.sendLog(context.stepId, {
-            time: reportportal.helpers.now(),
+        case STATUSES.UNDEFINED: {
+          this.reportportal.sendLog(this.context.stepId, {
+            time: this.reportportal.helpers.now(),
             level: 'ERROR',
             message: 'There is no step definition found. Please verify and implement it.',
           });
-          context.stepStatus = 'not_found';
-          context.scenarioStatus = 'failed';
-          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
+          this.context.stepStatus = STATUSES.NOT_FOUND;
+          this.context.scenarioStatus = STATUSES.FAILED;
+          this.context.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'ambiguous': {
-          reportportal.sendLog(context.stepId, {
-            time: reportportal.helpers.now(),
+        case STATUSES.AMBIGUOUS: {
+          this.reportportal.sendLog(this.context.stepId, {
+            time: this.reportportal.helpers.now(),
             level: 'ERROR',
             message:
               'There are more than one step implementation. Please verify and reimplement it.',
           });
-          context.stepStatus = 'not_found';
-          context.scenarioStatus = 'failed';
-          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
+          this.context.stepStatus = STATUSES.NOT_FOUND;
+          this.context.scenarioStatus = STATUSES.FAILED;
+          this.context.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           break;
         }
-        case 'skipped': {
-          context.stepStatus = 'skipped';
-          if (context.scenarioStatus === 'started' || context.scenarioStatus === 'passed') {
-            context.scenarioStatus = 'skipped';
+        case STATUSES.SKIPPED: {
+          this.context.stepStatus = STATUSES.SKIPPED;
+          if (this.context.scenarioStatus === STATUSES.FAILED) {
+            this.context.scenarioStatus = STATUSES.SKIPPED;
+          }
+
+          this.context.stepStatus = STATUSES.SKIPPED;
+          if (
+            this.context.scenarioStatus === STATUSES.STARTED ||
+            this.context.scenarioStatus === STATUSES.PASSED
+          ) {
+            this.context.scenarioStatus = STATUSES.SKIPPED;
           } else {
-            context.scenarioStatus = 'failed';
-            if (config.hasOwnProperty('reportSkippedCucumberStepsOnFailedTest') && !config.reportSkippedCucumberStepsOnFailedTest) {
-              context.stepStatus = 'cancelled';
+            this.context.scenarioStatus = STATUSES.FAILED;
+            if (
+              // eslint-disable-next-line no-prototype-builtins
+              config.hasOwnProperty('reportSkippedCucumberStepsOnFailedTest') &&
+              !config.reportSkippedCucumberStepsOnFailedTest
+            ) {
+              this.context.stepStatus = STATUSES.CANCELLED;
             }
           }
+
           break;
         }
-        case 'failed': {
-          context.stepStatus = 'failed';
-          context.scenarioStatus = 'failed';
-          incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
+        case STATUSES.FAILED: {
+          this.context.stepStatus = STATUSES.FAILED;
+          this.context.scenarioStatus = STATUSES.FAILED;
+          this.context.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
           const errorMessage = `${
-            context.stepDefinition.uri
+            this.context.stepDefinition.uri
           }\n ${event.result.exception.toString()}`;
-          reportportal.sendLog(context.stepId, {
-            time: reportportal.helpers.now(),
+          this.reportportal.sendLog(this.context.stepId, {
+            time: this.reportportal.helpers.now(),
             level: 'ERROR',
             message: errorMessage,
           });
           if (global.browser && config.takeScreenshot && config.takeScreenshot === 'onFailure') {
             const request = {
-              time: reportportal.helpers.now(),
+              time: this.reportportal.helpers.now(),
               level: 'ERROR',
-              file: {name: sceenshotName},
+              file: { name: sceenshotName },
               message: sceenshotName,
             };
             global.browser.takeScreenshot().then((png) => {
@@ -535,7 +384,7 @@ const createRPFormatterClass = (config) => {
                 type: 'image/png',
                 content: png,
               };
-              reportportal.sendLog(context.stepId, request, fileObj);
+              this.reportportal.sendLog(this.context.stepId, request, fileObj);
             });
           }
           break;
@@ -544,74 +393,127 @@ const createRPFormatterClass = (config) => {
           break;
       }
 
+      const itemParams = this.context.itemsParams[this.context.stepId];
+
       // AfterStep
       const request = {
-        status: context.stepStatus,
-        endTime: reportportal.helpers.now(),
+        status: this.context.stepStatus,
+        endTime: this.reportportal.helpers.now(),
+        ...itemParams,
       };
-      if (request.status === 'not_found') {
-        request.status = 'failed';
+      if (request.status === STATUSES.NOT_FOUND) {
+        request.status = STATUSES.FAILED;
         request.issue = {
           issueType: 'ab001',
           comment: 'STEP DEFINITION WAS NOT FOUND',
         };
-      } else if (request.status === 'not_implemented') {
-        request.status = 'skipped';
+      } else if (request.status === STATUSES.NOT_IMPLEMENTED) {
+        request.status = STATUSES.SKIPPED;
         request.issue = {
           issueType: 'ti001',
           comment: 'STEP IS PENDING IMPLEMENTATION',
         };
       }
 
-      reportportal.finishTestItem(context.stepId, request);
+      this.reportportal.finishTestItem(this.context.stepId, request);
+    }
+
+    updateItemParams(id, newParams) {
+      this.context.itemsParams[id] = {
+        ...this.context.itemsParams[id],
+        ...newParams,
+      };
+    }
+
+    getItemParams(id) {
+      return this.context.itemsParams[id] || {};
     }
 
     onTestStepAttachment(event) {
-      const fileName = !context.stepDefinition
-        ? 'UNDEFINED STEP'
-        : `Attachment at step definition line:${context.stepDefinition.line}`;
+      const fileName = this.context.getFileName();
       if (
         event.data &&
         event.data.length &&
-        (context.stepStatus === 'passed' || context.stepStatus === 'failed')
+        (this.context.stepStatus === STATUSES.PASSED ||
+          this.context.stepStatus === STATUSES.FAILED)
       ) {
+        const dataObj = utils.getJSON(event.data);
+        let itemId = this.context.stepId;
+
         switch (event.media.type) {
-          case 'text/plain': {
-            const logMessage = getJSON(event.data);
-            const request = {
-              time: reportportal.helpers.now(),
-            };
-            if (logMessage) {
-              request.level = logMessage.level;
-              request.message = logMessage.message;
+          case RP_EVENTS.TEST_CASE_ID: {
+            this.updateItemParams(itemId, { testCaseId: dataObj.testCaseId });
+            break;
+          }
+          case RP_EVENTS.ATTRIBUTES: {
+            const savedAttributes = this.getItemParams(itemId).attributes || [];
+            this.updateItemParams(itemId, {
+              attributes: savedAttributes.concat(dataObj.attributes),
+            });
+            break;
+          }
+          case RP_EVENTS.DESCRIPTION: {
+            const savedDescription = this.getItemParams(itemId).description || '';
+            this.updateItemParams(itemId, {
+              description: savedDescription
+                ? `${savedDescription}<br/>${dataObj.description}`
+                : dataObj.description,
+            });
+            break;
+          }
+          case RP_EVENTS.STATUS: {
+            if (dataObj.entity !== RP_ENTITY_LAUNCH) {
+              this.updateItemParams(itemId, {
+                status: dataObj.status,
+              });
             } else {
-              request.level = 'DEBUG';
+              this.context.launchStatus = dataObj.status;
+            }
+            break;
+          }
+          case 'text/plain': {
+            const request = {
+              time: this.reportportal.helpers.now(),
+            };
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
+                itemId = this.context.launchId;
+              }
+            } else {
+              request.level = LOG_LEVELS.DEBUG;
               request.message = event.data;
             }
-            reportportal.sendLog(context.stepId, request);
+            this.reportportal.sendLog(itemId, request);
             break;
           }
           default: {
             const request = {
-              time: reportportal.helpers.now(),
-              level: context.stepStatus === 'passed' ? 'DEBUG' : 'ERROR',
+              time: this.reportportal.helpers.now(),
+              level:
+                this.context.stepStatus === STATUSES.PASSED
+                  ? LOG_LEVELS.DEBUG
+                  : LOG_LEVELS.ERROR,
               message: fileName,
               file: {
                 name: fileName,
               },
             };
-            const parsedObject = getJSON(event.data);
-            if (parsedObject) {
-              request.level = parsedObject.level;
-              request.message = parsedObject.message;
-              request.file.name = parsedObject.message;
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              request.file.name = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
+                itemId = this.context.launchId;
+              }
             }
             const fileObj = {
               name: fileName,
               type: event.media.type,
-              content: (parsedObject && parsedObject.data) || event.data,
+              content: (dataObj && dataObj.data) || event.data,
             };
-            reportportal.sendLog(context.stepId, request, fileObj);
+            this.reportportal.sendLog(itemId, request, fileObj);
             break;
           }
         }
@@ -619,37 +521,54 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!isScenarioBasedStatistics && event.result.retried) {
+      if (!this.isScenarioBasedStatistics && event.result.retried) {
         return;
       }
-      const isFailed = event.result.status.toUpperCase() !== 'PASSED';
+      const isFailed = event.result.status.toUpperCase() !== STATUSES.PASSED;
       // ScenarioResult
-      reportportal.finishTestItem(context.scenarioId, {
-        status: isFailed ? 'failed' : 'passed',
-        endTime: reportportal.helpers.now(),
+      this.reportportal.finishTestItem(this.context.scenarioId, {
+        status: isFailed ? STATUSES.FAILED : STATUSES.PASSED,
+        endTime: this.reportportal.helpers.now(),
       });
-      context.scenarioId = null;
-
+      this.context.scenarioId = null;
       const featureUri = event.sourceLocation.uri;
-      featureData[featureUri].featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
+
+      if (!event.result.retried) {
+        this.context.scenariosCount[featureUri].done++;
+      }
+
+      const { total, done } = this.context.scenariosCount[featureUri];
+      if (done === total) {
+        const featureStatus =
+          this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
+        this.reportportal.finishTestItem(this.documentsStorage.featureData[featureUri].featureId, {
+          status: featureStatus,
+          endTime: this.reportportal.helpers.now(),
+        });
+      }
     }
 
     onTestRunFinished() {
-      Object.keys(featureData).forEach(feature => {
-        reportportal.finishTestItem(featureData[feature].featureId, {
-          status: featureData[feature].featureStatus,
-          endTime: reportportal.helpers.now(),
-        });
-      });
       // AfterFeatures
-      const promise = reportportal.getPromiseFinishAllItems(context.launchId);
-      promise.then(() => {
-        if (context.launchId) {
-          const launchFinishPromise = reportportal.finishLaunch(context.launchId, {
-            endTime: reportportal.helpers.now(),
-          }).promise;
+      const promise = this.reportportal.getPromiseFinishAllItems(
+        this.context.launchId,
+      );
+      return promise.then(() => {
+        if (this.context.launchId) {
+          const finishLaunchRQ = {
+            endTime: this.reportportal.helpers.now(),
+          };
+
+          if (this.context.launchStatus) {
+            finishLaunchRQ.status = this.context.launchStatus;
+          }
+
+          const launchFinishPromise = this.reportportal.finishLaunch(
+            this.context.launchId,
+            finishLaunchRQ,
+          ).promise;
           launchFinishPromise.then(() => {
-            context = cleanContext();
+            this.context.resetContext();
           });
         }
       });
@@ -657,4 +576,4 @@ const createRPFormatterClass = (config) => {
   };
 };
 
-module.exports = {createRPFormatterClass};
+module.exports = { createRPFormatterClass };

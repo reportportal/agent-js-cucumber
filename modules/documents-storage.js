@@ -14,11 +14,23 @@
  *  limitations under the License.
  */
 
-const { createRPFormatterClass } = require('./cucumber-reportportal-formatter');
-const { Logger, RPWorld } = require('./worlds');
+class DocumentsStorage {
+  constructor() {
+    this.gherkinDocuments = {};
+    this.featureData = {};
+  }
 
-module.exports = {
-  Logger,
-  RPWorld,
-  createRPFormatterClass,
-};
+  cacheDocument(gherkinDocument) {
+    this.gherkinDocuments[gherkinDocument.uri] = gherkinDocument.document;
+  }
+
+  createCachedFeature(uri) {
+    this.featureData[uri] = {};
+  }
+
+  isFeatureDataCached(uri) {
+    return !!this.featureData[uri];
+  }
+}
+
+module.exports = DocumentsStorage;
