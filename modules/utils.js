@@ -53,8 +53,10 @@ const createTagComparator = (tagA) => (tagB) =>
   tagB.location.line === tagA.location.line &&
   tagB.location.column === tagA.location.column;
 
-const isScenarioBasedStatistics = (config) =>
-  typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
+// There is no reason for this to be a function which is executed each time it is called.
+// Better to just assign it a variable value using the same logic since it is either
+// true or false for an entire run and never changes.
+const isScenarioBasedStatistics = typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
 const formatCodeRef = (pathName, itemName) => {
   const codeRef = pathName.replace(/\\/g, '/');
