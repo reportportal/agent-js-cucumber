@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const { Formatter } = require('cucumber');
+const {Formatter} = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
 const Table = require('cli-table3');
 const utils = require('./utils');
@@ -34,7 +34,7 @@ const {
 
 const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
-  const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
+  const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
   const attributesConf = !config.attributes ? [] : config.attributes;
   const isScenarioBasedStatistics = utils.isScenarioBasedStatistics(config);
 
@@ -47,7 +47,7 @@ const createRPFormatterClass = (config) => {
       this.attributesConf = attributesConf;
       this.isScenarioBasedStatistics = isScenarioBasedStatistics;
 
-      const { rerun, rerunOf } = options.parsedArgvOptions || {};
+      const {rerun, rerunOf} = options.parsedArgvOptions || {};
 
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
@@ -81,7 +81,7 @@ const createRPFormatterClass = (config) => {
           description: !config.description ? '' : config.description,
           attributes: [
             ...this.attributesConf,
-            { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
+            {key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true},
           ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
@@ -100,7 +100,7 @@ const createRPFormatterClass = (config) => {
           event,
         );
         const description = featureDocument.description ? featureDocument.description : featureUri;
-        const { name } = featureDocument;
+        const {name} = featureDocument;
         const itemAttributes = utils.createAttributes(featureDocument.tags);
 
         this.context.countTotalScenarios(featureDocument, featureUri);
@@ -153,14 +153,14 @@ const createRPFormatterClass = (config) => {
       let name = [keyword, this.context.scenario.name].join(': ');
       const eventTags = this.context.scenario.tags
         ? this.context.scenario.tags.filter(
-            (tag) => !featureTags.find(utils.createTagComparator(tag)),
-          )
+          (tag) => !featureTags.find(utils.createTagComparator(tag)),
+        )
         : [];
       const itemAttributes = utils.createAttributes(eventTags);
       const description =
         this.context.scenario.description ||
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
+      const {featureId} = this.documentsStorage.featureData[event.sourceLocation.uri];
 
       if (this.context.lastScenarioDescription !== name) {
         this.context.lastScenarioDescription = name;
@@ -195,7 +195,7 @@ const createRPFormatterClass = (config) => {
 
       this.context.stepSourceLocation = this.context.stepDefinitions.steps[
         event.index
-      ];
+        ];
 
       // skip After Hook added by protractor-cucumber-framework
       if (
@@ -227,12 +227,15 @@ const createRPFormatterClass = (config) => {
         if (this.context.step.argument.rows) {
           const rows = this.context.step.argument.rows.map((row) =>
             row.cells.map((cell) => {
-              this.context.scenario.parameters.forEach((parameter) => {
-                if (cell.value === `<${parameter.key}>`) {
-                  // eslint-disable-next-line no-param-reassign
-                  cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
-                }
-              });
+              // Added an if statement to only replace step parameters if this is a Scenario Outline
+              if (this.context.scenario.parameters) {
+                this.context.scenario.parameters.forEach((parameter) => {
+                  if (cell.value === `<${parameter.key}>`) {
+                    // eslint-disable-next-line no-param-reassign
+                    cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
+                  }
+                });
+              }
               return cell.value;
             }),
           );
@@ -375,7 +378,7 @@ const createRPFormatterClass = (config) => {
             const request = {
               time: this.reportportal.helpers.now(),
               level: 'ERROR',
-              file: { name: sceenshotName },
+              file: {name: sceenshotName},
               message: sceenshotName,
             };
             global.browser.takeScreenshot().then((png) => {
@@ -442,7 +445,7 @@ const createRPFormatterClass = (config) => {
 
         switch (event.media.type) {
           case RP_EVENTS.TEST_CASE_ID: {
-            this.updateItemParams(itemId, { testCaseId: dataObj.testCaseId });
+            this.updateItemParams(itemId, {testCaseId: dataObj.testCaseId});
             break;
           }
           case RP_EVENTS.ATTRIBUTES: {
@@ -537,7 +540,7 @@ const createRPFormatterClass = (config) => {
         this.context.scenariosCount[featureUri].done++;
       }
 
-      const { total, done } = this.context.scenariosCount[featureUri];
+      const {total, done} = this.context.scenariosCount[featureUri];
       if (done === total) {
         const featureStatus =
           this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
@@ -576,4 +579,4 @@ const createRPFormatterClass = (config) => {
   };
 };
 
-module.exports = { createRPFormatterClass };
+module.exports = {createRPFormatterClass};
