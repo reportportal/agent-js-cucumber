@@ -398,11 +398,13 @@ const createRPFormatterClass = (config) => {
 
         if (context.step.argument.rows) {
           let rows = context.step.argument.rows.map(row => row.cells.map(cell => {
-            context.scenario.parameters.forEach(parameter => {
-              if (cell.value === `<${parameter.key}>`) {
-                cell.value = replaceParameter(cell.value, parameter.key, parameter.value)
-              }
-            });
+            if (context.scenario.parameters) {
+              context.scenario.parameters.forEach(parameter => {
+                if (cell.value === `<${parameter.key}>`) {
+                  cell.value = replaceParameter(cell.value, parameter.key, parameter.value)
+                }
+              });
+            }
             return cell.value
           }));
           const datatable = new Table(table);
