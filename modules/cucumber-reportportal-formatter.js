@@ -62,8 +62,7 @@ const createRPFormatterClass = (config) => {
     outlineRow: 0,
     scenarioStatus: 'failed',
     forcedIssue: null,
-    featureId: null,
-    scenarioId: null,
+    featureId: null, scenarioId: null,
     stepId: null,
     stepStatus: 'failed',
     launchId: null,
@@ -649,7 +648,7 @@ const createRPFormatterClass = (config) => {
         if (context.launchId) {
           const launchFinishPromise = reportportal.finishLaunch(context.launchId, {
             endTime: reportportal.helpers.now(),
-            status: event.result.success,
+            status: event.result.success ? 'passed' : 'failed',
           }).promise;
           launchFinishPromise.then(() => {
             context = cleanContext();
