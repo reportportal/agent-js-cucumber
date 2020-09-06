@@ -397,10 +397,10 @@ const createRPFormatterClass = (config) => {
         }
 
         if (context.step.argument.rows) {
-          let rows = context.step.argument.rows.map(row => row.cells.map(cell => {
+          const rows = context.step.argument.rows.map(row => row.cells.map(cell => {
             if (context.scenario.parameters) {
               context.scenario.parameters.forEach(parameter => {
-                if (cell.value === `<${parameter.key}>`) {
+                if (cell.value.includes(`<${parameter.key}>`)) {
                   cell.value = replaceParameter(cell.value, parameter.key, parameter.value)
                 }
               });
@@ -636,7 +636,7 @@ const createRPFormatterClass = (config) => {
       featureData[featureUri].featureStatus = context.failedScenarios[featureUri] > 0 ? 'failed' : 'passed';
     }
 
-    onTestRunFinished() {
+    onTestRunFinished(event) {
       Object.keys(featureData).forEach(feature => {
         reportportal.finishTestItem(featureData[feature].featureId, {
           status: featureData[feature].featureStatus,
@@ -649,6 +649,7 @@ const createRPFormatterClass = (config) => {
         if (context.launchId) {
           const launchFinishPromise = reportportal.finishLaunch(context.launchId, {
             endTime: reportportal.helpers.now(),
+            status: event.result.success,
           }).promise;
           launchFinishPromise.then(() => {
             context = cleanContext();
