@@ -136,7 +136,7 @@ const createRPFormatterClass = (config) => {
   }
 
   function replaceParameter(originalString, name, value) {
-    return originalString.replace(`<${name}>`, value);
+    return originalString.replace(new RegExp(`<${name}>`, 'g'), value);
   }
 
   function createScenarioFromOutlineExample(outline, example, row) {
