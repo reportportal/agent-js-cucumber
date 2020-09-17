@@ -36,7 +36,7 @@ const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
   const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
   const attributesConf = !config.attributes ? [] : config.attributes;
-  const isScenarioBasedStatistics = utils.isScenarioBasedStatistics(config);
+  const isScenarioBasedStatistics = typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -95,34 +95,53 @@ const createRPFormatterClass = (config) => {
       if (!this.documentsStorage.isFeatureDataCached(featureUri)) {
         this.documentsStorage.createCachedFeature(featureUri);
 
+        const feature = this.documentsStorage.featureData[featureUri];
         const featureDocument = itemFinders.findFeature(
           this.documentsStorage.gherkinDocuments,
           event,
         );
-        const description = featureDocument.description ? featureDocument.description : featureUri;
+        feature.description = featureDocument.description ? featureDocument.description : featureUri;
         const {name} = featureDocument;
-        const itemAttributes = utils.createAttributes(featureDocument.tags);
+        feature.name = name;
+        feature.itemAttributes = utils.createAttributes(featureDocument.tags);
 
         this.context.countTotalScenarios(featureDocument, featureUri);
-
-        // BeforeFeature
-        const featureId = this.reportportal.startTestItem(
-          {
-            name,
-            startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
-            codeRef: utils.formatCodeRef(event.uri, name),
-            description,
-            attributes: itemAttributes,
-          },
-          this.context.launchId,
-        ).tempId;
-
-        this.documentsStorage.featureData[utils.getUri(event.uri)].featureId = featureId;
       }
     }
 
     onTestCasePrepared(event) {
+      const featureUri = utils.getUri(event.sourceLocation.uri);
+      const feature = this.documentsStorage.featureData[featureUri];
+      // If this is the first scenario in the feature, start the feature in RP
+      if (!feature.featureId) {
+        feature.featureId = this.reportportal.startTestItem(
+          {
+            name: feature.name,
+            startTime: this.reportportal.helpers.now(),
+            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+            codeRef: utils.formatCodeRef(featureUri, feature.name),
+            description: feature.description,
+            attributes: feature.itemAttributes,
+          },
+          this.context.launchId,
+        ).tempId;
+      }
+      // If this is the first feature in the run, set the currentFeatureUri
+      if (!this.context.currentFeatureUri) {
+        this.context.currentFeatureUri = featureUri;
+      }
+      // If this is a new feature, finish the previous feature in RP.
+      // does not work for the final feature in the run. that is finished in onTestRunFinished
+      if (this.context.currentFeatureUri !== featureUri) {
+        const previousFeature = this.documentsStorage.featureData[this.context.currentFeatureUri];
+        // If this is a new feature, finish the previous feature
+        reportportal.finishTestItem(previousFeature.featureId, {
+          status: previousFeature.featureStatus,
+          endTime: reportportal.helpers.now(),
+        });
+        // Now that the previous feature is finished, assign the new current feature
+        this.context.currentFeatureUri = featureUri;
+      }
       this.context.stepDefinitions = event;
       let hookType = 'Before';
       this.context.stepDefinitions.steps.forEach((step) => {
@@ -525,7 +544,8 @@ const createRPFormatterClass = (config) => {
       if (!this.isScenarioBasedStatistics && event.result.retried) {
         return;
       }
-      const isFailed = event.result.status.toUpperCase() !== STATUSES.PASSED;
+      // All statuses are lower case. Using toUpperCase() made all tests be marked as failed.
+      const isFailed = event.result.status !== STATUSES.PASSED;
       // ScenarioResult
       this.reportportal.finishTestItem(this.context.scenarioId, {
         status: isFailed ? STATUSES.FAILED : STATUSES.PASSED,
@@ -534,22 +554,17 @@ const createRPFormatterClass = (config) => {
       this.context.scenarioId = null;
       const featureUri = event.sourceLocation.uri;
 
-      if (!event.result.retried) {
-        this.context.scenariosCount[featureUri].done++;
-      }
-
-      const {total, done} = this.context.scenariosCount[featureUri];
-      if (done === total) {
-        const featureStatus =
-          this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
-        this.reportportal.finishTestItem(this.documentsStorage.featureData[featureUri].featureId, {
-          status: featureStatus,
-          endTime: this.reportportal.helpers.now(),
-        });
-      }
+      this.documentsStorage.featureData[featureUri].featureStatus =
+        this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
     }
 
     onTestRunFinished(event) {
+      // Finish the final feature in the run
+      const finalFeature = this.documentsStorage.featureData[this.context.currentFeatureUri];
+      reportportal.finishTestItem(finalFeature.featureId, {
+        status: finalFeature.featureStatus,
+        endTime: reportportal.helpers.now(),
+      });
       // AfterFeatures
       const promise = this.reportportal.getPromiseFinishAllItems(
         this.context.launchId,

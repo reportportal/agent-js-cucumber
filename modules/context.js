@@ -26,14 +26,13 @@ class Context {
     this.outlineRow = 0;
     this.scenarioStatus = STATUSES.FAILED;
     this.forcedIssue = null;
-    this.featureId = null;
+    this.currentFeatureUri = null;
     this.scenarioId = null;
     this.stepId = null;
     this.stepStatus = STATUSES.FAILED;
     this.launchId = null;
     this.background = null;
     this.failedScenarios = {};
-    this.scenariosCount = {};
     this.lastScenarioDescription = null;
     this.scenario = null;
     this.step = null;
@@ -79,23 +78,6 @@ class Context {
       }
     }
     return stepObj;
-  }
-
-  countTotalScenarios(feature, featureUri) {
-    let total = feature.children.length;
-    feature.children.forEach((child) => {
-      if (child.examples) {
-        child.examples.forEach((ex) => {
-          total += ex.tableBody.length - 1;
-        });
-      }
-    });
-    this.background = itemFinders.findBackground(feature);
-    if (this.background) {
-      total -= 1;
-    }
-
-    this.scenariosCount[featureUri] = { total, done: 0 };
   }
 
   incrementFailedScenariosCount(uri) {
