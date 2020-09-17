@@ -36,7 +36,7 @@ const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
   const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
   const attributesConf = !config.attributes ? [] : config.attributes;
-  const isScenarioBasedStatistics = typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
+  const isScenarioBasedStatistics = (typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false);
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -45,7 +45,6 @@ const createRPFormatterClass = (config) => {
       this.documentsStorage = documentsStorage;
       this.reportportal = reportportal;
       this.attributesConf = attributesConf;
-      this.isScenarioBasedStatistics = isScenarioBasedStatistics;
 
       const {rerun, rerunOf} = options.parsedArgvOptions || {};
 
@@ -118,7 +117,7 @@ const createRPFormatterClass = (config) => {
           {
             name: feature.name,
             startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: utils.formatCodeRef(featureUri, feature.name),
             description: feature.description,
             attributes: feature.itemAttributes,
@@ -190,17 +189,17 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
+      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
         this.context.scenarioId = this.reportportal.startTestItem(
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
+            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
             codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.context.scenario.parameters,
             attributes: itemAttributes,
-            retry: false,
+            retry: isScenarioBasedStatistics && event.attemptNumber > 1,
           },
           this.context.launchId,
           featureId,
@@ -261,7 +260,7 @@ const createRPFormatterClass = (config) => {
           datatable.push(...rows);
           stepArguments = datatable.toString();
         }
-        if (this.isScenarioBasedStatistics) {
+        if (isScenarioBasedStatistics) {
           name += `\n${stepArguments}`;
         } else {
           description = stepArguments;
@@ -292,8 +291,8 @@ const createRPFormatterClass = (config) => {
           type,
           codeRef,
           parameters: this.context.step.parameters,
-          hasStats: !this.isScenarioBasedStatistics,
-          retry: !this.isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
+          hasStats: !isScenarioBasedStatistics,
+          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
         this.context.launchId,
         this.context.scenarioId,
@@ -541,7 +540,7 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!this.isScenarioBasedStatistics && event.result.retried) {
+      if (!isScenarioBasedStatistics && event.result.retried) {
         return;
       }
       // All statuses are lower case. Using toUpperCase() made all tests be marked as failed.
