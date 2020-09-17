@@ -217,7 +217,6 @@ const createRPFormatterClass = (config) => {
         ? `${this.context.step.keyword} ${this.context.step.text}`
         : this.context.step.keyword;
 
-      // console.log(this.context.step);
       if (this.context.step.argument) {
         let stepArguments;
         if (this.context.step.argument.content) {
@@ -230,7 +229,7 @@ const createRPFormatterClass = (config) => {
               // Added an if statement to only replace step parameters if this is a Scenario Outline
               if (this.context.scenario.parameters) {
                 this.context.scenario.parameters.forEach((parameter) => {
-                  if (cell.value === `<${parameter.key}>`) {
+                  if (cell.value.includes(`<${parameter.key}>`)) {
                     // eslint-disable-next-line no-param-reassign
                     cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
                   }
@@ -269,7 +268,7 @@ const createRPFormatterClass = (config) => {
       this.context.stepId = this.reportportal.startTestItem(
         {
           name,
-          description,
+          description: description,
           startTime: this.reportportal.helpers.now(),
           type,
           codeRef,
@@ -343,7 +342,6 @@ const createRPFormatterClass = (config) => {
             this.context.scenarioStatus = STATUSES.SKIPPED;
           }
 
-          this.context.stepStatus = STATUSES.SKIPPED;
           if (
             this.context.scenarioStatus === STATUSES.STARTED ||
             this.context.scenarioStatus === STATUSES.PASSED
@@ -551,7 +549,7 @@ const createRPFormatterClass = (config) => {
       }
     }
 
-    onTestRunFinished() {
+    onTestRunFinished(event) {
       // AfterFeatures
       const promise = this.reportportal.getPromiseFinishAllItems(
         this.context.launchId,
@@ -560,6 +558,7 @@ const createRPFormatterClass = (config) => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
             endTime: this.reportportal.helpers.now(),
+            status: event.result.status ? STATUSES.PASSED : STATUSES.FAILED
           };
 
           if (this.context.launchStatus) {

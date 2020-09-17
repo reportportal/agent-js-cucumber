@@ -85,7 +85,7 @@ const getParameters = (header, body) => {
 };
 
 function replaceParameter(originalString, name, value) {
-  return originalString.replace(`<${name}>`, value);
+  return originalString.replace(new RegExp(`<${name}>`, 'g'), value);
 }
 
 const getStepType = (keyword) => {
