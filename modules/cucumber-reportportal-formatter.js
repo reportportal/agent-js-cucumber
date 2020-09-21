@@ -113,7 +113,7 @@ const createRPFormatterClass = (config) => {
       if (!feature.featureId) {
         feature.featureId = this.reportportal.startTestItem(
           {
-            name: feature.name,t
+            name: feature.name,
             startTime: this.reportportal.helpers.now(),
             type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: utils.formatCodeRef(featureUri, feature.name),
