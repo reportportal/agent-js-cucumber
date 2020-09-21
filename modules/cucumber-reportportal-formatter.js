@@ -103,8 +103,6 @@ const createRPFormatterClass = (config) => {
         const {name} = featureDocument;
         feature.name = name;
         feature.itemAttributes = utils.createAttributes(featureDocument.tags);
-
-        this.context.countTotalScenarios(featureDocument, featureUri);
       }
     }
 
@@ -115,7 +113,7 @@ const createRPFormatterClass = (config) => {
       if (!feature.featureId) {
         feature.featureId = this.reportportal.startTestItem(
           {
-            name: feature.name,
+            name: feature.name,t
             startTime: this.reportportal.helpers.now(),
             type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
             codeRef: utils.formatCodeRef(featureUri, feature.name),
