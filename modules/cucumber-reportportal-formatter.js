@@ -243,15 +243,16 @@ const createRPFormatterClass = (config) => {
           const rows = this.context.step.argument.rows.map((row) =>
             row.cells.map((cell) => {
               // Added an if statement to only replace step parameters if this is a Scenario Outline
+              let tempStepValue = cell.value;
               if (this.context.scenario.parameters) {
                 this.context.scenario.parameters.forEach((parameter) => {
                   if (cell.value.includes(`<${parameter.key}>`)) {
                     // eslint-disable-next-line no-param-reassign
-                    cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
+                    tempStepValue = utils.replaceParameter(cell.value, parameter.key, parameter.value);
                   }
                 });
               }
-              return cell.value;
+              return tempStepValue;
             }),
           );
           const datatable = new Table(TABLE_CONFIG);
