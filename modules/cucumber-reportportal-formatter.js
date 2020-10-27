@@ -99,7 +99,7 @@ const createRPFormatterClass = (config) => {
           this.documentsStorage.gherkinDocuments,
           event,
         );
-        feature.description = featureDocument.description ? featureDocument.description : featureUri;
+        feature.description = featureDocument.description || featureUri;
         const {name} = featureDocument;
         feature.name = name;
         feature.itemAttributes = utils.createAttributes(featureDocument.tags);
@@ -247,7 +247,6 @@ const createRPFormatterClass = (config) => {
               if (this.context.scenario.parameters) {
                 this.context.scenario.parameters.forEach((parameter) => {
                   if (cell.value.includes(`<${parameter.key}>`)) {
-                    // eslint-disable-next-line no-param-reassign
                     tempStepValue = utils.replaceParameter(cell.value, parameter.key, parameter.value);
                   }
                 });
@@ -285,7 +284,7 @@ const createRPFormatterClass = (config) => {
       this.context.stepId = this.reportportal.startTestItem(
         {
           name,
-          description: description,
+          description,
           startTime: this.reportportal.helpers.now(),
           type,
           codeRef,
@@ -542,7 +541,6 @@ const createRPFormatterClass = (config) => {
       if (!isScenarioBasedStatistics && event.result.retried) {
         return;
       }
-      // All statuses are lower case. Using toUpperCase() made all tests be marked as failed.
       const isFailed = event.result.status !== STATUSES.PASSED;
       // ScenarioResult
       this.reportportal.finishTestItem(this.context.scenarioId, {
