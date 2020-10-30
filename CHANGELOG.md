@@ -1,3 +1,9 @@
+### Fixed
+- [#66](https://github.com/reportportal/agent-js-cucumber/issues/66) Incorrect calculation of test status
+- Lots of other bugs
+
+### Updated
+- `@reportportal/client-javascript` version to the latest
 
 ## [5.0.0] - 2020-08-28
 ### Added
