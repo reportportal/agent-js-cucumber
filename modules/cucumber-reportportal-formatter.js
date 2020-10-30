@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const {Formatter} = require('cucumber');
+const { Formatter } = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
 const Table = require('cli-table3');
 const utils = require('./utils');
@@ -34,9 +34,10 @@ const {
 
 const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
-  const reportportal = new ReportPortalClient(config, {name: pjson.name, version: pjson.version});
+  const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   const attributesConf = !config.attributes ? [] : config.attributes;
-  const isScenarioBasedStatistics = (typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false);
+  const isScenarioBasedStatistics =
+    typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -46,7 +47,7 @@ const createRPFormatterClass = (config) => {
       this.reportportal = reportportal;
       this.attributesConf = attributesConf;
 
-      const {rerun, rerunOf} = options.parsedArgvOptions || {};
+      const { rerun, rerunOf } = options.parsedArgvOptions || {};
 
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
@@ -80,7 +81,7 @@ const createRPFormatterClass = (config) => {
           description: !config.description ? '' : config.description,
           attributes: [
             ...this.attributesConf,
-            {key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true},
+            { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
           ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
@@ -100,7 +101,7 @@ const createRPFormatterClass = (config) => {
           event,
         );
         feature.description = featureDocument.description || featureUri;
-        const {name} = featureDocument;
+        const { name } = featureDocument;
         feature.name = name;
         feature.itemAttributes = utils.createAttributes(featureDocument.tags);
       }
@@ -169,14 +170,14 @@ const createRPFormatterClass = (config) => {
       let name = [keyword, this.context.scenario.name].join(': ');
       const eventTags = this.context.scenario.tags
         ? this.context.scenario.tags.filter(
-          (tag) => !featureTags.find(utils.createTagComparator(tag)),
-        )
+            (tag) => !featureTags.find(utils.createTagComparator(tag)),
+          )
         : [];
       const itemAttributes = utils.createAttributes(eventTags);
       const description =
         this.context.scenario.description ||
         [utils.getUri(event.sourceLocation.uri), event.sourceLocation.line].join(':');
-      const {featureId} = this.documentsStorage.featureData[event.sourceLocation.uri];
+      const { featureId } = this.documentsStorage.featureData[event.sourceLocation.uri];
 
       if (this.context.lastScenarioDescription !== name) {
         this.context.lastScenarioDescription = name;
@@ -209,24 +210,17 @@ const createRPFormatterClass = (config) => {
       this.context.stepStatus = STATUSES.FAILED;
       this.context.stepId = null;
 
-      this.context.stepSourceLocation = this.context.stepDefinitions.steps[
-        event.index
-        ];
+      this.context.stepSourceLocation = this.context.stepDefinitions.steps[event.index];
 
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.context.stepSourceLocation.sourceLocation &&
-        this.context.stepSourceLocation.actionLocation.uri.includes(
-          AFTER_HOOK_URI_TO_SKIP,
-        )
+        this.context.stepSourceLocation.actionLocation.uri.includes(AFTER_HOOK_URI_TO_SKIP)
       )
         return;
 
       this.context.step = this.context.findStep(event);
-      this.context.stepDefinition = itemFinders.findStepDefinition(
-        this.context,
-        event,
-      );
+      this.context.stepDefinition = itemFinders.findStepDefinition(this.context, event);
 
       let description;
       let name = this.context.step.text
@@ -247,7 +241,11 @@ const createRPFormatterClass = (config) => {
               if (this.context.scenario.parameters) {
                 this.context.scenario.parameters.forEach((parameter) => {
                   if (cell.value.includes(`<${parameter.key}>`)) {
-                    tempStepValue = utils.replaceParameter(cell.value, parameter.key, parameter.value);
+                    tempStepValue = utils.replaceParameter(
+                      cell.value,
+                      parameter.key,
+                      parameter.value,
+                    );
                   }
                 });
               }
@@ -301,9 +299,7 @@ const createRPFormatterClass = (config) => {
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.context.stepSourceLocation.sourceLocation &&
-        this.context.stepSourceLocation.actionLocation.uri.includes(
-          AFTER_HOOK_URI_TO_SKIP,
-        )
+        this.context.stepSourceLocation.actionLocation.uri.includes(AFTER_HOOK_URI_TO_SKIP)
       )
         return;
 
@@ -392,7 +388,7 @@ const createRPFormatterClass = (config) => {
             const request = {
               time: this.reportportal.helpers.now(),
               level: 'ERROR',
-              file: {name: sceenshotName},
+              file: { name: sceenshotName },
               message: sceenshotName,
             };
             global.browser.takeScreenshot().then((png) => {
@@ -451,15 +447,14 @@ const createRPFormatterClass = (config) => {
       if (
         event.data &&
         event.data.length &&
-        (this.context.stepStatus === STATUSES.PASSED ||
-          this.context.stepStatus === STATUSES.FAILED)
+        (this.context.stepStatus === STATUSES.PASSED || this.context.stepStatus === STATUSES.FAILED)
       ) {
         const dataObj = utils.getJSON(event.data);
         let itemId = this.context.stepId;
 
         switch (event.media.type) {
           case RP_EVENTS.TEST_CASE_ID: {
-            this.updateItemParams(itemId, {testCaseId: dataObj.testCaseId});
+            this.updateItemParams(itemId, { testCaseId: dataObj.testCaseId });
             break;
           }
           case RP_EVENTS.ATTRIBUTES: {
@@ -509,9 +504,7 @@ const createRPFormatterClass = (config) => {
             const request = {
               time: this.reportportal.helpers.now(),
               level:
-                this.context.stepStatus === STATUSES.PASSED
-                  ? LOG_LEVELS.DEBUG
-                  : LOG_LEVELS.ERROR,
+                this.context.stepStatus === STATUSES.PASSED ? LOG_LEVELS.DEBUG : LOG_LEVELS.ERROR,
               message: fileName,
               file: {
                 name: fileName,
@@ -562,14 +555,12 @@ const createRPFormatterClass = (config) => {
         endTime: reportportal.helpers.now(),
       });
       // AfterFeatures
-      const promise = this.reportportal.getPromiseFinishAllItems(
-        this.context.launchId,
-      );
+      const promise = this.reportportal.getPromiseFinishAllItems(this.context.launchId);
       return promise.then(() => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
             endTime: this.reportportal.helpers.now(),
-            status: event.result.status ? STATUSES.PASSED : STATUSES.FAILED
+            status: event.result.status ? STATUSES.PASSED : STATUSES.FAILED,
           };
 
           if (this.context.launchStatus) {
@@ -589,4 +580,4 @@ const createRPFormatterClass = (config) => {
   };
 };
 
-module.exports = {createRPFormatterClass};
+module.exports = { createRPFormatterClass };
