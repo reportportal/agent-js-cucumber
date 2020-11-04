@@ -1,3 +1,5 @@
+
+## [5.0.1] - 2020-11-04
 ### Fixed
 - [#66](https://github.com/reportportal/agent-js-cucumber/issues/66) Incorrect calculation of test status
 - Lots of other bugs
