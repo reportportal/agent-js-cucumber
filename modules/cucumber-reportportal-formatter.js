@@ -36,7 +36,8 @@ const createRPFormatterClass = (config) => {
   const documentsStorage = new DocumentStorage();
   const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   const attributesConf = !config.attributes ? [] : config.attributes;
-  const isScenarioBasedStatistics = utils.isScenarioBasedStatistics(config);
+  const isScenarioBasedStatistics =
+    typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
 
   return class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -45,7 +46,6 @@ const createRPFormatterClass = (config) => {
       this.documentsStorage = documentsStorage;
       this.reportportal = reportportal;
       this.attributesConf = attributesConf;
-      this.isScenarioBasedStatistics = isScenarioBasedStatistics;
 
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
 
@@ -95,34 +95,51 @@ const createRPFormatterClass = (config) => {
       if (!this.documentsStorage.isFeatureDataCached(featureUri)) {
         this.documentsStorage.createCachedFeature(featureUri);
 
+        const feature = this.documentsStorage.featureData[featureUri];
         const featureDocument = itemFinders.findFeature(
           this.documentsStorage.gherkinDocuments,
           event,
         );
-        const description = featureDocument.description ? featureDocument.description : featureUri;
+        feature.description = featureDocument.description || featureUri;
         const { name } = featureDocument;
-        const itemAttributes = utils.createAttributes(featureDocument.tags);
-
-        this.context.countTotalScenarios(featureDocument, featureUri);
-
-        // BeforeFeature
-        const featureId = this.reportportal.startTestItem(
-          {
-            name,
-            startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
-            codeRef: utils.formatCodeRef(event.uri, name),
-            description,
-            attributes: itemAttributes,
-          },
-          this.context.launchId,
-        ).tempId;
-
-        this.documentsStorage.featureData[utils.getUri(event.uri)].featureId = featureId;
+        feature.name = name;
+        feature.itemAttributes = utils.createAttributes(featureDocument.tags);
       }
     }
 
     onTestCasePrepared(event) {
+      const featureUri = utils.getUri(event.sourceLocation.uri);
+      const feature = this.documentsStorage.featureData[featureUri];
+      // If this is the first scenario in the feature, start the feature in RP
+      if (!feature.featureId) {
+        feature.featureId = this.reportportal.startTestItem(
+          {
+            name: feature.name,
+            startTime: this.reportportal.helpers.now(),
+            type: isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+            codeRef: utils.formatCodeRef(featureUri, feature.name),
+            description: feature.description,
+            attributes: feature.itemAttributes,
+          },
+          this.context.launchId,
+        ).tempId;
+      }
+      // If this is the first feature in the run, set the currentFeatureUri
+      if (!this.context.currentFeatureUri) {
+        this.context.currentFeatureUri = featureUri;
+      }
+      // If this is a new feature, finish the previous feature in RP.
+      // does not work for the final feature in the run. that is finished in onTestRunFinished
+      if (this.context.currentFeatureUri !== featureUri) {
+        const previousFeature = this.documentsStorage.featureData[this.context.currentFeatureUri];
+        // If this is a new feature, finish the previous feature
+        reportportal.finishTestItem(previousFeature.featureId, {
+          status: previousFeature.featureStatus,
+          endTime: reportportal.helpers.now(),
+        });
+        // Now that the previous feature is finished, assign the new current feature
+        this.context.currentFeatureUri = featureUri;
+      }
       this.context.stepDefinitions = event;
       let hookType = 'Before';
       this.context.stepDefinitions.steps.forEach((step) => {
@@ -171,17 +188,17 @@ const createRPFormatterClass = (config) => {
       }
 
       // BeforeScenario
-      if (this.isScenarioBasedStatistics || event.attemptNumber < 2) {
+      if (isScenarioBasedStatistics || event.attemptNumber < 2) {
         this.context.scenarioId = this.reportportal.startTestItem(
           {
             name,
             startTime: this.reportportal.helpers.now(),
-            type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
+            type: isScenarioBasedStatistics ? 'STEP' : 'TEST',
             description,
             codeRef: utils.formatCodeRef(event.sourceLocation.uri, name),
             parameters: this.context.scenario.parameters,
             attributes: itemAttributes,
-            retry: false,
+            retry: isScenarioBasedStatistics && event.attemptNumber > 1,
           },
           this.context.launchId,
           featureId,
@@ -193,31 +210,23 @@ const createRPFormatterClass = (config) => {
       this.context.stepStatus = STATUSES.FAILED;
       this.context.stepId = null;
 
-      this.context.stepSourceLocation = this.context.stepDefinitions.steps[
-        event.index
-      ];
+      this.context.stepSourceLocation = this.context.stepDefinitions.steps[event.index];
 
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.context.stepSourceLocation.sourceLocation &&
-        this.context.stepSourceLocation.actionLocation.uri.includes(
-          AFTER_HOOK_URI_TO_SKIP,
-        )
+        this.context.stepSourceLocation.actionLocation.uri.includes(AFTER_HOOK_URI_TO_SKIP)
       )
         return;
 
       this.context.step = this.context.findStep(event);
-      this.context.stepDefinition = itemFinders.findStepDefinition(
-        this.context,
-        event,
-      );
+      this.context.stepDefinition = itemFinders.findStepDefinition(this.context, event);
 
       let description;
       let name = this.context.step.text
         ? `${this.context.step.keyword} ${this.context.step.text}`
         : this.context.step.keyword;
 
-      // console.log(this.context.step);
       if (this.context.step.argument) {
         let stepArguments;
         if (this.context.step.argument.content) {
@@ -227,20 +236,27 @@ const createRPFormatterClass = (config) => {
         if (this.context.step.argument.rows) {
           const rows = this.context.step.argument.rows.map((row) =>
             row.cells.map((cell) => {
-              this.context.scenario.parameters.forEach((parameter) => {
-                if (cell.value === `<${parameter.key}>`) {
-                  // eslint-disable-next-line no-param-reassign
-                  cell.value = utils.replaceParameter(cell.value, parameter.key, parameter.value);
-                }
-              });
-              return cell.value;
+              // Added an if statement to only replace step parameters if this is a Scenario Outline
+              let tempStepValue = cell.value;
+              if (this.context.scenario.parameters) {
+                this.context.scenario.parameters.forEach((parameter) => {
+                  if (cell.value.includes(`<${parameter.key}>`)) {
+                    tempStepValue = utils.replaceParameter(
+                      cell.value,
+                      parameter.key,
+                      parameter.value,
+                    );
+                  }
+                });
+              }
+              return tempStepValue;
             }),
           );
           const datatable = new Table(TABLE_CONFIG);
           datatable.push(...rows);
           stepArguments = datatable.toString();
         }
-        if (this.isScenarioBasedStatistics) {
+        if (isScenarioBasedStatistics) {
           name += `\n${stepArguments}`;
         } else {
           description = stepArguments;
@@ -271,8 +287,8 @@ const createRPFormatterClass = (config) => {
           type,
           codeRef,
           parameters: this.context.step.parameters,
-          hasStats: !this.isScenarioBasedStatistics,
-          retry: !this.isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
+          hasStats: !isScenarioBasedStatistics,
+          retry: !isScenarioBasedStatistics && event.testCase.attemptNumber > 1,
         },
         this.context.launchId,
         this.context.scenarioId,
@@ -283,9 +299,7 @@ const createRPFormatterClass = (config) => {
       // skip After Hook added by protractor-cucumber-framework
       if (
         !this.context.stepSourceLocation.sourceLocation &&
-        this.context.stepSourceLocation.actionLocation.uri.includes(
-          AFTER_HOOK_URI_TO_SKIP,
-        )
+        this.context.stepSourceLocation.actionLocation.uri.includes(AFTER_HOOK_URI_TO_SKIP)
       )
         return;
 
@@ -340,7 +354,6 @@ const createRPFormatterClass = (config) => {
             this.context.scenarioStatus = STATUSES.SKIPPED;
           }
 
-          this.context.stepStatus = STATUSES.SKIPPED;
           if (
             this.context.scenarioStatus === STATUSES.STARTED ||
             this.context.scenarioStatus === STATUSES.PASSED
@@ -434,8 +447,7 @@ const createRPFormatterClass = (config) => {
       if (
         event.data &&
         event.data.length &&
-        (this.context.stepStatus === STATUSES.PASSED ||
-          this.context.stepStatus === STATUSES.FAILED)
+        (this.context.stepStatus === STATUSES.PASSED || this.context.stepStatus === STATUSES.FAILED)
       ) {
         const dataObj = utils.getJSON(event.data);
         let itemId = this.context.stepId;
@@ -492,9 +504,7 @@ const createRPFormatterClass = (config) => {
             const request = {
               time: this.reportportal.helpers.now(),
               level:
-                this.context.stepStatus === STATUSES.PASSED
-                  ? LOG_LEVELS.DEBUG
-                  : LOG_LEVELS.ERROR,
+                this.context.stepStatus === STATUSES.PASSED ? LOG_LEVELS.DEBUG : LOG_LEVELS.ERROR,
               message: fileName,
               file: {
                 name: fileName,
@@ -521,10 +531,10 @@ const createRPFormatterClass = (config) => {
     }
 
     onTestCaseFinished(event) {
-      if (!this.isScenarioBasedStatistics && event.result.retried) {
+      if (!isScenarioBasedStatistics && event.result.retried) {
         return;
       }
-      const isFailed = event.result.status.toUpperCase() !== STATUSES.PASSED;
+      const isFailed = event.result.status !== STATUSES.PASSED;
       // ScenarioResult
       this.reportportal.finishTestItem(this.context.scenarioId, {
         status: isFailed ? STATUSES.FAILED : STATUSES.PASSED,
@@ -533,30 +543,24 @@ const createRPFormatterClass = (config) => {
       this.context.scenarioId = null;
       const featureUri = event.sourceLocation.uri;
 
-      if (!event.result.retried) {
-        this.context.scenariosCount[featureUri].done++;
-      }
-
-      const { total, done } = this.context.scenariosCount[featureUri];
-      if (done === total) {
-        const featureStatus =
-          this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
-        this.reportportal.finishTestItem(this.documentsStorage.featureData[featureUri].featureId, {
-          status: featureStatus,
-          endTime: this.reportportal.helpers.now(),
-        });
-      }
+      this.documentsStorage.featureData[featureUri].featureStatus =
+        this.context.failedScenarios[featureUri] > 0 ? STATUSES.FAILED : STATUSES.PASSED;
     }
 
-    onTestRunFinished() {
+    onTestRunFinished(event) {
+      // Finish the final feature in the run
+      const finalFeature = this.documentsStorage.featureData[this.context.currentFeatureUri];
+      reportportal.finishTestItem(finalFeature.featureId, {
+        status: finalFeature.featureStatus,
+        endTime: reportportal.helpers.now(),
+      });
       // AfterFeatures
-      const promise = this.reportportal.getPromiseFinishAllItems(
-        this.context.launchId,
-      );
+      const promise = this.reportportal.getPromiseFinishAllItems(this.context.launchId);
       return promise.then(() => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
             endTime: this.reportportal.helpers.now(),
+            status: event.result.status ? STATUSES.PASSED : STATUSES.FAILED,
           };
 
           if (this.context.launchStatus) {

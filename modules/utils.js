@@ -53,9 +53,6 @@ const createTagComparator = (tagA) => (tagB) =>
   tagB.location.line === tagA.location.line &&
   tagB.location.column === tagA.location.column;
 
-const isScenarioBasedStatistics = (config) =>
-  typeof config.scenarioBasedStatistics === 'boolean' ? config.scenarioBasedStatistics : false;
-
 const formatCodeRef = (pathName, itemName) => {
   const codeRef = pathName.replace(/\\/g, '/');
 
@@ -83,7 +80,7 @@ const getParameters = (header, body) => {
 };
 
 function replaceParameter(originalString, name, value) {
-  return originalString.replace(`<${name}>`, value);
+  return originalString.replace(new RegExp(`<${name}>`, 'g'), value);
 }
 
 const getStepType = (keyword) => {
@@ -108,7 +105,6 @@ module.exports = {
   createTagComparator,
   createAttribute,
   createAttributes,
-  isScenarioBasedStatistics,
   getUri,
   getJSON,
   getStepType,
