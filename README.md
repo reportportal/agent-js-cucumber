@@ -288,8 +288,6 @@ Then(/^I should see my new task in the list$/, function() {
   this.setStatusStopped();
   this.setStatusInterrupted();
   this.setStatusCancelled();
-  this.setStatusInfo();
-  this.setStatusWarn();
 });
 ```
 
@@ -303,8 +301,6 @@ Then(/^I should see my new task in the list$/, function() {
   this.setLaunchStatusStopped();
   this.setLaunchStatusInterrupted();
   this.setLaunchStatusCancelled();
-  this.setLaunchStatusInfo();
-  this.setLaunchStatusWarn();
 });
 ```
 
