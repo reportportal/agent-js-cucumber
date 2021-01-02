@@ -560,7 +560,7 @@ const createRPFormatterClass = (config) => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
             endTime: this.reportportal.helpers.now(),
-            status: event.result.status ? STATUSES.PASSED : STATUSES.FAILED,
+            status: event.result.success ? STATUSES.PASSED : STATUSES.FAILED,
           };
 
           if (this.context.launchStatus) {
