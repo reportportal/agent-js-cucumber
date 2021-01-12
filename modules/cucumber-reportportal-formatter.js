@@ -47,10 +47,11 @@ const createRPFormatterClass = (config) => {
       this.reportportal = reportportal;
       this.attributesConf = attributesConf;
 
-      const { rerun, rerunOf } = options.parsedArgvOptions || {};
+      const { rerun, rerunOf, isLaunchMergeRequired } = options.parsedArgvOptions || {};
 
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
+      this.isLaunchMergeRequired = isLaunchMergeRequired || config.isLaunchMergeRequired;
 
       this.registerListeners(options.eventBroadcaster);
     }
@@ -85,6 +86,7 @@ const createRPFormatterClass = (config) => {
           ],
           rerun: this.isRerun,
           rerunOf: this.rerunOf,
+          isLaunchMergeRequired: this.isLaunchMergeRequired
         });
         this.context.launchId = launch.tempId;
       }
@@ -574,6 +576,7 @@ const createRPFormatterClass = (config) => {
           launchFinishPromise.then(() => {
             this.context.resetContext();
           });
+          this.reportportal.mergeLaunches();
         }
       });
     }
