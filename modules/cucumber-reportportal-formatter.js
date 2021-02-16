@@ -557,8 +557,8 @@ const createRPFormatterClass = (config) => {
         endTime: reportportal.helpers.now(),
       });
       // AfterFeatures
-      this.reportportal.mergeLaunches();
       const promise = this.reportportal.getPromiseFinishAllItems(this.context.launchId);
+      this.reportportal.mergeLaunches();
       return promise.then(() => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
