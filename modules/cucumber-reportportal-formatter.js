@@ -577,8 +577,8 @@ const createRPFormatterClass = (config) => {
             this.context.resetContext();
           });
         }
+        this.reportportal.mergeLaunches();
       });
-      this.reportportal.mergeLaunches();
     }
   };
 };
