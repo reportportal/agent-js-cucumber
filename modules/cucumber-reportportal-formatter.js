@@ -558,7 +558,6 @@ const createRPFormatterClass = (config) => {
       });
       // AfterFeatures
       const promise = this.reportportal.getPromiseFinishAllItems(this.context.launchId);
-      this.reportportal.mergeLaunches();
       return promise.then(() => {
         if (this.context.launchId) {
           const finishLaunchRQ = {
@@ -577,6 +576,7 @@ const createRPFormatterClass = (config) => {
           launchFinishPromise.then(() => {
             this.context.resetContext();
           });
+          this.reportportal.mergeLaunches();
         }
       });
     }
