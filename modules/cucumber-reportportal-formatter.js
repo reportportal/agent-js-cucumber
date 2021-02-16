@@ -574,10 +574,10 @@ const createRPFormatterClass = (config) => {
             finishLaunchRQ,
           ).promise;
           launchFinishPromise.then(() => {
+            this.reportportal.mergeLaunches();
             this.context.resetContext();
           });
         }
-        this.reportportal.mergeLaunches();
       });
     }
   };
