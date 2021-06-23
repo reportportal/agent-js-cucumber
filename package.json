@@ -1,6 +1,6 @@
 {
   "name": "@reportportal/agent-js-cucumber",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Agent that connects cucumber-js with Report Portal",
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=6.x",
