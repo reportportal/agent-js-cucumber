@@ -1,3 +1,8 @@
+### Fixed
+- Launch status calculation
+
+### Updated
+- `@reportportal/client-javascript` version to the latest
 
 ## [5.0.1] - 2020-11-04
 ### Fixed
