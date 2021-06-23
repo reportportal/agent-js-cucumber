@@ -62,13 +62,17 @@ npm install --save-dev @reportportal/agent-js-cucumber
         }
       ],
       "mode": "DEFAULT",
-      "debug": false
+      "debug": false,
+      "restClientConfig": {
+        "timeout": 0
+      }
     }
     ```
 
     `takeScreenshot` - if this option is defined then framework will take screenshot with _protractor or webdriver_ API if step has failed<br/>
     `mode` - Launch mode. Allowable values *DEFAULT* (by default) or *DEBUG*.<br/>
     `debug` - this flag allows seeing the logs of the `client-javascript`. Useful for debugging.
+    `restClientConfig` (optional) - The object with `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, may contain other client options eg. `timeout`.
 
 3. Create Report Portal formatter in a new js file, for example `reportPortalFormatter.js`:
 
