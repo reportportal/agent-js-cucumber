@@ -32,6 +32,9 @@
     "type": "git",
     "url": "git+https://github.com/reportportal/agent-js-cucumber"
   },
+  "files": [
+    "/modules"
+  ],
   "keywords": [
     "cucumber-reporter",
     "reportportal",
