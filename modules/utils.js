@@ -101,6 +101,41 @@ const getStepType = (keyword) => {
   return type;
 };
 
+const findNode = (feature, searchId) => {
+  return feature.children.find((child) => {
+    if (child.rule) {
+      return child.rule.children.find((item) => {
+        if (!item.scenario) return false;
+        return item.scenario.id === searchId;
+      });
+    }
+    if (child.scenario) {
+      return child.scenario.id === searchId;
+    }
+    return null;
+  });
+};
+
+const detectLastScenario = (node, searchId) => {
+  let isLastScenario = false;
+  node.children.forEach((child, index) => {
+    if (child.scenario) {
+      isLastScenario = child.scenario.id === searchId && index === node.children.length - 1;
+    }
+  });
+  return isLastScenario;
+};
+
+const findScenario = (node, searchId) => {
+  const children = node.children.find((child) => {
+    if (child.scenario) {
+      return child.scenario.id === searchId;
+    }
+    return null;
+  });
+  return children.scenario;
+};
+
 module.exports = {
   createTagComparator,
   createAttribute,
@@ -111,4 +146,7 @@ module.exports = {
   getParameters,
   formatCodeRef,
   replaceParameter,
+  findNode,
+  findScenario,
+  detectLastScenario,
 };

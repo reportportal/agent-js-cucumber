@@ -14,14 +14,13 @@
  *  limitations under the License.
  */
 
-const { Formatter } = require('cucumber');
 const ReportPortalClient = require('@reportportal/client-javascript');
 const Table = require('cli-table3');
 const utils = require('./utils');
 const Context = require('./context');
 const DocumentStorage = require('./documents-storage');
-const itemFinders = require('./itemFinders');
 const pjson = require('../package.json');
+const itemFinders = require('./itemFinders');
 const {
   AFTER_HOOK_URI_TO_SKIP,
   RP_ENTITY_LAUNCH,
@@ -30,9 +29,19 @@ const {
   CUCUMBER_EVENTS,
   RP_EVENTS,
   TABLE_CONFIG,
+  CUCUMBER_MESSAGES,
 } = require('./constants');
+const Storage = require('./storage');
 
 const createRPFormatterClass = (config) => {
+  let Formatter;
+  try {
+    // eslint-disable-next-line global-require
+    Formatter = require('@cucumber/cucumber').Formatter;
+  } catch (e) {
+    // eslint-disable-next-line global-require
+    Formatter = require('cucumber').Formatter;
+  }
   const documentsStorage = new DocumentStorage();
   const reportportal = new ReportPortalClient(config, { name: pjson.name, version: pjson.version });
   const attributesConf = !config.attributes ? [] : config.attributes;
@@ -53,6 +62,34 @@ const createRPFormatterClass = (config) => {
       this.rerunOf = rerunOf || config.rerunOf;
 
       this.registerListeners(options.eventBroadcaster);
+
+      // NEW API
+      this.storage = new Storage();
+      options.eventBroadcaster.on('envelope', (event) => {
+        const [key] = Object.keys(event);
+        switch (key) {
+          case CUCUMBER_MESSAGES.GHERKIN_DOCUMENT:
+            return this.onGherkinDocumentEvent(event[key]);
+          case CUCUMBER_MESSAGES.PICKLE:
+            return this.onPickleEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_RUN_STARTED:
+            return this.onTestRunStartedEvent();
+          case CUCUMBER_MESSAGES.TEST_CASE:
+            return this.onTestCaseEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_CASE_STARTED:
+            return this.onTestCaseStartedEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_STEP_STARTED:
+            return this.onTestStepStartedEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_STEP_FINISHED:
+            return this.onTestStepFinishedEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_CASE_FINISHED:
+            return this.onTestCaseFinishedEvent(event[key]);
+          case CUCUMBER_MESSAGES.TEST_RUN_FINISHED:
+            return this.onTestRunFinishedEvent(event[key]);
+          default:
+            return null;
+        }
+      });
     }
 
     registerListeners(eventBroadcaster) {
@@ -68,6 +105,241 @@ const createRPFormatterClass = (config) => {
       );
       eventBroadcaster.on(CUCUMBER_EVENTS.TEST_CASE_FINISHED, this.onTestCaseFinished.bind(this));
       eventBroadcaster.on(CUCUMBER_EVENTS.TEST_RUN_FINISHED, this.onTestRunFinished.bind(this));
+    }
+
+    onGherkinDocumentEvent(data) {
+      this.storage.setDocument(data);
+    }
+
+    onPickleEvent(data) {
+      this.storage.setPickle(data);
+    }
+
+    onTestRunStartedEvent() {
+      const startLaunchData = {
+        name: config.launch,
+        startTime: this.reportportal.helpers.now(),
+        description: !config.description ? '' : config.description,
+        attributes: [
+          ...this.attributesConf,
+          { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
+        ],
+        rerun: this.isRerun,
+        rerunOf: this.rerunOf,
+      };
+      const { tempId } = this.reportportal.startLaunch(startLaunchData);
+      this.storage.setLaunchTempId(tempId);
+    }
+
+    onTestCaseEvent(data) {
+      const { id: testCaseId, pickleId, testSteps } = data;
+      this.storage.setTestCase(data);
+
+      // prepare steps
+      const stepsMap = {};
+      testSteps.forEach((step) => {
+        const { pickleStepId, id } = step;
+        // skip hookId
+        if (pickleStepId) {
+          const { steps } = this.storage.getPickle(pickleId);
+          stepsMap[id] = steps.find((item) => item.id === pickleStepId);
+        }
+      });
+      this.storage.setSteps(testCaseId, stepsMap);
+    }
+
+    onTestCaseStartedEvent(data) {
+      const { id, testCaseId } = data;
+      this.storage.setTestCaseStartedId(id, testCaseId);
+      const { pickleId } = this.storage.getTestCase(testCaseId);
+      const {
+        uri: pickleFeatureUri,
+        astNodeIds: [scenarioId],
+      } = this.storage.getPickle(pickleId);
+      const currentFeatureUri = this.storage.getCurrentFeatureUri();
+      const feature = this.storage.getFeature(pickleFeatureUri);
+      const launchTempId = this.storage.getLaunchTempId();
+
+      // start FEATURE if no currentFeatureUri or new feature
+      // else finish old one
+      if (!currentFeatureUri && currentFeatureUri !== pickleFeatureUri) {
+        this.storage.setCurrentFeatureUri(pickleFeatureUri);
+        const suiteData = {
+          name: feature.name,
+          startTime: this.reportportal.helpers.now(),
+          type: 'SUITE',
+          description: feature.description.trim(),
+          attributes: utils.createAttributes(feature.tags),
+        };
+        const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
+        this.storage.setFeatureTempId(tempId);
+      } else {
+        const tempFeatureId = this.storage.getFeatureTempId();
+        this.reportportal.finishTestItem(tempFeatureId, {});
+      }
+
+      // current feature node rule || scenario
+      const currentNode = utils.findNode(feature, scenarioId);
+
+      let scenario;
+      let ruleTempId = this.storage.getRuleTempId();
+      if (currentNode.rule && !ruleTempId) {
+        // start RULE
+        const { rule } = currentNode;
+        const testData = {
+          startTime: this.reportportal.helpers.now(),
+          type: 'SUITE',
+          name: rule.name,
+          description: rule.description,
+          attributes: utils.createAttributes(rule.tags),
+        };
+        const parentId = this.storage.getFeatureTempId();
+        const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
+        ruleTempId = tempId;
+        this.storage.setRuleTempId(tempId);
+
+        scenario = utils.findScenario(rule, scenarioId);
+        const isLastScenario = utils.detectLastScenario(currentNode.rule, scenarioId);
+        this.storage.setLastScenario(isLastScenario);
+      } else if (currentNode.rule && ruleTempId) {
+        scenario = utils.findScenario(currentNode.rule, scenarioId);
+        const isLastScenario = utils.detectLastScenario(currentNode.rule, scenarioId);
+        this.storage.setLastScenario(isLastScenario);
+      } else {
+        scenario = currentNode.scenario;
+      }
+
+      const testData = {
+        startTime: this.reportportal.helpers.now(),
+        type: 'TEST',
+        name: scenario.name,
+        description: scenario.description,
+        attributes: utils.createAttributes(scenario.tags),
+      };
+
+      const parentId = ruleTempId || this.storage.getFeatureTempId();
+      const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
+      this.storage.setScenarioTempId(tempId);
+    }
+
+    onTestStepStartedEvent(data) {
+      const { testCaseStartedId, testStepId } = data;
+      const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+      const step = this.storage.getStep(testCaseId, testStepId);
+
+      // start step
+      if (step) {
+        const stepData = {
+          name: step.text,
+          startTime: this.reportportal.helpers.now(),
+          type: 'STEP',
+        };
+        const launchTempId = this.storage.getLaunchTempId();
+        const parentId = this.storage.getScenarioTempId();
+        const { tempId } = this.reportportal.startTestItem(stepData, launchTempId, parentId);
+        this.storage.setStepTempId(tempId);
+      }
+    }
+
+    onTestStepFinishedEvent(data) {
+      const { testCaseStartedId, testStepId, testStepResult } = data;
+      const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+      const step = this.storage.getStep(testCaseId, testStepId);
+      const tempStepId = this.storage.getStepTempId();
+      let status;
+
+      switch (testStepResult.status.toLowerCase()) {
+        case STATUSES.PASSED: {
+          status = STATUSES.PASSED;
+          break;
+        }
+        case STATUSES.PENDING: {
+          this.reportportal.sendLog(tempStepId, {
+            time: this.reportportal.helpers.now(),
+            level: 'WARN',
+            message: "This step is marked as 'pending'",
+          });
+          status = STATUSES.FAILED;
+          break;
+        }
+        case STATUSES.UNDEFINED: {
+          this.reportportal.sendLog(tempStepId, {
+            time: this.reportportal.helpers.now(),
+            level: 'ERROR',
+            message: 'There is no step definition found. Please verify and implement it.',
+          });
+          status = STATUSES.FAILED;
+          break;
+        }
+        case STATUSES.AMBIGUOUS: {
+          this.reportportal.sendLog(tempStepId, {
+            time: this.reportportal.helpers.now(),
+            level: 'ERROR',
+            message:
+              'There are more than one step implementation. Please verify and reimplement it.',
+          });
+          status = STATUSES.FAILED;
+          break;
+        }
+        case STATUSES.SKIPPED: {
+          status = STATUSES.SKIPPED;
+          break;
+        }
+        case STATUSES.FAILED: {
+          status = STATUSES.FAILED;
+          this.reportportal.sendLog(tempStepId, {
+            time: this.reportportal.helpers.now(),
+            level: 'ERROR',
+            message: testStepResult.message,
+          });
+          break;
+        }
+        default:
+          break;
+      }
+
+      if (step) {
+        this.reportportal.finishTestItem(tempStepId, {
+          status: status || testStepResult.status,
+          endTime: this.reportportal.helpers.now(),
+        });
+      }
+
+      this.storage.setStepTempId(null);
+    }
+
+    onTestCaseFinishedEvent(data) {
+      const { testCaseStartedId } = data;
+      const scenarioTempId = this.storage.getScenarioTempId();
+      this.reportportal.finishTestItem(scenarioTempId, {});
+
+      // finish RULE if it's exist and if it's last scenario
+      const isLastScenario = this.storage.getLastScenario();
+      const ruleTempId = this.storage.getRuleTempId();
+      if (ruleTempId && isLastScenario) {
+        this.reportportal.finishTestItem(ruleTempId, {});
+        this.storage.setRuleTempId(null);
+        this.storage.setLastScenario(false);
+      }
+
+      const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+      this.storage.removeTestCaseStartedId(testCaseStartedId);
+      this.storage.removeSteps(testCaseId);
+      this.storage.removeTestCase(testCaseId);
+      this.storage.setScenarioTempId(null);
+    }
+
+    onTestRunFinishedEvent() {
+      const featureTempId = this.storage.getFeatureTempId();
+      this.reportportal.finishTestItem(featureTempId, {});
+
+      const launchId = this.storage.getLaunchTempId();
+      this.reportportal.getPromiseFinishAllItems(launchId).then(() => {
+        this.reportportal.finishLaunch(launchId, {});
+      });
+      this.storage.setLaunchTempId(null);
+      this.storage.setCurrentFeatureUri(null);
+      this.storage.setFeatureTempId(null);
     }
 
     onGherkinDocument(event) {
