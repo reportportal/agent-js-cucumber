@@ -57,7 +57,7 @@ module.exports = class Storage {
   getFeature(uri) {
     const document = this.getDocument(uri);
 
-    return document.feature;
+    return document && document.feature;
   }
 
   setPickle(pickle) {
@@ -102,7 +102,7 @@ module.exports = class Storage {
 
   getStep(testCaseId, testStepId) {
     const steps = this.steps.get(testCaseId);
-    return steps[testStepId];
+    return steps && steps[testStepId];
   }
 
   setFeatureTempId(value) {
