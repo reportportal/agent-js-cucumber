@@ -63,6 +63,7 @@ const CUCUMBER_MESSAGES = {
   TEST_CASE_STARTED: 'testCaseStarted',
   TEST_CASE_FINISHED: 'testCaseFinished',
   TEST_STEP_STARTED: 'testStepStarted',
+  ATTACHMENT: 'attachment',
   TEST_STEP_FINISHED: 'testStepFinished',
   TEST_RUN_FINISHED: 'testRunFinished',
 };

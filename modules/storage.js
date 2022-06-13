@@ -105,6 +105,13 @@ module.exports = class Storage {
     return steps[testStepId];
   }
 
+  updateStep(testCaseId, testStepId, data) {
+    const steps = this.steps.get(testCaseId);
+    const newStepsData = { ...steps };
+    newStepsData[testStepId] = { ...newStepsData[testStepId], ...data };
+    this.steps.set(testCaseId, newStepsData);
+  }
+
   setFeatureTempId(value) {
     this.featureTempId = value;
   }
