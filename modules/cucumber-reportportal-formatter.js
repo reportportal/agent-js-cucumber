@@ -65,6 +65,8 @@ const createRPFormatterClass = (config) => {
 
       // NEW API
       this.storage = new Storage();
+      this.customLaunchStatus = null;
+
       options.eventBroadcaster.on('envelope', (event) => {
         const [key] = Object.keys(event);
         switch (key) {
@@ -80,6 +82,8 @@ const createRPFormatterClass = (config) => {
             return this.onTestCaseStartedEvent(event[key]);
           case CUCUMBER_MESSAGES.TEST_STEP_STARTED:
             return this.onTestStepStartedEvent(event[key]);
+          case CUCUMBER_MESSAGES.ATTACHMENT:
+            return this.onTestStepAttachmentEvent(event[key]);
           case CUCUMBER_MESSAGES.TEST_STEP_FINISHED:
             return this.onTestStepFinishedEvent(event[key]);
           case CUCUMBER_MESSAGES.TEST_CASE_FINISHED:
@@ -241,6 +245,49 @@ const createRPFormatterClass = (config) => {
       }
     }
 
+    onTestStepAttachmentEvent(data) {
+      if (data) {
+        const { testStepId, testCaseStartedId } = data;
+        const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+        const step = this.storage.getStep(testCaseId, testStepId);
+        const dataObj = utils.getJSON(data.body);
+
+        switch (data.mediaType) {
+          case RP_EVENTS.TEST_CASE_ID: {
+            this.storage.updateStep(testCaseId, testStepId, dataObj);
+            break;
+          }
+          case RP_EVENTS.ATTRIBUTES: {
+            const savedAttributes = step.attributes || [];
+            this.storage.updateStep(testCaseId, testStepId, {
+              attributes: savedAttributes.concat(dataObj.attributes),
+            });
+            break;
+          }
+          case RP_EVENTS.DESCRIPTION: {
+            const savedDescription = step.description || '';
+            this.storage.updateStep(testCaseId, testStepId, {
+              description: savedDescription
+                ? `${savedDescription}<br/>${dataObj.description}`
+                : dataObj.description,
+            });
+            break;
+          }
+          case RP_EVENTS.STATUS: {
+            if (dataObj.entity !== RP_ENTITY_LAUNCH) {
+              this.storage.updateStep(testCaseId, testStepId, dataObj);
+            } else {
+              this.customLaunchStatus = dataObj.status;
+            }
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      }
+    }
+
     onTestStepFinishedEvent(data) {
       const { testCaseStartedId, testStepId, testStepResult } = data;
       const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
@@ -299,8 +346,13 @@ const createRPFormatterClass = (config) => {
       }
 
       if (step) {
+        const { attributes, description, testCaseId: customTestCaseId } = step;
+        status = step.status || status || testStepResult.status;
         this.reportportal.finishTestItem(tempStepId, {
-          status: status || testStepResult.status,
+          ...(status && { status }),
+          ...(attributes && { attributes }),
+          ...(description && { description }),
+          ...(customTestCaseId && { testCaseId: customTestCaseId }),
           endTime: this.reportportal.helpers.now(),
         });
       }
@@ -334,12 +386,19 @@ const createRPFormatterClass = (config) => {
       this.reportportal.finishTestItem(featureTempId, {});
 
       const launchId = this.storage.getLaunchTempId();
-      this.reportportal.getPromiseFinishAllItems(launchId).then(() => {
-        this.reportportal.finishLaunch(launchId, {});
-      });
-      this.storage.setLaunchTempId(null);
-      this.storage.setCurrentFeatureUri(null);
-      this.storage.setFeatureTempId(null);
+      this.reportportal
+        .getPromiseFinishAllItems(launchId)
+        .then(() => {
+          this.reportportal.finishLaunch(launchId, {
+            ...(this.customLaunchStatus && { status: this.customLaunchStatus }),
+          });
+        })
+        .then(() => {
+          this.storage.setLaunchTempId(null);
+          this.storage.setCurrentFeatureUri(null);
+          this.storage.setFeatureTempId(null);
+          this.customLaunchStatus = null;
+        });
     }
 
     onGherkinDocument(event) {
