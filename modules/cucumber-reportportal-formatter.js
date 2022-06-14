@@ -172,7 +172,7 @@ const createRPFormatterClass = (config) => {
           name: feature.name,
           startTime: this.reportportal.helpers.now(),
           type: 'SUITE',
-          description: feature.description.trim(),
+          description: (feature.description || '').trim(),
           attributes: utils.createAttributes(feature.tags),
         };
         const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
