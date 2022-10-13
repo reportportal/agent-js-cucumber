@@ -281,7 +281,52 @@ const createRPFormatterClass = (config) => {
             }
             break;
           }
+          case 'text/plain': {
+            const request = {
+              time: this.reportportal.helpers.now(),
+            };
+            let tempStepId = this.storage.getStepTempId();
+
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
+                tempStepId = this.storage.getLaunchTempId();
+              }
+            } else {
+              request.level = LOG_LEVELS.DEBUG;
+              request.message = data.body;
+            }
+            this.reportportal.sendLog(tempStepId, request);
+            break;
+          }
           default: {
+            const fileName = 'file'; // TODO
+            const request = {
+              time: this.reportportal.helpers.now(),
+              level:
+                this.context.stepStatus === STATUSES.PASSED ? LOG_LEVELS.DEBUG : LOG_LEVELS.ERROR,
+              message: fileName,
+              file: {
+                name: fileName,
+              },
+            };
+            let tempStepId = this.storage.getStepTempId();
+
+            if (dataObj) {
+              request.level = dataObj.level;
+              request.message = dataObj.message;
+              request.file.name = dataObj.message;
+              if (dataObj.entity === RP_ENTITY_LAUNCH) {
+                tempStepId = this.storage.getLaunchTempId();
+              }
+            }
+            const fileObj = {
+              name: fileName,
+              type: data.mediaType,
+              content: (dataObj && dataObj.data) || data.body,
+            };
+            this.reportportal.sendLog(tempStepId, request, fileObj);
             break;
           }
         }
