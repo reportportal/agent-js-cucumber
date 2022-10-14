@@ -15,7 +15,6 @@
  */
 
 const { STATUSES } = require('./constants');
-const itemFinders = require('./itemFinders');
 
 class Context {
   constructor() {
