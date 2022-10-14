@@ -301,7 +301,7 @@ const createRPFormatterClass = (config) => {
             break;
           }
           default: {
-            const fileName = 'file'; // TODO
+            const fileName = 'file'; // TODO: generate human valuable file name here if possible
             const request = {
               time: this.reportportal.helpers.now(),
               level:
