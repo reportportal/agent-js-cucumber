@@ -15,19 +15,12 @@
  */
 
 const { createRPFormatterClass } = require('../modules');
-const {
-  ContextMock,
-  DocumentsStorageMock,
-  RPClientMock,
-  getDefaultConfig,
-  mockedDate,
-} = require('./mocks');
+const { RPClientMock, getDefaultConfig, mockedDate } = require('./mocks');
 const Storage = require('../modules/storage');
 const {
   gherkinDocument,
   uri,
   pickle,
-  pickleId,
   testCase,
   testCaseStarted,
   testCaseId,
@@ -38,8 +31,9 @@ const {
   testCaseFinished,
   testCaseStartedId,
 } = require('./data');
+const { STATUSES } = require('../modules/constants');
 
-describe('', () => {
+describe('cucumber-reportportal-formatter', () => {
   let FormatterClass;
   let formatter;
   const config = getDefaultConfig();
@@ -120,7 +114,9 @@ describe('', () => {
 
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
-      expect(finishTestItem).toHaveBeenCalledWith(tempFeatureId, {});
+      expect(finishTestItem).toHaveBeenCalledWith(tempFeatureId, {
+        endTime: formatter.reportportal.helpers.now(),
+      });
     });
 
     it('start scenario flow', () => {
@@ -194,7 +190,7 @@ describe('', () => {
 
       expect(spyFinishTestItem).toBeCalledWith('testItemId', {
         endTime: mockedDate,
-        status: 'failed',
+        status: STATUSES.FAILED,
       });
       expect(formatter.storage.getStepTempId()).toBe(null);
     });
@@ -216,7 +212,10 @@ describe('', () => {
 
       formatter.onTestCaseFinishedEvent(testCaseFinished);
 
-      expect(spyFinishTestItem).lastCalledWith('testItemId', {});
+      expect(spyFinishTestItem).toBeCalledWith('testItemId', {
+        endTime: formatter.reportportal.helpers.now(),
+        status: STATUSES.FAILED,
+      });
       expect(formatter.storage.getTestCaseId(testCaseStartedId)).toBe(undefined);
       expect(formatter.storage.getStep(testCaseId, testStepId)).toBe(undefined);
       expect(formatter.storage.getTestCase(testCaseId)).toBe(undefined);
@@ -245,7 +244,9 @@ describe('', () => {
 
       await formatter.onTestRunFinishedEvent();
 
-      expect(spyFinishTestItem).lastCalledWith('testItemId', {});
+      expect(spyFinishTestItem).lastCalledWith('testItemId', {
+        endTime: formatter.reportportal.helpers.now(),
+      });
       expect(spyGetPromiseFinishAllItems).toBeCalledWith('tempLaunchId');
 
       expect(formatter.storage.getLaunchTempId()).toBeNull();
