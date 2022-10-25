@@ -1,3 +1,4 @@
+const stripAnsi = require('strip-ansi');
 const Table = require('cli-table3');
 const utils = require('../utils');
 const itemFinders = require('../itemFinders');
@@ -347,9 +348,9 @@ module.exports = {
         this.context.stepStatus = STATUSES.FAILED;
         this.context.scenarioStatus = STATUSES.FAILED;
         this.context.incrementFailedScenariosCount(event.testCase.sourceLocation.uri);
-        const errorMessage = `${
-          this.context.stepDefinition.uri
-        }\n ${event.result.exception.toString()}`;
+        const errorMessage = stripAnsi(
+          `${this.context.stepDefinition.uri}\n ${event.result.exception.toString()}`,
+        );
         this.reportportal.sendLog(this.context.stepId, {
           time: this.reportportal.helpers.now(),
           level: 'ERROR',

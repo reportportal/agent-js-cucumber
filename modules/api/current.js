@@ -1,3 +1,4 @@
+const stripAnsi = require('strip-ansi');
 const pjson = require('../../package.json');
 const utils = require('../utils');
 const {
@@ -308,7 +309,7 @@ module.exports = {
         this.reportportal.sendLog(tempStepId, {
           time: this.reportportal.helpers.now(),
           level: 'ERROR',
-          message: testStepResult.message,
+          message: stripAnsi(testStepResult.message),
         });
         break;
       }
