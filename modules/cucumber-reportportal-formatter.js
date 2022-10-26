@@ -23,14 +23,14 @@ const createRPFormatterClass = (config) => {
   let module;
   try {
     // eslint-disable-next-line global-require
-    module = require('./api/new');
-    // eslint-disable-next-line global-require
     Formatter = require('@cucumber/cucumber').Formatter;
+    // eslint-disable-next-line global-require
+    module = require('./api/current');
   } catch (e) {
     // eslint-disable-next-line global-require
     Formatter = require('cucumber').Formatter;
     // eslint-disable-next-line global-require
-    module = require('./api/old');
+    module = require('./api/deprecated');
   }
 
   return class CucumberReportPortalFormatter extends Formatter {
@@ -52,6 +52,8 @@ const createRPFormatterClass = (config) => {
           : false;
 
       utils.bindToClass(module, this);
+
+      this.init();
     }
   };
 };

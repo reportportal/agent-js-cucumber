@@ -140,11 +140,7 @@ const bindToClass = (module, thisClass) => {
   const that = thisClass;
   Object.entries(module).forEach((method) => {
     const [key, value] = method;
-    if (key === 'init') {
-      value.call(that);
-    } else {
-      that[key] = value.bind(that);
-    }
+    that[key] = value.bind(that);
   });
 };
 
