@@ -236,14 +236,14 @@ describe('', () => {
       formatter.onTestCaseFinishedEvent(testCaseFinished);
     });
 
-    it('finishTestItem, getPromiseFinishAllItems should be called, clean storage', () => {
+    it('finishTestItem, getPromiseFinishAllItems should be called, clean storage', async () => {
       const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
       const spyGetPromiseFinishAllItems = jest.spyOn(
         formatter.reportportal,
         'getPromiseFinishAllItems',
       );
 
-      formatter.onTestRunFinishedEvent();
+      await formatter.onTestRunFinishedEvent();
 
       expect(spyFinishTestItem).lastCalledWith('testItemId', {});
       expect(spyGetPromiseFinishAllItems).toBeCalledWith('tempLaunchId');

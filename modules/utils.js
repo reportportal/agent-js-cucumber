@@ -136,6 +136,14 @@ const findScenario = (node, searchId) => {
   return children.scenario;
 };
 
+const bindToClass = (module, thisClass) => {
+  const that = thisClass;
+  Object.entries(module).forEach((method) => {
+    const [key, value] = method;
+    that[key] = value.bind(that);
+  });
+};
+
 module.exports = {
   createTagComparator,
   createAttribute,
@@ -149,4 +157,5 @@ module.exports = {
   findNode,
   findScenario,
   detectLastScenario,
+  bindToClass,
 };
