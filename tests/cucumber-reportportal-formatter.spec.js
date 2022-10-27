@@ -34,12 +34,9 @@ const {
 const { STATUSES } = require('../modules/constants');
 
 describe('cucumber-reportportal-formatter', () => {
-  let FormatterClass;
-  let formatter;
   const config = getDefaultConfig();
-
-  FormatterClass = createRPFormatterClass(config);
-  formatter = new FormatterClass({
+  const FormatterClass = createRPFormatterClass(config);
+  const formatter = new FormatterClass({
     parsedArgvOptions: {},
     eventBroadcaster: {
       on: () => {},
@@ -115,7 +112,7 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
       expect(finishTestItem).toHaveBeenCalledWith(tempFeatureId, {
-        endTime: formatter.reportportal.helpers.now(),
+        endTime: mockedDate,
       });
     });
 
@@ -213,7 +210,7 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestCaseFinishedEvent(testCaseFinished);
 
       expect(spyFinishTestItem).toBeCalledWith('testItemId', {
-        endTime: formatter.reportportal.helpers.now(),
+        endTime: mockedDate,
         status: STATUSES.FAILED,
       });
       expect(formatter.storage.getTestCaseId(testCaseStartedId)).toBe(undefined);
@@ -245,7 +242,7 @@ describe('cucumber-reportportal-formatter', () => {
       await formatter.onTestRunFinishedEvent();
 
       expect(spyFinishTestItem).lastCalledWith('testItemId', {
-        endTime: formatter.reportportal.helpers.now(),
+        endTime: mockedDate,
       });
       expect(spyGetPromiseFinishAllItems).toBeCalledWith('tempLaunchId');
 
