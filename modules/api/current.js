@@ -99,7 +99,7 @@ module.exports = {
       const suiteData = {
         name: feature.name,
         startTime: this.reportportal.helpers.now(),
-        type: 'SUITE',
+        type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
         description: (feature.description || '').trim(),
         attributes: utils.createAttributes(feature.tags),
       };
@@ -107,7 +107,9 @@ module.exports = {
       this.storage.setFeatureTempId(tempId);
     } else {
       const tempFeatureId = this.storage.getFeatureTempId();
-      this.reportportal.finishTestItem(tempFeatureId, {});
+      this.reportportal.finishTestItem(tempFeatureId, {
+        endTime: this.reportportal.helpers.now(),
+      });
     }
 
     // current feature node rule || scenario
@@ -120,7 +122,7 @@ module.exports = {
       const { rule } = currentNode;
       const testData = {
         startTime: this.reportportal.helpers.now(),
-        type: 'SUITE',
+        type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
         name: rule.name,
         description: rule.description,
         attributes: utils.createAttributes(rule.tags),
@@ -143,7 +145,7 @@ module.exports = {
 
     const testData = {
       startTime: this.reportportal.helpers.now(),
-      type: 'TEST',
+      type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
       name: scenario.name,
       description: scenario.description,
       attributes: utils.createAttributes(scenario.tags),
@@ -164,6 +166,7 @@ module.exports = {
         name: step.text,
         startTime: this.reportportal.helpers.now(),
         type: 'STEP',
+        ...(this.isScenarioBasedStatistics && { hasStats: false }),
       };
       const launchTempId = this.storage.getLaunchTempId();
       const parentId = this.storage.getScenarioTempId();
@@ -329,23 +332,33 @@ module.exports = {
       });
     }
 
+    if (this.isScenarioBasedStatistics && status !== STATUSES.PASSED) {
+      this.storage.updateTestCase(testCaseId, { status: STATUSES.FAILED });
+    }
+
     this.storage.setStepTempId(null);
   },
   onTestCaseFinishedEvent(data) {
     const { testCaseStartedId } = data;
+    const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+    const testCase = this.storage.getTestCase(testCaseId);
     const scenarioTempId = this.storage.getScenarioTempId();
-    this.reportportal.finishTestItem(scenarioTempId, {});
+    this.reportportal.finishTestItem(scenarioTempId, {
+      endTime: this.reportportal.helpers.now(),
+      ...(this.isScenarioBasedStatistics && { status: testCase.status || STATUSES.PASSED }),
+    });
 
     // finish RULE if it's exist and if it's last scenario
     const isLastScenario = this.storage.getLastScenario();
     const ruleTempId = this.storage.getRuleTempId();
     if (ruleTempId && isLastScenario) {
-      this.reportportal.finishTestItem(ruleTempId, {});
+      this.reportportal.finishTestItem(ruleTempId, {
+        endTime: this.reportportal.helpers.now(),
+      });
       this.storage.setRuleTempId(null);
       this.storage.setLastScenario(false);
     }
 
-    const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     this.storage.removeTestCaseStartedId(testCaseStartedId);
     this.storage.removeSteps(testCaseId);
     this.storage.removeTestCase(testCaseId);
@@ -353,7 +366,9 @@ module.exports = {
   },
   onTestRunFinishedEvent() {
     const featureTempId = this.storage.getFeatureTempId();
-    this.reportportal.finishTestItem(featureTempId, {});
+    this.reportportal.finishTestItem(featureTempId, {
+      endTime: this.reportportal.helpers.now(),
+    });
 
     const launchId = this.storage.getLaunchTempId();
     this.reportportal.getPromiseFinishAllItems(launchId).then(() => {

@@ -76,6 +76,12 @@ module.exports = class Storage {
     return this.testCases.get(id);
   }
 
+  updateTestCase(id, data) {
+    const testCase = this.testCases.get(id);
+    const newTestCaseData = { ...testCase, ...data };
+    this.testCases.set(id, newTestCaseData);
+  }
+
   removeTestCase(id) {
     this.testCases.delete(id);
   }
