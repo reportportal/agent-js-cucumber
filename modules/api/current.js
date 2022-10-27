@@ -323,10 +323,13 @@ module.exports = {
     if (step) {
       const { attributes, description, testCaseId: customTestCaseId } = step;
       status = step.status || status || testStepResult.status;
+      const errorMessage =
+        testStepResult.message && `\`\`\`error\n${stripAnsi(testStepResult.message)}\n\`\`\``;
+      const descriptionToSend = errorMessage ? `${description}\n${errorMessage}` : description;
       this.reportportal.finishTestItem(tempStepId, {
         ...(status && { status }),
         ...(attributes && { attributes }),
-        ...(description && { description }),
+        ...(description && { description: descriptionToSend }),
         ...(customTestCaseId && { testCaseId: customTestCaseId }),
         endTime: this.reportportal.helpers.now(),
       });
