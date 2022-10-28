@@ -85,10 +85,11 @@ module.exports = {
         const stepData = stepsData.find((item) => item.id === pickleStepId);
         stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP };
       } else if (hookId) {
+        const isBeforeHook = index === 0;
         const { name } = this.storage.getHook(hookId);
         stepsMap[id] = {
-          text: name || (index === 0 ? 'Before' : 'After'),
-          type: index === 0 ? TEST_ITEM_TYPES.BEFORE_TEST : TEST_ITEM_TYPES.AFTER_TEST,
+          text: name || (isBeforeHook ? 'Before' : 'After'),
+          type: isBeforeHook ? TEST_ITEM_TYPES.BEFORE_TEST : TEST_ITEM_TYPES.AFTER_TEST,
         };
       }
     });
