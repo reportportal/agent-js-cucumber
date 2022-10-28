@@ -57,6 +57,7 @@ const CUCUMBER_EVENTS = {
 
 const CUCUMBER_MESSAGES = {
   GHERKIN_DOCUMENT: 'gherkinDocument',
+  HOOK: 'hook',
   PICKLE: 'pickle',
   TEST_RUN_STARTED: 'testRunStarted',
   TEST_CASE: 'testCase',
@@ -66,6 +67,14 @@ const CUCUMBER_MESSAGES = {
   ATTACHMENT: 'attachment',
   TEST_STEP_FINISHED: 'testStepFinished',
   TEST_RUN_FINISHED: 'testRunFinished',
+};
+
+const TEST_ITEM_TYPES = {
+  SUITE: 'SUITE',
+  STEP: 'STEP',
+  TEST: 'TEST',
+  BEFORE_TEST: 'BEFORE_TEST',
+  AFTER_TEST: 'AFTER_TEST',
 };
 
 const RP_EVENTS = {
@@ -106,4 +115,5 @@ module.exports = {
   RP_EVENTS,
   TABLE_CONFIG,
   CUCUMBER_MESSAGES,
+  TEST_ITEM_TYPES,
 };

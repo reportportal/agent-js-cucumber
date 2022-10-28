@@ -7,6 +7,7 @@ const {
   LOG_LEVELS,
   STATUSES,
   CUCUMBER_MESSAGES,
+  TEST_ITEM_TYPES,
 } = require('../constants');
 const Storage = require('../storage');
 
@@ -22,6 +23,8 @@ module.exports = {
           return this.onGherkinDocumentEvent(event[key]);
         case CUCUMBER_MESSAGES.PICKLE:
           return this.onPickleEvent(event[key]);
+        case CUCUMBER_MESSAGES.HOOK:
+          return this.onHookEvent(event[key]);
         case CUCUMBER_MESSAGES.TEST_RUN_STARTED:
           return this.onTestRunStartedEvent();
         case CUCUMBER_MESSAGES.TEST_CASE:
@@ -45,6 +48,10 @@ module.exports = {
   },
   onGherkinDocumentEvent(data) {
     this.storage.setDocument(data);
+  },
+  onHookEvent(data) {
+    const { id } = data;
+    this.storage.setHook(id, data);
   },
   onPickleEvent(data) {
     this.storage.setPickle(data);
@@ -70,12 +77,20 @@ module.exports = {
 
     // prepare steps
     const stepsMap = {};
-    testSteps.forEach((step) => {
-      const { pickleStepId, id } = step;
-      // skip hookId
+    testSteps.forEach((step, index) => {
+      const { pickleStepId, id, hookId } = step;
+
       if (pickleStepId) {
-        const { steps } = this.storage.getPickle(pickleId);
-        stepsMap[id] = steps.find((item) => item.id === pickleStepId);
+        const { steps: stepsData } = this.storage.getPickle(pickleId);
+        const stepData = stepsData.find((item) => item.id === pickleStepId);
+        stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP };
+      } else if (hookId) {
+        const isBeforeHook = index === 0;
+        const { name } = this.storage.getHook(hookId);
+        stepsMap[id] = {
+          text: name || (isBeforeHook ? 'Before' : 'After'),
+          type: isBeforeHook ? TEST_ITEM_TYPES.BEFORE_TEST : TEST_ITEM_TYPES.AFTER_TEST,
+        };
       }
     });
     this.storage.setSteps(testCaseId, stepsMap);
@@ -99,7 +114,7 @@ module.exports = {
       const suiteData = {
         name: feature.name,
         startTime: this.reportportal.helpers.now(),
-        type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+        type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
         description: (feature.description || '').trim(),
         attributes: utils.createAttributes(feature.tags),
       };
@@ -122,7 +137,7 @@ module.exports = {
       const { rule } = currentNode;
       const testData = {
         startTime: this.reportportal.helpers.now(),
-        type: this.isScenarioBasedStatistics ? 'TEST' : 'SUITE',
+        type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
         name: rule.name,
         description: rule.description,
         attributes: utils.createAttributes(rule.tags),
@@ -145,7 +160,7 @@ module.exports = {
 
     const testData = {
       startTime: this.reportportal.helpers.now(),
-      type: this.isScenarioBasedStatistics ? 'STEP' : 'TEST',
+      type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
       name: scenario.name,
       description: scenario.description,
       attributes: utils.createAttributes(scenario.tags),
@@ -165,7 +180,7 @@ module.exports = {
       const stepData = {
         name: step.text,
         startTime: this.reportportal.helpers.now(),
-        type: 'STEP',
+        type: step.type,
         ...(this.isScenarioBasedStatistics && { hasStats: false }),
       };
       const launchTempId = this.storage.getLaunchTempId();
@@ -179,7 +194,6 @@ module.exports = {
       const { testStepId, testCaseStartedId } = data;
       const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
       const step = this.storage.getStep(testCaseId, testStepId);
-      if (!step) return;
       const dataObj = utils.getJSON(data.body);
 
       switch (data.mediaType) {
@@ -267,7 +281,6 @@ module.exports = {
     const { testCaseStartedId, testStepId, testStepResult } = data;
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const step = this.storage.getStep(testCaseId, testStepId);
-    if (!step) return;
     const tempStepId = this.storage.getStepTempId();
     let status;
 

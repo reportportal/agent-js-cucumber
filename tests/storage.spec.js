@@ -32,6 +32,8 @@ const {
   scenarioTempId,
   stepTempId,
   ruleTempId,
+  hookId,
+  hook,
 } = require('./data');
 
 describe('test Storage', () => {
@@ -70,10 +72,23 @@ describe('test Storage', () => {
     expect(storage.getPickle(pickleId)).toEqual(pickle);
   });
 
+  it('set/getHook', () => {
+    storage.setHook(hookId, hook);
+
+    expect(storage.getHook(hookId)).toEqual(hook);
+  });
+
   it('set/getTestCase', () => {
     storage.setTestCase(testCase);
 
     expect(storage.getTestCase(testCaseId)).toEqual(testCase);
+  });
+
+  it('updateTestCase', () => {
+    const newData = { newField: true };
+    storage.updateTestCase(testCaseId, newData);
+
+    expect(storage.getTestCase(testCaseId)).toMatchObject(newData);
   });
 
   it('removeTestCase', () => {
@@ -111,6 +126,16 @@ describe('test Storage', () => {
     storage.removeSteps(testCaseId);
 
     expect(storage.getStep(testCaseId, testStepId)).toBeUndefined();
+  });
+
+  it('updateStep', () => {
+    const newData = { newStepField: true };
+    storage.setSteps(testCaseId, {
+      [testStepId]: step,
+    });
+    storage.updateStep(testCaseId, testStepId, newData);
+
+    expect(storage.getStep(testCaseId, testStepId)).toMatchObject(newData);
   });
 
   it('set/getFeatureTempId', () => {

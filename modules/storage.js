@@ -19,6 +19,7 @@ module.exports = class Storage {
     this.launchTempId = null;
     this.documents = new Map();
     this.pickles = new Map();
+    this.hooks = new Map();
     this.testCases = new Map();
     this.testCaseStartedIds = new Map();
     this.steps = new Map();
@@ -66,6 +67,14 @@ module.exports = class Storage {
 
   getPickle(id) {
     return this.pickles.get(id);
+  }
+
+  setHook(id, data) {
+    this.hooks.set(id, data);
+  }
+
+  getHook(id) {
+    return this.hooks.get(id);
   }
 
   setTestCase(testCase) {
