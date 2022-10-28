@@ -52,6 +52,11 @@ const pickle = {
   name: 'Given and expected value are equal',
   steps: [step],
 };
+const hookId = '2b9c9732-acbd-4fa0-8408-42875800d92e';
+const hook = {
+  id: hookId,
+  name: 'Hook name',
+};
 const testCaseId = '16c505eb-433e-496a-82d8-7799f5dd99ce';
 const testStepId = '635a880a-73c7-440d-9c28-eee5d0353339';
 const testCase = {
@@ -106,6 +111,8 @@ module.exports = {
   pickleId,
   uri,
   pickle,
+  hookId,
+  hook,
   testCase,
   testCaseId,
   testCaseStarted,
