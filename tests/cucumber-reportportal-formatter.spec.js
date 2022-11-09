@@ -31,7 +31,7 @@ const {
   testCaseFinished,
   testCaseStartedId,
 } = require('./data');
-const { STATUSES } = require('../modules/constants');
+const { STATUSES, TEST_ITEM_TYPES } = require('../modules/constants');
 
 describe('cucumber-reportportal-formatter', () => {
   const config = getDefaultConfig();
@@ -74,12 +74,12 @@ describe('cucumber-reportportal-formatter', () => {
 
   describe('onTestCaseEvent', () => {
     it('should set steps to storage under testCaseId', () => {
-      const expectedRes = pickle.steps[0];
+      const expectedRes = { ...pickle.steps[0], type: TEST_ITEM_TYPES.STEP };
 
       formatter.storage.setPickle(pickle);
       formatter.onTestCaseEvent(testCase);
 
-      expect(formatter.storage.getStep(testCase.id, testStepId)).toBe(expectedRes);
+      expect(formatter.storage.getStep(testCase.id, testStepId)).toEqual(expectedRes);
     });
   });
 
