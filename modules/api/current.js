@@ -77,7 +77,7 @@ module.exports = {
       ...this.attributesConf,
       { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
     ];
-    if (this.skippedIssue === false) {
+    if (this.config.skippedIssue === false) {
       const skippedIssueAttribute = { key: 'skippedIssue', value: 'false', system: true };
       attributes.push(skippedIssueAttribute);
     }
@@ -360,7 +360,7 @@ module.exports = {
       const errorMessage =
         testStepResult.message && `\`\`\`error\n${stripAnsi(testStepResult.message)}\n\`\`\``;
       const descriptionToSend = errorMessage ? `${description}\n${errorMessage}` : description;
-      const withoutIssue = status === STATUSES.SKIPPED && this.skippedIssue === false;
+      const withoutIssue = status === STATUSES.SKIPPED && this.config.skippedIssue === false;
       this.reportportal.finishTestItem(tempStepId, {
         ...(status && { status }),
         ...(attributes && { attributes }),

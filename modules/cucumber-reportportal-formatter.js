@@ -50,7 +50,6 @@ const createRPFormatterClass = (config) => {
         typeof this.config.scenarioBasedStatistics === 'boolean'
           ? this.config.scenarioBasedStatistics
           : false;
-      this.skippedIssue = config.skippedIssue;
 
       utils.bindToClass(module, this);
 
