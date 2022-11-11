@@ -1,3 +1,19 @@
+/*
+ *  Copyright 2022 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 const stripAnsi = require('strip-ansi');
 const pjson = require('../../package.json');
 const utils = require('../utils');
@@ -57,14 +73,19 @@ module.exports = {
     this.storage.setPickle(data);
   },
   onTestRunStartedEvent() {
+    const attributes = [
+      ...this.attributesConf,
+      { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
+    ];
+    if (this.config.skippedIssue === false) {
+      const skippedIssueAttribute = { key: 'skippedIssue', value: 'false', system: true };
+      attributes.push(skippedIssueAttribute);
+    }
     const startLaunchData = {
       name: this.config.launch,
       startTime: this.reportportal.helpers.now(),
       description: this.config.description || '',
-      attributes: [
-        ...this.attributesConf,
-        { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
-      ],
+      attributes,
       rerun: this.isRerun,
       rerunOf: this.rerunOf,
     };
@@ -339,11 +360,13 @@ module.exports = {
       const errorMessage =
         testStepResult.message && `\`\`\`error\n${stripAnsi(testStepResult.message)}\n\`\`\``;
       const descriptionToSend = errorMessage ? `${description}\n${errorMessage}` : description;
+      const withoutIssue = status === STATUSES.SKIPPED && this.config.skippedIssue === false;
       this.reportportal.finishTestItem(tempStepId, {
         ...(status && { status }),
         ...(attributes && { attributes }),
         ...(description && { description: descriptionToSend }),
         ...(customTestCaseId && { testCaseId: customTestCaseId }),
+        ...(withoutIssue && { issue: { issueType: 'NOT_ISSUE' } }),
         endTime: this.reportportal.helpers.now(),
       });
     }
