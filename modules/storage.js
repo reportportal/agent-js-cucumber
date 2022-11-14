@@ -23,6 +23,7 @@ module.exports = class Storage {
     this.testCases = new Map();
     this.testCaseStartedIds = new Map();
     this.steps = new Map();
+    this.parameters = new Map();
     this.currentFeatureUri = null;
     this.featureTempId = null;
     this.ruleTempId = null;
@@ -125,6 +126,14 @@ module.exports = class Storage {
     const newStepsData = { ...steps };
     newStepsData[testStepId] = { ...newStepsData[testStepId], ...data };
     this.steps.set(testCaseId, newStepsData);
+  }
+
+  setParameters(id, data) {
+    this.parameters.set(id, data);
+  }
+
+  getParameters(id) {
+    return this.parameters.get(id);
   }
 
   setFeatureTempId(value) {

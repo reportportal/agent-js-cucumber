@@ -144,6 +144,25 @@ const bindToClass = (module, thisClass) => {
   });
 };
 
+const collectParams = ({ tableHeader, tableBody }) => {
+  const { cells: headerCells } = tableHeader;
+  return tableBody.reduce((map, row) => {
+    const { id, cells: rowCells } = row;
+
+    const rowData = rowCells.reduce((acc, cell, i) => {
+      return {
+        ...acc,
+        [id]: [...(acc[id] || []), { key: headerCells[i].value, value: cell.value }],
+      };
+    }, {});
+
+    return {
+      ...map,
+      ...rowData,
+    };
+  }, {});
+};
+
 module.exports = {
   createTagComparator,
   createAttribute,
@@ -158,4 +177,5 @@ module.exports = {
   findScenario,
   detectLastScenario,
   bindToClass,
+  collectParams,
 };

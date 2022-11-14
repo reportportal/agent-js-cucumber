@@ -122,7 +122,7 @@ module.exports = {
     const { pickleId } = this.storage.getTestCase(testCaseId);
     const {
       uri: pickleFeatureUri,
-      astNodeIds: [scenarioId],
+      astNodeIds: [scenarioId, parametersId],
     } = this.storage.getPickle(pickleId);
     const currentFeatureUri = this.storage.getCurrentFeatureUri();
     const feature = this.storage.getFeature(pickleFeatureUri);
@@ -187,6 +187,15 @@ module.exports = {
       attributes: utils.createAttributes(scenario.tags),
     };
 
+    if (parametersId) {
+      const [{ tableHeader, tableBody }] = scenario.examples;
+      const params = utils.collectParams({ tableHeader, tableBody });
+      Object.keys(params).forEach((paramKey) => {
+        this.storage.setParameters(paramKey, params[paramKey]);
+      });
+      testData.parameters = this.storage.getParameters(parametersId);
+    }
+
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
     this.storage.setScenarioTempId(tempId);
@@ -204,6 +213,19 @@ module.exports = {
         type: step.type,
         ...(this.isScenarioBasedStatistics && { hasStats: false }),
       };
+
+      if (!this.isScenarioBasedStatistics && step.astNodeIds && step.astNodeIds.length > 1) {
+        const testCase = this.storage.getTestCase(testCaseId);
+        const { testSteps } = testCase;
+        const testStep = testSteps.find((item) => item.id === testStepId);
+        const argumentsMap = testStep.stepMatchArgumentsLists[0].stepMatchArguments.map((arg) =>
+          arg.group.value.slice(1, -1),
+        );
+        const parametersId = step.astNodeIds[1];
+        const params = this.storage.getParameters(parametersId);
+        stepData.parameters = params.filter((param) => argumentsMap.includes(param.value));
+      }
+
       const launchTempId = this.storage.getLaunchTempId();
       const parentId = this.storage.getScenarioTempId();
       const { tempId } = this.reportportal.startTestItem(stepData, launchTempId, parentId);
