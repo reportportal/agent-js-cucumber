@@ -30,6 +30,9 @@ const {
   testStepFinished,
   testCaseFinished,
   testCaseStartedId,
+  feature,
+  scenario,
+  step,
 } = require('./data');
 const { STATUSES, TEST_ITEM_TYPES } = require('../modules/constants');
 
@@ -46,6 +49,10 @@ describe('cucumber-reportportal-formatter', () => {
   beforeEach(() => {
     formatter.reportportal = new RPClientMock();
     formatter.storage = new Storage();
+  });
+
+  afterEach(() => {
+    formatter.codeRefIndexesMap.clear();
   });
 
   describe('onGherkinDocumentEvent', () => {
@@ -138,9 +145,10 @@ describe('cucumber-reportportal-formatter', () => {
         {
           attributes: [],
           description: undefined,
-          name: 'scenario name',
+          name: scenario.name,
           startTime: mockedDate,
           type: 'TEST',
+          codeRef: `${uri}/${feature.name}/${scenario.name}`,
         },
         'tempLaunchId',
         'testItemId',
@@ -163,7 +171,12 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestStepStartedEvent(testStepStarted);
 
       expect(spyStartTestItem).lastCalledWith(
-        { name: 'I put "true"', startTime: mockedDate, type: 'STEP' },
+        {
+          name: step.text,
+          startTime: mockedDate,
+          type: 'STEP',
+          codeRef: `${uri}/${feature.name}/${scenario.name}/${step.text}`,
+        },
         'tempLaunchId',
         'testItemId',
       );
