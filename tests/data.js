@@ -17,17 +17,18 @@
 const launchTempId = 'tempId';
 const uri = 'features/statuses/statuses.feature';
 const scenarioId = '1957ea93-e4de-4895-86e8-acb857b5b069';
+const scenario = { id: scenarioId, name: 'scenario name' };
 const feature = {
   keyword: 'Feature',
   name: 'statuses',
   description: '',
-  children: [{ scenario: { id: scenarioId, name: 'scenario name' } }],
+  children: [{ scenario }],
 };
 const featureWithRule = {
   keyword: 'Feature',
   name: 'statuses',
   description: '',
-  children: [{ rule: { children: [{ scenario: { id: scenarioId, name: 'scenario name' } }] } }],
+  children: [{ rule: { children: [{ scenario }] } }],
 };
 const gherkinDocument = {
   uri,
@@ -107,6 +108,7 @@ module.exports = {
   gherkinDocumentWithRule,
   scenarioId,
   feature,
+  scenario,
   featureWithRule,
   pickleId,
   uri,

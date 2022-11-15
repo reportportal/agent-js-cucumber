@@ -31,6 +31,7 @@ module.exports = {
   init() {
     this.storage = new Storage();
     this.customLaunchStatus = null;
+    this.codeRefIndexesMap = new Map();
 
     this.options.eventBroadcaster.on('envelope', (event) => {
       const [key] = Object.keys(event);
@@ -130,6 +131,7 @@ module.exports = {
 
     // start FEATURE if no currentFeatureUri or new feature
     // else finish old one
+    const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
     if (!currentFeatureUri && currentFeatureUri !== pickleFeatureUri) {
       this.storage.setCurrentFeatureUri(pickleFeatureUri);
       const suiteData = {
@@ -138,6 +140,7 @@ module.exports = {
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
         description: (feature.description || '').trim(),
         attributes: utils.createAttributes(feature.tags),
+        codeRef: featureCodeRef,
       };
       const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
       this.storage.setFeatureTempId(tempId);
@@ -156,12 +159,15 @@ module.exports = {
     if (currentNode.rule && !ruleTempId) {
       // start RULE
       const { rule } = currentNode;
+      const { name, description, tags } = rule;
+      const currentNodeCodeRef = utils.formatCodeRef(featureCodeRef, name);
       const testData = {
         startTime: this.reportportal.helpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
-        name: rule.name,
-        description: rule.description,
-        attributes: utils.createAttributes(rule.tags),
+        name,
+        description,
+        attributes: utils.createAttributes(tags),
+        codeRef: currentNodeCodeRef,
       };
       const parentId = this.storage.getFeatureTempId();
       const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
@@ -179,12 +185,22 @@ module.exports = {
       scenario = currentNode.scenario;
     }
 
+    const { name: scenarioName } = scenario;
+    const currentNodeCodeRef =
+      (ruleTempId && utils.formatCodeRef(featureCodeRef, currentNode.rule.name)) || featureCodeRef;
+    const scenarioCodeRefIndexValue = this.codeRefIndexesMap.get(currentNodeCodeRef);
+    this.codeRefIndexesMap.set(currentNodeCodeRef, (scenarioCodeRefIndexValue || 0) + 1);
+    const name = scenarioCodeRefIndexValue
+      ? `${scenarioName} [${scenarioCodeRefIndexValue}]`
+      : scenarioName;
+    const scenarioCodeRef = utils.formatCodeRef(currentNodeCodeRef, name);
     const testData = {
       startTime: this.reportportal.helpers.now(),
       type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
-      name: scenario.name,
+      name,
       description: scenario.description,
       attributes: utils.createAttributes(scenario.tags),
+      codeRef: scenarioCodeRef,
     };
 
     if (parametersId) {
@@ -199,23 +215,31 @@ module.exports = {
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
     this.storage.setScenarioTempId(tempId);
+    this.storage.updateTestCase(testCaseId, { codeRef: scenarioCodeRef });
   },
   onTestStepStartedEvent(data) {
     const { testCaseStartedId, testStepId } = data;
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+    const testCase = this.storage.getTestCase(testCaseId);
     const step = this.storage.getStep(testCaseId, testStepId);
 
     // start step
     if (step) {
+      const { text: stepName, type } = step;
+      const codeRef = utils.formatCodeRef(testCase.codeRef, stepName);
+      const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);
+      this.codeRefIndexesMap.set(codeRef, (stepCodeRefIndexValue || 0) + 1);
+      const name = stepCodeRefIndexValue ? `${stepName} [${stepCodeRefIndexValue}]` : stepName;
+
       const stepData = {
-        name: step.text,
+        name,
         startTime: this.reportportal.helpers.now(),
-        type: step.type,
+        type,
+        codeRef,
         ...(this.isScenarioBasedStatistics && { hasStats: false }),
       };
 
       if (!this.isScenarioBasedStatistics && step.astNodeIds && step.astNodeIds.length > 1) {
-        const testCase = this.storage.getTestCase(testCaseId);
         const { testSteps } = testCase;
         const testStep = testSteps.find((item) => item.id === testStepId);
         const argumentsMap = testStep.stepMatchArgumentsLists[0].stepMatchArguments.map((arg) =>
@@ -418,6 +442,7 @@ module.exports = {
       });
       this.storage.setRuleTempId(null);
       this.storage.setLastScenario(false);
+      this.codeRefIndexesMap.clear();
     }
 
     this.storage.removeTestCaseStartedId(testCaseStartedId);
