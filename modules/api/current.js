@@ -186,7 +186,6 @@ module.exports = {
     }
 
     const { name: scenarioName } = scenario;
-    // recalculate currentNodeCodeRef
     const currentNodeCodeRef =
       (ruleTempId && utils.formatCodeRef(featureCodeRef, currentNode.rule.name)) || featureCodeRef;
     const scenarioCodeRefIndexValue = this.codeRefIndexesMap.get(currentNodeCodeRef);
