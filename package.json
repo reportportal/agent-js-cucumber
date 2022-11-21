@@ -3,13 +3,15 @@
   "version": "5.0.2",
   "description": "Agent that connects cucumber-js with Report Portal",
   "main": "./modules/index",
-  "spec": "cucumber version >=4.x <=6.x",
+  "spec": "cucumber version >=4.x <=8.x",
   "dependencies": {
     "@reportportal/client-javascript": "^5.0.6",
     "cli-table3": "^0.6.0",
     "strip-ansi": "^6.0.1"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^8.8.0",
+    "@types/jest": "^29.2.3",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-prettier": "^6.9.0",
@@ -26,8 +28,8 @@
   "scripts": {
     "lint": "eslint ./modules/**/*.js",
     "format": "npm run lint -- --fix",
-    "test": "exit 0",
-    "test:coverage": "exit 0"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",

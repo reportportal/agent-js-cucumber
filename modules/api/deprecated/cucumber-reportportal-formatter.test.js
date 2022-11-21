@@ -1,15 +1,15 @@
 /* These tests need to be rewritten to reflect the refactoring of the agent. Plans for version 5.0.1. */
-const { createRPFormatterClass } = require('../modules');
+const { createRPFormatterClass } = require('../../index');
 const {
   ContextMock,
   DocumentsStorageMock,
   RPClientMock,
   getDefaultConfig,
   mockedDate,
-} = require('./mocks');
-const itemFinders = require('../modules/itemFinders');
-const utils = require('../modules/utils');
-const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('../modules/constants');
+} = require('../../../tests/mocks');
+const itemFinders = require('./itemFinders');
+const utils = require('../../utils');
+const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('../../constants');
 
 const featureMock = {
   description: 'feature description',

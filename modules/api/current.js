@@ -76,7 +76,7 @@ module.exports = {
   },
   onTestRunStartedEvent() {
     const attributes = [
-      ...this.attributesConf,
+      ...(this.config.attributes || []),
       { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
     ];
     if (this.config.skippedIssue === false) {
