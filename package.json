@@ -23,7 +23,8 @@
     "prettier": "^1.19.1"
   },
   "peerDependencies": {
-    "cucumber": "4.x - 6.x"
+    "cucumber": "4.x - 6.x",
+    "@cucumber/cucumber": "7.x - 8.x"
   },
   "scripts": {
     "lint": "eslint ./modules/**/*.js",
