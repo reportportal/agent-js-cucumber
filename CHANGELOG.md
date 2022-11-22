@@ -1,7 +1,11 @@
+### Added
+- Added support for 7-8 versions of `@cucumber/cucumber` package
+
 ### Changed
-- Bump @reportportal/client-javascript version to 5.0.6
 - Package size reduced
-- Added support for 7-8 versions of Cucumber framework
+
+### Updated
+- `@reportportal/client-javascript` version to the latest
 
 ## [5.0.2] - 2021-06-23
 ### Fixed
