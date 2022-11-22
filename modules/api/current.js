@@ -32,6 +32,7 @@ module.exports = {
     this.storage = new Storage();
     this.customLaunchStatus = null;
     this.codeRefIndexesMap = new Map();
+    this.isRetry = false;
 
     this.options.eventBroadcaster.on('envelope', (event) => {
       const [key] = Object.keys(event);
@@ -118,7 +119,7 @@ module.exports = {
     this.storage.setSteps(testCaseId, stepsMap);
   },
   onTestCaseStartedEvent(data) {
-    const { id, testCaseId } = data;
+    const { id, testCaseId, attempt } = data;
     this.storage.setTestCaseStartedId(id, testCaseId);
     const { pickleId } = this.storage.getTestCase(testCaseId);
     const {
@@ -185,15 +186,27 @@ module.exports = {
       scenario = currentNode.scenario;
     }
 
+    if (attempt > 0) {
+      this.isRetry = true;
+
+      if (!this.isScenarioBasedStatistics) return;
+    }
+
     const { name: scenarioName } = scenario;
-    const currentNodeCodeRef =
-      (ruleTempId && utils.formatCodeRef(featureCodeRef, currentNode.rule.name)) || featureCodeRef;
+    const currentNodeCodeRef = utils.formatCodeRef(
+      featureCodeRef,
+      ruleTempId ? currentNode.rule.name : scenarioName,
+    );
     const scenarioCodeRefIndexValue = this.codeRefIndexesMap.get(currentNodeCodeRef);
     this.codeRefIndexesMap.set(currentNodeCodeRef, (scenarioCodeRefIndexValue || 0) + 1);
-    const name = scenarioCodeRefIndexValue
-      ? `${scenarioName} [${scenarioCodeRefIndexValue}]`
-      : scenarioName;
-    const scenarioCodeRef = utils.formatCodeRef(currentNodeCodeRef, name);
+    const name =
+      scenarioCodeRefIndexValue && !this.isRetry
+        ? `${scenarioName} [${scenarioCodeRefIndexValue}]`
+        : scenarioName;
+    const scenarioCodeRef =
+      scenarioCodeRefIndexValue && !this.isRetry
+        ? `${currentNodeCodeRef} [${scenarioCodeRefIndexValue}]`
+        : currentNodeCodeRef;
     const testData = {
       startTime: this.reportportal.helpers.now(),
       type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
@@ -201,6 +214,7 @@ module.exports = {
       description: scenario.description,
       attributes: utils.createAttributes(scenario.tags),
       codeRef: scenarioCodeRef,
+      retry: this.isScenarioBasedStatistics && attempt > 0,
     };
 
     if (parametersId) {
@@ -229,14 +243,18 @@ module.exports = {
       const codeRef = utils.formatCodeRef(testCase.codeRef, stepName);
       const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);
       this.codeRefIndexesMap.set(codeRef, (stepCodeRefIndexValue || 0) + 1);
-      const name = stepCodeRefIndexValue ? `${stepName} [${stepCodeRefIndexValue}]` : stepName;
+      const name =
+        stepCodeRefIndexValue && !this.isRetry
+          ? `${stepName} [${stepCodeRefIndexValue}]`
+          : stepName;
 
       const stepData = {
         name,
         startTime: this.reportportal.helpers.now(),
         type,
         codeRef,
-        ...(this.isScenarioBasedStatistics && { hasStats: false }),
+        hasStats: !this.isScenarioBasedStatistics,
+        retry: !this.isScenarioBasedStatistics && this.isRetry,
       };
 
       if (!this.isScenarioBasedStatistics && step.astNodeIds && step.astNodeIds.length > 1) {
@@ -401,16 +419,18 @@ module.exports = {
     }
 
     if (step) {
-      const { attributes, description, testCaseId: customTestCaseId } = step;
+      const { attributes, description = '', testCaseId: customTestCaseId } = step;
       status = step.status || status || testStepResult.status;
       const errorMessage =
         testStepResult.message && `\`\`\`error\n${stripAnsi(testStepResult.message)}\n\`\`\``;
-      const descriptionToSend = errorMessage ? `${description}\n${errorMessage}` : description;
+      const descriptionToSend = errorMessage
+        ? `${description}${description ? '\n' : ''}${errorMessage}`
+        : description;
       const withoutIssue = status === STATUSES.SKIPPED && this.config.skippedIssue === false;
       this.reportportal.finishTestItem(tempStepId, {
         ...(status && { status }),
         ...(attributes && { attributes }),
-        ...(description && { description: descriptionToSend }),
+        ...(descriptionToSend && { description: descriptionToSend }),
         ...(customTestCaseId && { testCaseId: customTestCaseId }),
         ...(withoutIssue && { issue: { issueType: 'NOT_ISSUE' } }),
         endTime: this.reportportal.helpers.now(),
@@ -424,7 +444,7 @@ module.exports = {
     this.storage.setStepTempId(null);
   },
   onTestCaseFinishedEvent(data) {
-    const { testCaseStartedId } = data;
+    const { testCaseStartedId, willBeRetried } = data;
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const testCase = this.storage.getTestCase(testCaseId);
     const scenarioTempId = this.storage.getScenarioTempId();
@@ -445,10 +465,13 @@ module.exports = {
       this.codeRefIndexesMap.clear();
     }
 
-    this.storage.removeTestCaseStartedId(testCaseStartedId);
-    this.storage.removeSteps(testCaseId);
-    this.storage.removeTestCase(testCaseId);
-    this.storage.setScenarioTempId(null);
+    if (!willBeRetried) {
+      this.storage.removeTestCaseStartedId(testCaseStartedId);
+      this.storage.removeSteps(testCaseId);
+      this.storage.removeTestCase(testCaseId);
+      this.storage.setScenarioTempId(null);
+      this.isRetry = false;
+    }
   },
   onTestRunFinishedEvent() {
     const featureTempId = this.storage.getFeatureTempId();

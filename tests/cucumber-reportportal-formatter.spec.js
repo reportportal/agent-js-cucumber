@@ -149,6 +149,7 @@ describe('cucumber-reportportal-formatter', () => {
           startTime: mockedDate,
           type: 'TEST',
           codeRef: `${uri}/${feature.name}/${scenario.name}`,
+          retry: false,
         },
         'tempLaunchId',
         'testItemId',
@@ -176,6 +177,8 @@ describe('cucumber-reportportal-formatter', () => {
           startTime: mockedDate,
           type: 'STEP',
           codeRef: `${uri}/${feature.name}/${scenario.name}/${step.text}`,
+          hasStats: true,
+          retry: false,
         },
         'tempLaunchId',
         'testItemId',
@@ -201,6 +204,7 @@ describe('cucumber-reportportal-formatter', () => {
       expect(spyFinishTestItem).toBeCalledWith('testItemId', {
         endTime: mockedDate,
         status: STATUSES.FAILED,
+        description: '```error\nerror message\n```',
       });
       expect(formatter.storage.getStepTempId()).toBe(null);
     });
@@ -225,6 +229,7 @@ describe('cucumber-reportportal-formatter', () => {
       expect(spyFinishTestItem).toBeCalledWith('testItemId', {
         endTime: mockedDate,
         status: STATUSES.FAILED,
+        description: '```error\nerror message\n```',
       });
       expect(formatter.storage.getTestCaseId(testCaseStartedId)).toBe(undefined);
       expect(formatter.storage.getStep(testCaseId, testStepId)).toBe(undefined);
