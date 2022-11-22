@@ -32,7 +32,6 @@ module.exports = {
     this.storage = new Storage();
     this.customLaunchStatus = null;
     this.codeRefIndexesMap = new Map();
-    this.isRetry = false;
 
     this.options.eventBroadcaster.on('envelope', (event) => {
       const [key] = Object.keys(event);
@@ -121,7 +120,7 @@ module.exports = {
   onTestCaseStartedEvent(data) {
     const { id, testCaseId, attempt } = data;
     this.storage.setTestCaseStartedId(id, testCaseId);
-    const { pickleId } = this.storage.getTestCase(testCaseId);
+    const { pickleId, isRetry: isTestCaseRetried } = this.storage.getTestCase(testCaseId);
     const {
       uri: pickleFeatureUri,
       astNodeIds: [scenarioId, parametersId],
@@ -186,8 +185,10 @@ module.exports = {
       scenario = currentNode.scenario;
     }
 
+    let isRetry = isTestCaseRetried;
     if (attempt > 0) {
-      this.isRetry = true;
+      isRetry = true;
+      this.storage.updateTestCase(testCaseId, { isRetry: true });
 
       if (!this.isScenarioBasedStatistics) return;
     }
@@ -200,11 +201,11 @@ module.exports = {
     const scenarioCodeRefIndexValue = this.codeRefIndexesMap.get(currentNodeCodeRef);
     this.codeRefIndexesMap.set(currentNodeCodeRef, (scenarioCodeRefIndexValue || 0) + 1);
     const name =
-      scenarioCodeRefIndexValue && !this.isRetry
+      scenarioCodeRefIndexValue && !isRetry
         ? `${scenarioName} [${scenarioCodeRefIndexValue}]`
         : scenarioName;
     const scenarioCodeRef =
-      scenarioCodeRefIndexValue && !this.isRetry
+      scenarioCodeRefIndexValue && !isRetry
         ? `${currentNodeCodeRef} [${scenarioCodeRefIndexValue}]`
         : currentNodeCodeRef;
     const testData = {
@@ -244,7 +245,7 @@ module.exports = {
       const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);
       this.codeRefIndexesMap.set(codeRef, (stepCodeRefIndexValue || 0) + 1);
       const name =
-        stepCodeRefIndexValue && !this.isRetry
+        stepCodeRefIndexValue && !testCase.isRetry
           ? `${stepName} [${stepCodeRefIndexValue}]`
           : stepName;
 
@@ -254,7 +255,7 @@ module.exports = {
         type,
         codeRef,
         hasStats: !this.isScenarioBasedStatistics,
-        retry: !this.isScenarioBasedStatistics && this.isRetry,
+        retry: !this.isScenarioBasedStatistics && !!testCase.isRetry,
       };
 
       if (!this.isScenarioBasedStatistics && step.astNodeIds && step.astNodeIds.length > 1) {
@@ -470,7 +471,6 @@ module.exports = {
       this.storage.removeSteps(testCaseId);
       this.storage.removeTestCase(testCaseId);
       this.storage.setScenarioTempId(null);
-      this.isRetry = false;
     }
   },
   onTestRunFinishedEvent() {
