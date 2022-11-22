@@ -16,8 +16,8 @@
 
 const stripAnsi = require('strip-ansi');
 const Table = require('cli-table3');
-const utils = require('../utils');
-const itemFinders = require('../itemFinders');
+const utils = require('../../utils');
+const itemFinders = require('./itemFinders');
 const {
   STATUSES,
   AFTER_HOOK_URI_TO_SKIP,
@@ -26,10 +26,10 @@ const {
   RP_ENTITY_LAUNCH,
   LOG_LEVELS,
   CUCUMBER_EVENTS,
-} = require('../constants');
-const Context = require('../context');
-const DocumentStorage = require('../documents-storage');
-const pjson = require('../../package.json');
+} = require('../../constants');
+const Context = require('./context');
+const DocumentStorage = require('./documents-storage');
+const pjson = require('../../../package.json');
 
 module.exports = {
   init() {
@@ -74,7 +74,7 @@ module.exports = {
         startTime: this.reportportal.helpers.now(),
         description: !this.config.description ? '' : this.config.description,
         attributes: [
-          ...this.attributesConf,
+          ...(this.config.attributes || []),
           { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
         ],
         rerun: this.isRerun,

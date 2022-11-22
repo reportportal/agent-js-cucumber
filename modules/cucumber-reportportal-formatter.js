@@ -42,7 +42,6 @@ const createRPFormatterClass = (config) => {
         name: pjson.name,
         version: pjson.version,
       });
-      this.attributesConf = config.attributes || [];
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
