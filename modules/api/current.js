@@ -188,7 +188,7 @@ module.exports = {
     let isRetry = isTestCaseRetried;
     if (attempt > 0) {
       isRetry = true;
-      this.storage.updateTestCase(testCaseId, { isRetry: true });
+      this.storage.updateTestCase(testCaseId, { isRetry });
 
       if (!this.isScenarioBasedStatistics) return;
     }
