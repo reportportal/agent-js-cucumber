@@ -1,38 +1,4 @@
-// eslint-disable-next-line max-classes-per-file
-const { cleanContext } = require('../modules/utils');
-
 const mockedDate = Date.now();
-
-class ContextMock {
-  constructor() {
-    this.context = cleanContext();
-
-    this.findStep = jest.fn().mockReturnValue({
-      keyword: 'anyKeyWord',
-    });
-
-    this.countFailedScenarios = jest.fn();
-
-    this.getFileName = jest.fn().mockReturnValue('fileName');
-
-    this.resetContext = jest.fn();
-  }
-}
-
-class DocumentsStorageMock {
-  constructor() {
-    this.gherkinDocuments = {};
-    this.pickleDocuments = {};
-
-    this.cacheDocument = jest.fn().mockReturnValue({
-      keyword: 'anyKeyWord',
-    });
-
-    this.cacheAcceptedPickle = jest.fn();
-
-    this.isAcceptedPickleCached = jest.fn().mockReturnValue(false);
-  }
-}
 
 class RPClientMock {
   constructor(config) {
@@ -79,8 +45,6 @@ const getDefaultConfig = () => ({
 });
 
 module.exports = {
-  ContextMock,
-  DocumentsStorageMock,
   RPClientMock,
   getDefaultConfig,
   mockedDate,

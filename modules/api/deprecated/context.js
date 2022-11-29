@@ -14,8 +14,7 @@
  *  limitations under the License.
  */
 
-const { STATUSES } = require('./constants');
-const itemFinders = require('./itemFinders');
+const { STATUSES } = require('../../constants');
 
 class Context {
   constructor() {
@@ -81,9 +80,7 @@ class Context {
   }
 
   incrementFailedScenariosCount(uri) {
-    this.failedScenarios[uri] = this.failedScenarios[uri]
-      ? this.failedScenarios[uri] + 1
-      : 1;
+    this.failedScenarios[uri] = this.failedScenarios[uri] ? this.failedScenarios[uri] + 1 : 1;
   }
 
   resetContext() {

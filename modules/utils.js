@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2022 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-const path = require('path');
-
 const getJSON = (json) => {
   try {
     const jsonObject = JSON.parse(json);
@@ -27,8 +25,6 @@ const getJSON = (json) => {
   }
   return false;
 };
-
-const getUri = (uri) => uri.replace(process.cwd() + path.sep, '');
 
 const createAttribute = (tag = '') => {
   const parsedTag = tag.replace('@', '').split(':');
@@ -48,67 +44,82 @@ const createAttribute = (tag = '') => {
 
 const createAttributes = (items) => (items ? items.map((item) => createAttribute(item.name)) : []);
 
-const createTagComparator = (tagA) => (tagB) =>
-  tagB.name === tagA.name &&
-  tagB.location.line === tagA.location.line &&
-  tagB.location.column === tagA.location.column;
-
 const formatCodeRef = (pathName, itemName) => {
   const codeRef = pathName.replace(/\\/g, '/');
 
   return itemName ? `${codeRef}/${itemName}` : codeRef;
 };
 
-const getParameters = (header, body) => {
-  const keys = header ? header.cells.map((cell) => cell.value) : [];
-
-  if (Array.isArray(body)) {
-    return body.reduce((acc, item) => {
-      const params = item.cells.map((cell, index) => ({
-        key: keys[index],
-        value: cell.value,
-      }));
-
-      return acc.concat(params);
-    }, []);
-  }
-
-  return body.cells.map((cell, index) => ({
-    key: keys[index],
-    value: cell.value,
-  }));
+const findNode = (feature, searchId) => {
+  return feature.children.find((child) => {
+    if (child.rule) {
+      return child.rule.children.find((item) => {
+        if (!item.scenario) return false;
+        return item.scenario.id === searchId;
+      });
+    }
+    if (child.scenario) {
+      return child.scenario.id === searchId;
+    }
+    return null;
+  });
 };
 
-function replaceParameter(originalString, name, value) {
-  return originalString.replace(new RegExp(`<${name}>`, 'g'), value);
-}
+const detectLastScenario = (node, searchId) => {
+  let isLastScenario = false;
+  node.children.forEach((child, index) => {
+    if (child.scenario) {
+      isLastScenario = child.scenario.id === searchId && index === node.children.length - 1;
+    }
+  });
+  return isLastScenario;
+};
 
-const getStepType = (keyword) => {
-  let type;
+const findScenario = (node, searchId) => {
+  const children = node.children.find((child) => {
+    if (child.scenario) {
+      return child.scenario.id === searchId;
+    }
+    return null;
+  });
+  return children.scenario;
+};
 
-  switch (keyword) {
-    case 'Before':
-      type = 'BEFORE_TEST';
-      break;
-    case 'After':
-      type = 'AFTER_TEST';
-      break;
-    default:
-      type = 'STEP';
-      break;
-  }
+const bindToClass = (module, thisClass) => {
+  const that = thisClass;
+  Object.entries(module).forEach((method) => {
+    const [key, value] = method;
+    that[key] = value.bind(that);
+  });
+};
 
-  return type;
+const collectParams = ({ tableHeader, tableBody }) => {
+  const { cells: headerCells } = tableHeader;
+  return tableBody.reduce((map, row) => {
+    const { id, cells: rowCells } = row;
+
+    const rowData = rowCells.reduce((acc, cell, i) => {
+      return {
+        ...acc,
+        [id]: [...(acc[id] || []), { key: headerCells[i].value, value: cell.value }],
+      };
+    }, {});
+
+    return {
+      ...map,
+      ...rowData,
+    };
+  }, {});
 };
 
 module.exports = {
-  createTagComparator,
   createAttribute,
   createAttributes,
-  getUri,
   getJSON,
-  getStepType,
-  getParameters,
   formatCodeRef,
-  replaceParameter,
+  findNode,
+  findScenario,
+  detectLastScenario,
+  bindToClass,
+  collectParams,
 };
