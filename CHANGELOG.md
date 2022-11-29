@@ -1,9 +1,6 @@
 ### Added
 - Added support for 7-8 versions of `@cucumber/cucumber` package
 
-### Changed
-- Package size reduced
-
 ### Updated
 - `@reportportal/client-javascript` version to the latest
 
