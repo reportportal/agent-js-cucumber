@@ -454,9 +454,9 @@ module.exports = {
       ...(this.isScenarioBasedStatistics && { status: testCase.status || STATUSES.PASSED }),
     });
 
-    const currentFeatureUrl = this.storage.getCurrentFeatureUri();
+    const currentFeatureUri = this.storage.getCurrentFeatureUri();
     const featureHasOneTestCase =
-      Array.from(this.storage.getPicklesValues()).filter(({ uri }) => uri === currentFeatureUrl)
+      Array.from(this.storage.getPicklesValues()).filter(({ uri }) => uri === currentFeatureUri)
         .length === 1;
 
     if (featureHasOneTestCase) {
