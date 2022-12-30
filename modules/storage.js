@@ -70,6 +70,10 @@ module.exports = class Storage {
     return this.pickles.get(id);
   }
 
+  getPicklesValues() {
+    return this.pickles.values();
+  }
+
   setHook(id, data) {
     this.hooks.set(id, data);
   }
