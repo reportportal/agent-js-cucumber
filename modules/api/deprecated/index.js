@@ -16,7 +16,7 @@
 
 const stripAnsi = require('strip-ansi');
 const Table = require('cli-table3');
-const utils = require('../../utils');
+const utils = require('./utils');
 const itemFinders = require('./itemFinders');
 const {
   STATUSES,
