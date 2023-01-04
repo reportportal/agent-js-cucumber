@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const utils = require('../../utils');
+const utils = require('./utils');
 
 function createSteps(header, row, steps) {
   return steps.map((step) => {

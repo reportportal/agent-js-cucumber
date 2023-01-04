@@ -69,10 +69,10 @@ const getStepType = (keyword) => {
 module.exports = {
   createTagComparator,
   getUri,
-  createAttributes: commonUtils.createAttributes(),
-  getJSON: commonUtils.getJSON(),
+  createAttributes: commonUtils.createAttributes,
+  getJSON: commonUtils.getJSON,
   getStepType,
   getParameters,
-  formatCodeRef: commonUtils.formatCodeRef(),
+  formatCodeRef: commonUtils.formatCodeRef,
   replaceParameter,
 };
