@@ -1,3 +1,5 @@
+
+## [5.1.1] - 2023-01-05
 ### Fixed
 - [#118](https://github.com/reportportal/agent-js-cucumber/issues/118) Scenarios in separate Feature files are reported under same Feature
 - [#119](https://github.com/reportportal/agent-js-cucumber/issues/119) Status interrupted for second scenario
