@@ -132,7 +132,7 @@ module.exports = {
     // start FEATURE if no currentFeatureUri or new feature
     // else finish old one
     const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
-    if (!currentFeatureUri && currentFeatureUri !== pickleFeatureUri) {
+    if (currentFeatureUri !== pickleFeatureUri) {
       this.storage.setCurrentFeatureUri(pickleFeatureUri);
       const suiteData = {
         name: feature.name,
@@ -453,6 +453,18 @@ module.exports = {
       endTime: this.reportportal.helpers.now(),
       ...(this.isScenarioBasedStatistics && { status: testCase.status || STATUSES.PASSED }),
     });
+
+    const currentFeatureUri = this.storage.getCurrentFeatureUri();
+    const featureHasOneTestCase =
+      Array.from(this.storage.getPicklesValues()).filter(({ uri }) => uri === currentFeatureUri)
+        .length === 1;
+
+    if (featureHasOneTestCase) {
+      const tempFeatureId = this.storage.getFeatureTempId();
+      this.reportportal.finishTestItem(tempFeatureId, {
+        endTime: this.reportportal.helpers.now(),
+      });
+    }
 
     // finish RULE if it's exist and if it's last scenario
     const isLastScenario = this.storage.getLastScenario();

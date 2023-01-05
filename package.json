@@ -5,12 +5,12 @@
   "main": "./modules/index",
   "spec": "cucumber version >=4.x <=8.x",
   "dependencies": {
-    "@reportportal/client-javascript": "^5.0.6",
-    "cli-table3": "^0.6.0",
+    "@reportportal/client-javascript": "^5.0.7",
+    "cli-table3": "^0.6.3",
     "strip-ansi": "^6.0.1"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^8.8.0",
+    "@cucumber/cucumber": "^8.10.0",
     "@types/jest": "^29.2.3",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
@@ -40,9 +40,12 @@
     "/modules"
   ],
   "keywords": [
-    "cucumber-reporter",
     "reportportal",
-    "reporter"
+    "rp",
+    "cucumber",
+    "cucumber-reporter",
+    "reporter",
+    "cucumber-js"
   ],
   "author": "reportportal.io",
   "license": "Apache-2.0",
