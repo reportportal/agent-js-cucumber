@@ -8,7 +8,7 @@ const {
   mockedDate,
 } = require('../../../tests/mocks');
 const itemFinders = require('./itemFinders');
-const utils = require('../../utils');
+const utils = require('./utils');
 const { AFTER_HOOK_URI_TO_SKIP, STATUSES } = require('../../constants');
 
 const featureMock = {
