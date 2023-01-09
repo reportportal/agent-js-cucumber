@@ -1,3 +1,5 @@
+### Fixed
+- Finish feature/scenario only when its children have already been finished
 
 ## [5.1.1] - 2023-01-05
 ### Fixed
