@@ -121,6 +121,7 @@ module.exports = {
     const { id, testCaseId, attempt } = data;
     this.storage.setTestCaseStartedId(id, testCaseId);
     const { pickleId, isRetry: isTestCaseRetried } = this.storage.getTestCase(testCaseId);
+
     const {
       uri: pickleFeatureUri,
       astNodeIds: [scenarioId, parametersId],
@@ -128,12 +129,13 @@ module.exports = {
     const currentFeatureUri = this.storage.getCurrentFeatureUri();
     const feature = this.storage.getFeature(pickleFeatureUri);
     const launchTempId = this.storage.getLaunchTempId();
-
+    const isNeedToStartFeature = currentFeatureUri !== pickleFeatureUri;
     // start FEATURE if no currentFeatureUri or new feature
     // else finish old one
+
     const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
-    if (currentFeatureUri !== pickleFeatureUri) {
-      this.storage.setCurrentFeatureUri(pickleFeatureUri);
+    if (isNeedToStartFeature) {
+      const isFirstFeatureInLaunch = currentFeatureUri === null;
       const suiteData = {
         name: feature.name,
         startTime: this.reportportal.helpers.now(),
@@ -142,16 +144,21 @@ module.exports = {
         attributes: utils.createAttributes(feature.tags),
         codeRef: featureCodeRef,
       };
+
+      if (!isFirstFeatureInLaunch) {
+        const previousFeatureTempId = this.storage.getFeatureTempId();
+        this.reportportal.finishTestItem(previousFeatureTempId, {
+          endTime: this.reportportal.helpers.now(),
+        });
+      }
+
+      this.storage.setCurrentFeatureUri(pickleFeatureUri);
       const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
       this.storage.setFeatureTempId(tempId);
-    } else {
-      const tempFeatureId = this.storage.getFeatureTempId();
-      this.reportportal.finishTestItem(tempFeatureId, {
-        endTime: this.reportportal.helpers.now(),
-      });
     }
 
-    // current feature node rule || scenario
+    // current feature node rule(this entity is for grouping several
+    // scenarios in one logical block) || scenario
     const currentNode = utils.findNode(feature, scenarioId);
 
     let scenario;
@@ -444,27 +451,21 @@ module.exports = {
 
     this.storage.setStepTempId(null);
   },
-  onTestCaseFinishedEvent(data) {
-    const { testCaseStartedId, willBeRetried } = data;
+  onTestCaseFinishedEvent({ testCaseStartedId, willBeRetried }) {
+    const isNeedToFinishTestCase = !this.isScenarioBasedStatistics && willBeRetried;
+
+    if (isNeedToFinishTestCase) {
+      return;
+    }
+
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const testCase = this.storage.getTestCase(testCaseId);
     const scenarioTempId = this.storage.getScenarioTempId();
+
     this.reportportal.finishTestItem(scenarioTempId, {
       endTime: this.reportportal.helpers.now(),
       ...(this.isScenarioBasedStatistics && { status: testCase.status || STATUSES.PASSED }),
     });
-
-    const currentFeatureUri = this.storage.getCurrentFeatureUri();
-    const featureHasOneTestCase =
-      Array.from(this.storage.getPicklesValues()).filter(({ uri }) => uri === currentFeatureUri)
-        .length === 1;
-
-    if (featureHasOneTestCase) {
-      const tempFeatureId = this.storage.getFeatureTempId();
-      this.reportportal.finishTestItem(tempFeatureId, {
-        endTime: this.reportportal.helpers.now(),
-      });
-    }
 
     // finish RULE if it's exist and if it's last scenario
     const isLastScenario = this.storage.getLastScenario();
