@@ -129,13 +129,13 @@ module.exports = {
     const currentFeatureUri = this.storage.getCurrentFeatureUri();
     const feature = this.storage.getFeature(pickleFeatureUri);
     const launchTempId = this.storage.getLaunchTempId();
-    const isFirstFeatureInLaunch = currentFeatureUri === null;
     const isNeedToStartFeature = currentFeatureUri !== pickleFeatureUri;
     // start FEATURE if no currentFeatureUri or new feature
     // else finish old one
 
     const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
     if (isNeedToStartFeature) {
+      const isFirstFeatureInLaunch = currentFeatureUri === null;
       const suiteData = {
         name: feature.name,
         startTime: this.reportportal.helpers.now(),
@@ -145,16 +145,14 @@ module.exports = {
         codeRef: featureCodeRef,
       };
 
-      if (isFirstFeatureInLaunch) {
-        this.storage.setCurrentFeatureUri(pickleFeatureUri);
-      } else {
+      if (!isFirstFeatureInLaunch) {
         const previousFeatureTempId = this.storage.getFeatureTempId();
         this.reportportal.finishTestItem(previousFeatureTempId, {
           endTime: this.reportportal.helpers.now(),
         });
-        this.storage.setCurrentFeatureUri(pickleFeatureUri);
       }
 
+      this.storage.setCurrentFeatureUri(pickleFeatureUri);
       const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
       this.storage.setFeatureTempId(tempId);
     }
