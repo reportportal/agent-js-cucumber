@@ -106,6 +106,10 @@ const TABLE_CONFIG = {
   },
 };
 
+const SYMBOLS_NAMES = {
+  astNodesDataField: 'astNodesData',
+};
+
 module.exports = {
   AFTER_HOOK_URI_TO_SKIP,
   RP_ENTITY_LAUNCH,
@@ -116,4 +120,5 @@ module.exports = {
   TABLE_CONFIG,
   CUCUMBER_MESSAGES,
   TEST_ITEM_TYPES,
+  SYMBOLS_NAMES,
 };

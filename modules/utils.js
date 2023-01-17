@@ -112,6 +112,19 @@ const collectParams = ({ tableHeader, tableBody }) => {
   }, {});
 };
 
+const findAstNodesData = (testSteps) => {
+  const isRule = testSteps.some((entity) => 'rule' in entity);
+
+  if (!isRule) {
+    return testSteps.reduce((acc, steps) => {
+      const keywords = Object.keys(steps);
+      return acc.concat(...keywords.map((keyword) => steps[keyword].steps));
+    }, []);
+  }
+
+  return findAstNodesData(testSteps.reduce((acc, { rule }) => acc.concat(rule.children), []));
+};
+
 module.exports = {
   createAttribute,
   createAttributes,
@@ -122,4 +135,5 @@ module.exports = {
   detectLastScenario,
   bindToClass,
   collectParams,
+  findAstNodesData,
 };

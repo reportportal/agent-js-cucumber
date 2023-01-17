@@ -166,7 +166,7 @@ describe('cucumber-reportportal-formatter', () => {
         {
           attributes: [],
           description: undefined,
-          name: scenario.name,
+          name: `${scenario.keyword}: ${scenario.name}`,
           startTime: mockedDate,
           type: 'TEST',
           codeRef: `${uri}/${feature.name}/${scenario.name}`,

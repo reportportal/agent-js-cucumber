@@ -17,7 +17,12 @@
 const launchTempId = 'tempId';
 const uri = 'features/statuses/statuses.feature';
 const scenarioId = '1957ea93-e4de-4895-86e8-acb857b5b069';
-const scenario = { id: scenarioId, name: 'scenario name' };
+const scenario = {
+  id: scenarioId,
+  name: 'scenario name',
+  keyword: 'Scenario',
+  steps: [{ id: 'scenarioStepsId', keyword: 'Then' }],
+};
 const feature = {
   keyword: 'Feature',
   name: 'statuses',

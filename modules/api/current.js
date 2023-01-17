@@ -24,6 +24,7 @@ const {
   STATUSES,
   CUCUMBER_MESSAGES,
   TEST_ITEM_TYPES,
+  SYMBOLS_NAMES,
 } = require('../constants');
 const Storage = require('../storage');
 
@@ -130,14 +131,14 @@ module.exports = {
     const feature = this.storage.getFeature(pickleFeatureUri);
     const launchTempId = this.storage.getLaunchTempId();
     const isNeedToStartFeature = currentFeatureUri !== pickleFeatureUri;
+
     // start FEATURE if no currentFeatureUri or new feature
     // else finish old one
-
     const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
     if (isNeedToStartFeature) {
       const isFirstFeatureInLaunch = currentFeatureUri === null;
       const suiteData = {
-        name: feature.name,
+        name: `${feature.keyword}: ${feature.name}`,
         startTime: this.reportportal.helpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
         description: (feature.description || '').trim(),
@@ -166,12 +167,12 @@ module.exports = {
     if (currentNode.rule && !ruleTempId) {
       // start RULE
       const { rule } = currentNode;
-      const { name, description, tags } = rule;
+      const { name, description, tags, keyword } = rule;
       const currentNodeCodeRef = utils.formatCodeRef(featureCodeRef, name);
       const testData = {
         startTime: this.reportportal.helpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
-        name,
+        name: `${keyword}: ${name}`,
         description,
         attributes: utils.createAttributes(tags),
         codeRef: currentNodeCodeRef,
@@ -201,6 +202,8 @@ module.exports = {
     }
 
     const { name: scenarioName } = scenario;
+    const [keyword] = scenario.keyword.split(' ');
+
     const currentNodeCodeRef = utils.formatCodeRef(
       featureCodeRef,
       ruleTempId ? currentNode.rule.name : scenarioName,
@@ -215,10 +218,11 @@ module.exports = {
       scenarioCodeRefIndexValue && !isRetry
         ? `${currentNodeCodeRef} [${scenarioCodeRefIndexValue}]`
         : currentNodeCodeRef;
+
     const testData = {
       startTime: this.reportportal.helpers.now(),
       type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
-      name,
+      name: `${keyword}: ${name}`,
       description: scenario.description,
       attributes: utils.createAttributes(scenario.tags),
       codeRef: scenarioCodeRef,
@@ -234,10 +238,17 @@ module.exports = {
       testData.parameters = this.storage.getParameters(parametersId);
     }
 
+    const { children } = feature;
+    const stepsAstNodesData = utils.findAstNodesData(children);
+    const astNodesDataField = Symbol.for(SYMBOLS_NAMES.astNodesDataField);
+
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
     this.storage.setScenarioTempId(tempId);
-    this.storage.updateTestCase(testCaseId, { codeRef: scenarioCodeRef });
+    this.storage.updateTestCase(testCaseId, {
+      codeRef: scenarioCodeRef,
+      [astNodesDataField]: stepsAstNodesData,
+    });
   },
   onTestStepStartedEvent(data) {
     const { testCaseStartedId, testStepId } = data;
@@ -247,7 +258,12 @@ module.exports = {
 
     // start step
     if (step) {
-      const { text: stepName, type } = step;
+      const { text: stepName, type, astNodeIds } = step;
+      const astNodesDataField = Symbol.for(SYMBOLS_NAMES.astNodesDataField);
+      const keyword =
+        astNodeIds &&
+        (testCase[astNodesDataField].find(({ id }) => astNodeIds.includes(id)) || {}).keyword;
+
       const codeRef = utils.formatCodeRef(testCase.codeRef, stepName);
       const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);
       this.codeRefIndexesMap.set(codeRef, (stepCodeRefIndexValue || 0) + 1);
@@ -257,7 +273,7 @@ module.exports = {
           : stepName;
 
       const stepData = {
-        name,
+        name: keyword ? `${keyword} ${name}` : name,
         startTime: this.reportportal.helpers.now(),
         type,
         codeRef,
