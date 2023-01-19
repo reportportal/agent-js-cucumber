@@ -81,7 +81,12 @@ describe('cucumber-reportportal-formatter', () => {
 
   describe('onTestCaseEvent', () => {
     it('should set steps to storage under testCaseId', () => {
-      const expectedRes = { ...pickle.steps[0], type: TEST_ITEM_TYPES.STEP };
+      formatter.onGherkinDocumentEvent(gherkinDocument);
+      const expectedRes = {
+        ...pickle.steps[0],
+        type: TEST_ITEM_TYPES.STEP,
+        stepsAstNodesData: scenario.steps,
+      };
 
       formatter.storage.setPickle(pickle);
       formatter.onTestCaseEvent(testCase);

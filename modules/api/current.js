@@ -24,7 +24,6 @@ const {
   STATUSES,
   CUCUMBER_MESSAGES,
   TEST_ITEM_TYPES,
-  SYMBOLS_NAMES,
 } = require('../constants');
 const Storage = require('../storage');
 
@@ -104,9 +103,12 @@ module.exports = {
       const { pickleStepId, id, hookId } = step;
 
       if (pickleStepId) {
-        const { steps: stepsData } = this.storage.getPickle(pickleId);
+        const { steps: stepsData, uri } = this.storage.getPickle(pickleId);
+        const { children } = this.storage.getFeature(uri);
+        const stepsAstNodesData = utils.findAstNodesData(children);
+
         const stepData = stepsData.find((item) => item.id === pickleStepId);
-        stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP };
+        stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP, stepsAstNodesData };
       } else if (hookId) {
         const isBeforeHook = index === 0;
         const { name } = this.storage.getHook(hookId);
@@ -237,17 +239,11 @@ module.exports = {
       });
       testData.parameters = this.storage.getParameters(parametersId);
     }
-
-    const { children } = feature;
-    const stepsAstNodesData = utils.findAstNodesData(children);
-    const astNodesDataField = Symbol.for(SYMBOLS_NAMES.astNodesDataField);
-
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
     this.storage.setScenarioTempId(tempId);
     this.storage.updateTestCase(testCaseId, {
       codeRef: scenarioCodeRef,
-      [astNodesDataField]: stepsAstNodesData,
     });
   },
   onTestStepStartedEvent(data) {
@@ -258,11 +254,9 @@ module.exports = {
 
     // start step
     if (step) {
-      const { text: stepName, type, astNodeIds } = step;
-      const astNodesDataField = Symbol.for(SYMBOLS_NAMES.astNodesDataField);
+      const { text: stepName, type, astNodeIds, stepsAstNodesData } = step;
       const keyword =
-        astNodeIds &&
-        (testCase[astNodesDataField].find(({ id }) => astNodeIds.includes(id)) || {}).keyword;
+        astNodeIds && (stepsAstNodesData.find(({ id }) => astNodeIds.includes(id)) || {}).keyword;
 
       const codeRef = utils.formatCodeRef(testCase.codeRef, stepName);
       const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);
