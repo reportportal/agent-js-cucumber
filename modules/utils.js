@@ -112,17 +112,16 @@ const collectParams = ({ tableHeader, tableBody }) => {
   }, {});
 };
 
-const findAstNodesData = (testSteps) => {
-  const isRule = testSteps.some((entity) => 'rule' in entity);
+const findAstNodesData = (children) => {
+  const flattenChildren = children.reduce(
+    (acc, child) => acc.concat('rule' in child ? child.rule.children : child),
+    [],
+  );
 
-  if (!isRule) {
-    return testSteps.reduce((acc, steps) => {
-      const keywords = Object.keys(steps);
-      return acc.concat(...keywords.map((keyword) => steps[keyword].steps));
-    }, []);
-  }
-
-  return findAstNodesData(testSteps.reduce((acc, { rule }) => acc.concat(rule.children), []));
+  return flattenChildren.reduce((acc, child) => {
+    const childValues = Object.values(child);
+    return acc.concat(childValues.map((childValue) => childValue.steps).flat());
+  }, []);
 };
 
 module.exports = {
