@@ -129,27 +129,26 @@ describe('utils', () => {
     expect(utils.collectParams({ tableHeader, tableBody })).toEqual(expectedRes);
   });
   it('findAstNodesData should create an array of astNodeObjects which contains step information', () => {
+    const astNodeIds = ['scenarioStepId', 'anotherScenarioStepId'];
     const children = [
       {
         rule: {
           children: [
             {
               scenario: {
-                steps: [
-                  { keyword: 'Then ', id: 'scenarioStepId' },
-                  { keyword: 'When ', id: 'scenarioStepId' },
-                ],
+                id: 'scenarioStepId',
+                steps: [{ keyword: 'Then ' }, { keyword: 'When ' }],
+              },
+              background: {
+                steps: [{ keyword: 'Then ' }],
               },
             },
           ],
         },
       },
     ];
-    const expectedResult = [
-      { keyword: 'Then ', id: 'scenarioStepId' },
-      { keyword: 'When ', id: 'scenarioStepId' },
-    ];
+    const expectedResult = [{ keyword: 'Then ' }, { keyword: 'When ' }, { keyword: 'Then ' }];
 
-    expect(utils.findAstNodesData(children)).toStrictEqual(expectedResult);
+    expect(utils.findAstNodesData(children, astNodeIds)).toStrictEqual(expectedResult);
   });
 });

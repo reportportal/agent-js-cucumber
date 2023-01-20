@@ -95,7 +95,7 @@ module.exports = {
   },
   onTestCaseEvent(data) {
     const { id: testCaseId, pickleId, testSteps } = data;
-    this.storage.setTestCase(data);
+    this.storage.setTestCase({ id: testCaseId, pickleId, testSteps });
 
     // prepare steps
     const stepsMap = {};
@@ -103,10 +103,11 @@ module.exports = {
       const { pickleStepId, id, hookId } = step;
 
       if (pickleStepId) {
-        const { steps: stepsData, uri } = this.storage.getPickle(pickleId);
+        const { steps: stepsData, uri, astNodeIds } = this.storage.getPickle(pickleId);
         const { children } = this.storage.getFeature(uri);
-        const stepsAstNodesData = utils.findAstNodesData(children);
 
+        const stepsAstNodesData =
+          (astNodeIds && utils.findAstNodesData(children, astNodeIds)) || [];
         const stepData = stepsData.find((item) => item.id === pickleStepId);
         stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP, stepsAstNodesData };
       } else if (hookId) {

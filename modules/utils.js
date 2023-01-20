@@ -112,15 +112,25 @@ const collectParams = ({ tableHeader, tableBody }) => {
   }, {});
 };
 
-const findAstNodesData = (children) => {
+const findAstNodesData = (children, astNodeIds) => {
   const flattenChildren = children.reduce(
     (acc, child) => acc.concat('rule' in child ? child.rule.children : child),
     [],
   );
+  const isCollectBackground = (key) => key === 'background';
 
   return flattenChildren.reduce((acc, child) => {
-    const childValues = Object.values(child);
-    return acc.concat(childValues.map((childValue) => childValue.steps).flat());
+    const childKeys = Object.entries(child);
+    return acc.concat(
+      childKeys.reduce(
+        (accumulator, [key, { id, steps }]) =>
+          astNodeIds.includes(id) || isCollectBackground(key)
+            ? accumulator.concat(steps)
+            : accumulator,
+
+        [],
+      ),
+    );
   }, []);
 };
 
