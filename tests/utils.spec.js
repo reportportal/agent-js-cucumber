@@ -15,7 +15,7 @@
  */
 
 const utils = require('../modules/utils');
-const { scenarioId, featureWithRule, feature } = require('./data');
+const { scenarioId, featureWithRule, feature, scenario } = require('./data');
 
 describe('utils', () => {
   describe('getJSON', () => {
@@ -128,27 +128,7 @@ describe('utils', () => {
 
     expect(utils.collectParams({ tableHeader, tableBody })).toEqual(expectedRes);
   });
-  it('findAstNodesData should create an array of astNodeObjects which contains step information', () => {
-    const astNodeIds = ['scenarioStepId', 'anotherScenarioStepId'];
-    const children = [
-      {
-        rule: {
-          children: [
-            {
-              scenario: {
-                id: 'scenarioStepId',
-                steps: [{ keyword: 'Then ' }, { keyword: 'When ' }],
-              },
-              background: {
-                steps: [{ keyword: 'Then ' }],
-              },
-            },
-          ],
-        },
-      },
-    ];
-    const expectedResult = [{ keyword: 'Then ' }, { keyword: 'When ' }, { keyword: 'Then ' }];
-
-    expect(utils.findAstNodesData(children, astNodeIds)).toStrictEqual(expectedResult);
+  it('findAstNodesData should create an array of scenario steps', () => {
+    expect(utils.findAstNodesData(feature.children)).toStrictEqual(scenario.steps);
   });
 });

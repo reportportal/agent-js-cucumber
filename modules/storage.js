@@ -24,6 +24,7 @@ module.exports = class Storage {
     this.testCaseStartedIds = new Map();
     this.steps = new Map();
     this.parameters = new Map();
+    this.astNodesData = new Map();
     this.currentFeatureUri = null;
     this.featureTempId = null;
     this.ruleTempId = null;
@@ -178,5 +179,13 @@ module.exports = class Storage {
 
   getLastScenario() {
     return this.isLastScenario;
+  }
+
+  setAstNodesData({ uri }, astNodesData) {
+    this.astNodesData.set(uri, astNodesData);
+  }
+
+  getAstNodesData(uri) {
+    return this.astNodesData.get(uri);
   }
 };

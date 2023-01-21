@@ -65,6 +65,7 @@ module.exports = {
   },
   onGherkinDocumentEvent(data) {
     this.storage.setDocument(data);
+    this.storage.setAstNodesData(data, utils.findAstNodesData(data.feature.children));
   },
   onHookEvent(data) {
     const { id } = data;
@@ -103,13 +104,9 @@ module.exports = {
       const { pickleStepId, id, hookId } = step;
 
       if (pickleStepId) {
-        const { steps: stepsData, uri, astNodeIds } = this.storage.getPickle(pickleId);
-        const { children } = this.storage.getFeature(uri);
-
-        const stepsAstNodesData =
-          (astNodeIds && utils.findAstNodesData(children, astNodeIds)) || [];
+        const { steps: stepsData } = this.storage.getPickle(pickleId);
         const stepData = stepsData.find((item) => item.id === pickleStepId);
-        stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP, stepsAstNodesData };
+        stepsMap[id] = { ...stepData, type: TEST_ITEM_TYPES.STEP };
       } else if (hookId) {
         const isBeforeHook = index === 0;
         const { name } = this.storage.getHook(hookId);
@@ -255,9 +252,12 @@ module.exports = {
 
     // start step
     if (step) {
-      const { text: stepName, type, astNodeIds, stepsAstNodesData } = step;
+      const currentFeatureUri = this.storage.getCurrentFeatureUri();
+      const astNodesData = this.storage.getAstNodesData(currentFeatureUri);
+
+      const { text: stepName, type, astNodeIds } = step;
       const keyword =
-        astNodeIds && (stepsAstNodesData.find(({ id }) => astNodeIds.includes(id)) || {}).keyword;
+        astNodeIds && (astNodesData.find(({ id }) => astNodeIds.includes(id)) || {}).keyword;
 
       const codeRef = utils.formatCodeRef(testCase.codeRef, stepName);
       const stepCodeRefIndexValue = this.codeRefIndexesMap.get(codeRef);

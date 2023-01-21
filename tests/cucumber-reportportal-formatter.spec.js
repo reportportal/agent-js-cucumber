@@ -56,10 +56,15 @@ describe('cucumber-reportportal-formatter', () => {
   });
 
   describe('onGherkinDocumentEvent', () => {
-    it('should set document to storage', () => {
+    beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
-
+    });
+    it('should set document to storage', () => {
       expect(formatter.storage.getDocument(uri)).toBe(gherkinDocument);
+    });
+
+    it('should set document feature.children', () => {
+      expect(formatter.storage.getAstNodesData(uri)).toStrictEqual(scenario.steps);
     });
   });
 
@@ -85,7 +90,6 @@ describe('cucumber-reportportal-formatter', () => {
       const expectedRes = {
         ...pickle.steps[0],
         type: TEST_ITEM_TYPES.STEP,
-        stepsAstNodesData: scenario.steps,
       };
 
       formatter.storage.setPickle(pickle);
