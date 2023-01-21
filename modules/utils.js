@@ -112,6 +112,18 @@ const collectParams = ({ tableHeader, tableBody }) => {
   }, {});
 };
 
+const findAstNodesData = (children) => {
+  const flattenChildren = children.reduce(
+    (acc, child) => acc.concat('rule' in child ? child.rule.children : child),
+    [],
+  );
+
+  return flattenChildren.reduce((acc, child) => {
+    const childValues = Object.values(child);
+    return acc.concat(childValues.map((childValue) => childValue.steps).flat());
+  }, []);
+};
+
 module.exports = {
   createAttribute,
   createAttributes,
@@ -122,4 +134,5 @@ module.exports = {
   detectLastScenario,
   bindToClass,
   collectParams,
+  findAstNodesData,
 };

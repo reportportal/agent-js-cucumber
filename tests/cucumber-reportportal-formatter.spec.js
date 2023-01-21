@@ -56,10 +56,15 @@ describe('cucumber-reportportal-formatter', () => {
   });
 
   describe('onGherkinDocumentEvent', () => {
-    it('should set document to storage', () => {
+    beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
-
+    });
+    it('should set document to storage', () => {
       expect(formatter.storage.getDocument(uri)).toBe(gherkinDocument);
+    });
+
+    it('should set document feature.children', () => {
+      expect(formatter.storage.getAstNodesData(uri)).toStrictEqual(scenario.steps);
     });
   });
 
@@ -81,7 +86,11 @@ describe('cucumber-reportportal-formatter', () => {
 
   describe('onTestCaseEvent', () => {
     it('should set steps to storage under testCaseId', () => {
-      const expectedRes = { ...pickle.steps[0], type: TEST_ITEM_TYPES.STEP };
+      formatter.onGherkinDocumentEvent(gherkinDocument);
+      const expectedRes = {
+        ...pickle.steps[0],
+        type: TEST_ITEM_TYPES.STEP,
+      };
 
       formatter.storage.setPickle(pickle);
       formatter.onTestCaseEvent(testCase);
@@ -166,7 +175,7 @@ describe('cucumber-reportportal-formatter', () => {
         {
           attributes: [],
           description: undefined,
-          name: scenario.name,
+          name: `${scenario.keyword}: ${scenario.name}`,
           startTime: mockedDate,
           type: 'TEST',
           codeRef: `${uri}/${feature.name}/${scenario.name}`,

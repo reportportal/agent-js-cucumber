@@ -15,7 +15,7 @@
  */
 
 const utils = require('../modules/utils');
-const { scenarioId, featureWithRule, feature } = require('./data');
+const { scenarioId, featureWithRule, feature, scenario } = require('./data');
 
 describe('utils', () => {
   describe('getJSON', () => {
@@ -127,5 +127,8 @@ describe('utils', () => {
     };
 
     expect(utils.collectParams({ tableHeader, tableBody })).toEqual(expectedRes);
+  });
+  it('findAstNodesData should create an array of scenario steps', () => {
+    expect(utils.findAstNodesData(feature.children)).toStrictEqual(scenario.steps);
   });
 });
