@@ -21,7 +21,7 @@ const scenario = {
   id: scenarioId,
   name: 'scenario name',
   keyword: 'Scenario',
-  steps: [{ id: 'scenarioStepsId', keyword: 'Then' }],
+  steps: [{ id: 'scenarioStepsId', keyword: 'Then', location: { line: 7, column: 5 } }],
 };
 const feature = {
   keyword: 'Feature',

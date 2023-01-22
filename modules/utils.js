@@ -124,6 +124,15 @@ const findAstNodesData = (children) => {
   }, []);
 };
 
+const getScreenshotName = (astNodesData, astNodesIds) => {
+  const location =
+    astNodesIds && (astNodesData.find(({ id }) => astNodesIds.includes(id)) || {}).location;
+
+  return location
+    ? `Failed at step definition line:${location.line} column:${location.column}`
+    : 'UNDEFINED STEP';
+};
+
 module.exports = {
   createAttribute,
   createAttributes,
@@ -135,4 +144,5 @@ module.exports = {
   bindToClass,
   collectParams,
   findAstNodesData,
+  getScreenshotName,
 };
