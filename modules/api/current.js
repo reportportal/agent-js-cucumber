@@ -432,11 +432,11 @@ module.exports = {
           message: stripAnsi(testStepResult.message),
         });
 
-        const hasBrowser = 'browser' in global;
+        const isBrowserAvailable = 'browser' in global;
         const isTakeScreenshotOptionProvidedInRPConfig =
           this.config.takeScreenshot && this.config.takeScreenshot === 'onFailure';
 
-        if (hasBrowser && isTakeScreenshotOptionProvidedInRPConfig) {
+        if (isBrowserAvailable && isTakeScreenshotOptionProvidedInRPConfig) {
           const currentFeatureUri = this.storage.getCurrentFeatureUri();
           const astNodesData = this.storage.getAstNodesData(currentFeatureUri);
           const screenshotName = utils.getScreenshotName(astNodesData, step.astNodeIds);
