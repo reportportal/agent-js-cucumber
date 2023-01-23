@@ -54,6 +54,7 @@ npm install --save-dev @reportportal/agent-js-cucumber
       "endpoint": "${rp.endpoint}/api/v1",
       "launch": "${rp.launch}",
       "project": "${rp.your_project}",
+      "takeScreenshot": "onFailure",
       "description": "Awesome launch description.",
       "attributes": [
         {
