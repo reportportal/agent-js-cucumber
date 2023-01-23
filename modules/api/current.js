@@ -431,6 +431,37 @@ module.exports = {
           level: 'ERROR',
           message: stripAnsi(testStepResult.message),
         });
+
+        const isBrowserAvailable = 'browser' in global;
+        const isTakeScreenshotOptionProvidedInRPConfig =
+          this.config.takeScreenshot && this.config.takeScreenshot === 'onFailure';
+
+        if (isBrowserAvailable && isTakeScreenshotOptionProvidedInRPConfig) {
+          const currentFeatureUri = this.storage.getCurrentFeatureUri();
+          const astNodesData = this.storage.getAstNodesData(currentFeatureUri);
+          const screenshotName = utils.getScreenshotName(astNodesData, step.astNodeIds);
+
+          const request = {
+            time: this.reportportal.helpers.now(),
+            level: 'ERROR',
+            file: { name: screenshotName },
+            message: screenshotName,
+          };
+
+          global.browser
+            .takeScreenshot()
+            .then((png) => {
+              const screenshot = {
+                name: screenshotName,
+                type: 'image/png',
+                content: png,
+              };
+              this.reportportal.sendLog(tempStepId, request, screenshot);
+            })
+            .catch((error) => {
+              console.dir(error);
+            });
+        }
         break;
       }
       default:

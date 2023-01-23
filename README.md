@@ -54,6 +54,7 @@ npm install --save-dev @reportportal/agent-js-cucumber
       "endpoint": "${rp.endpoint}/api/v1",
       "launch": "${rp.launch}",
       "project": "${rp.your_project}",
+      "takeScreenshot": "onFailure",
       "description": "Awesome launch description.",
       "attributes": [
         {
@@ -68,7 +69,7 @@ npm install --save-dev @reportportal/agent-js-cucumber
       }
     }
     ```
-
+    `takeScreenshot` - if this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.<br/>
     `mode` - Launch mode. Allowable values *DEFAULT* (by default) or *DEBUG*.<br/>
     `debug` - this flag allows seeing the logs of the `client-javascript`. Useful for debugging.<br/>
     `restClientConfig` (optional) - The object with `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, may contain other client options eg. `timeout`.

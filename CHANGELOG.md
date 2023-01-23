@@ -1,5 +1,6 @@
 ### Added
 - Provide BDD entities titles to their names
+- Screenshot attaching on failure
 ### Fixed
 - Finish feature/scenario only when its children have already been finished
 

@@ -131,4 +131,22 @@ describe('utils', () => {
   it('findAstNodesData should create an array of scenario steps', () => {
     expect(utils.findAstNodesData(feature.children)).toStrictEqual(scenario.steps);
   });
+
+  describe('getScreenshotName', () => {
+    const astNodeIds = ['scenarioStepsId'];
+
+    it('should return "UNDEFINED STEP" when astNodeIds is undefined or null', () => {
+      expect(utils.getScreenshotName(scenario.steps, undefined)).toBe('UNDEFINED STEP');
+    });
+
+    it('should return "UNDEFINED STEP" when astNodesData does not contains step information of corresponding step', () => {
+      expect(utils.getScreenshotName(scenario.steps, ['not exists ID'])).toBe('UNDEFINED STEP');
+    });
+
+    it('should return "Failed at step definition line: column: " when astNodesData contains step information for corresponding step', () => {
+      expect(utils.getScreenshotName(scenario.steps, astNodeIds)).toBe(
+        'Failed at step definition line:7 column:5',
+      );
+    });
+  });
 });
