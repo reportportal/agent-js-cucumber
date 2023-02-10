@@ -34,6 +34,8 @@ const {
   ruleTempId,
   hookId,
   hook,
+  ruleId,
+  featureWithRule,
 } = require('./data');
 
 describe('test Storage', () => {
@@ -145,26 +147,69 @@ describe('test Storage', () => {
   });
 
   it('set/getScenarioTempId', () => {
-    storage.setScenarioTempId(scenarioTempId);
+    storage.setScenarioTempId(testCaseStartedId, scenarioTempId);
 
-    expect(storage.getScenarioTempId()).toBe(scenarioTempId);
+    expect(storage.getScenarioTempId(testCaseStartedId)).toBe(scenarioTempId);
+  });
+
+  it('set/removeScenarioTempId', () => {
+    storage.setScenarioTempId(testCaseStartedId, scenarioTempId);
+    storage.removeScenarioTempId(testCaseStartedId);
+
+    expect(storage.getScenarioTempId(testCaseStartedId)).toBeUndefined();
   });
 
   it('set/getStepTempId', () => {
-    storage.setStepTempId(stepTempId);
+    storage.setStepTempId(testStepId, stepTempId);
 
-    expect(storage.getStepTempId()).toBe(stepTempId);
+    expect(storage.getStepTempId(testStepId)).toBe(stepTempId);
+  });
+
+  it('set/removeStepTempId', () => {
+    storage.setStepTempId(testStepId.stepTempId);
+    storage.removeStepTempId(testCaseStartedId);
+
+    expect(storage.removeStepTempId(testStepId)).toBeUndefined();
   });
 
   it('set/getRuleTempId', () => {
-    storage.setRuleTempId(ruleTempId);
+    storage.setRuleTempId(ruleId, ruleTempId);
 
-    expect(storage.getRuleTempId()).toBe(ruleTempId);
+    expect(storage.getRuleTempId(ruleId)).toBe(ruleTempId);
   });
 
-  it('set/getLastScenario value', () => {
-    storage.setLastScenario(true);
+  it('set/removeRuleTempId', () => {
+    storage.setRuleTempId(ruleId, ruleTempId);
+    storage.removeRuleTempId(ruleId);
 
-    expect(storage.getLastScenario()).toBe(true);
+    expect(storage.removeRuleTempId(ruleId)).toBeUndefined();
+  });
+
+  it('set/getRuleTempIdToTestCase', () => {
+    storage.setRuleTempIdToTestCase(testCaseStartedId, ruleTempId);
+
+    expect(storage.getRuleTempIdToTestCase(testCaseStartedId)).toBe(ruleTempId);
+  });
+
+  it('set/removeRuleTempIdToTestCase', () => {
+    storage.setRuleTempIdToTestCase(testCaseStartedId, ruleTempId);
+    storage.removeRuleTempIdToTestCase(testCaseStartedId);
+
+    expect(storage.getRuleTempIdToTestCase(testCaseStartedId)).toBeUndefined();
+  });
+
+  it('set/getRuleChildren', () => {
+    const ruleChildren = featureWithRule.children.map((child) => child.rule.children);
+    storage.setRuleChildren(ruleTempId, ruleChildren);
+
+    expect(storage.getRuleChildren(ruleTempId)).toStrictEqual(ruleChildren);
+  });
+
+  it('set/removeRuleTempIdToTestCase', () => {
+    const ruleChildren = featureWithRule.children.map((child) => child.rule.children);
+    storage.setRuleChildren(ruleTempId, ruleChildren);
+    storage.removeRuleChildren(ruleTempId);
+
+    expect(storage.getRuleChildren(ruleTempId)).toStrictEqual([]);
   });
 });

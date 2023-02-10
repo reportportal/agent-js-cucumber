@@ -65,15 +65,8 @@ const findNode = (feature, searchId) => {
   });
 };
 
-const detectLastScenario = (node, searchId) => {
-  let isLastScenario = false;
-  node.children.forEach((child, index) => {
-    if (child.scenario) {
-      isLastScenario = child.scenario.id === searchId && index === node.children.length - 1;
-    }
-  });
-  return isLastScenario;
-};
+const detectLastScenario = (allScenarios, startedScenarios) =>
+  allScenarios.every((scenarioId) => startedScenarios.includes(scenarioId));
 
 const findScenario = (node, searchId) => {
   const children = node.children.find((child) => {

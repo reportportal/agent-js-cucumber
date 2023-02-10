@@ -64,16 +64,16 @@ describe('utils', () => {
 
   describe('detectLastScenario', () => {
     it('detectLastScenario should return true', () => {
-      const node = featureWithRule.children[0].rule;
-
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(true);
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedChildren = ruleChildren;
+      expect(utils.detectLastScenario(ruleChildren, startedChildren)).toBe(true);
     });
 
     it('detectLastScenario should return false', () => {
-      const node = featureWithRule.children[0].rule;
-      node.children.push({ scenario: { id: 'abc' } });
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedChildren = [];
 
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(false);
+      expect(utils.detectLastScenario(ruleChildren, startedChildren)).toBe(false);
     });
   });
 

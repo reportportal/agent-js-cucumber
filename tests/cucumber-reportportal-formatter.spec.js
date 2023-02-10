@@ -156,7 +156,7 @@ describe('cucumber-reportportal-formatter', () => {
     it('start scenario flow', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
-      expect(formatter.storage.getScenarioTempId()).toBe('testItemId');
+      expect(formatter.storage.getScenarioTempId(testCaseStartedId)).toBe('testItemId');
     });
 
     it('start rule flow', () => {
@@ -236,7 +236,7 @@ describe('cucumber-reportportal-formatter', () => {
         status: STATUSES.FAILED,
         description: '```error\nerror message\n```',
       });
-      expect(formatter.storage.getStepTempId()).toBe(null);
+      expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
     });
   });
 
@@ -264,7 +264,7 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getTestCaseId(testCaseStartedId)).toBe(undefined);
       expect(formatter.storage.getStep(testCaseId, testStepId)).toBe(undefined);
       expect(formatter.storage.getTestCase(testCaseId)).toBe(undefined);
-      expect(formatter.storage.getScenarioTempId()).toBeNull();
+      expect(formatter.storage.getScenarioTempId(testCaseStartedId)).toBeUndefined();
     });
 
     it('should not finishTestItem if this is scenarioBaseStatistics or test case willBeRetried', () => {

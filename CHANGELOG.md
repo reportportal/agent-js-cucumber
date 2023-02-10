@@ -1,6 +1,7 @@
 ### Added
 - Provide BDD entities titles to their names
 - Screenshot attaching on failure
+- Add parallel reporting support 
 ### Fixed
 - Finish feature/scenario only when its children have already been finished
 
