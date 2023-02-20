@@ -65,8 +65,8 @@ const findNode = (feature, searchId) => {
   });
 };
 
-const isAllRuleChildrenStarted = (allScenarios, startedScenarios) =>
-  allScenarios.every((scenarioId) => startedScenarios.has(scenarioId));
+const isAllRuleChildrenStarted = (ruleChildrenIds, startedRuleChildrenIds) =>
+  ruleChildrenIds.every((childId) => startedRuleChildrenIds.has(childId));
 
 const findScenario = (node, searchId) => {
   const children = node.children.find((child) => {

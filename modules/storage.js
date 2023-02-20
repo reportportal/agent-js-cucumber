@@ -31,7 +31,7 @@ module.exports = class Storage {
     this.stepTempId = new Map();
     this.ruleTempId = new Map();
     this.ruleTempIdToTestCaseStartedId = new Map();
-    this.startedRuleChildren = new Map();
+    this.startedRuleChildrenIds = new Map();
     this.ruleChildrenIds = new Map();
   }
 
@@ -203,16 +203,19 @@ module.exports = class Storage {
     this.ruleTempIdToTestCaseStartedId.delete(testCaseStartedId);
   }
 
-  getStartedRuleChildren(ruleTempId) {
-    return this.startedRuleChildren.get(ruleTempId) || new Set();
+  getStartedRuleChildrenIds(ruleTempId) {
+    return this.startedRuleChildrenIds.get(ruleTempId) || new Set();
   }
 
-  setStartedRuleChildren(ruleTempId, child) {
-    this.startedRuleChildren.set(ruleTempId, this.getStartedRuleChildren(ruleTempId).add(child));
+  setStartedRuleChildrenIds(ruleTempId, child) {
+    this.startedRuleChildrenIds.set(
+      ruleTempId,
+      this.getStartedRuleChildrenIds(ruleTempId).add(child),
+    );
   }
 
-  removeStartedRuleChildren(ruleTempId) {
-    this.startedRuleChildren.delete(ruleTempId);
+  removeStartedRuleChildrenIds(ruleTempId) {
+    this.startedRuleChildrenIds.delete(ruleTempId);
   }
 
   setRuleChildrenIds(ruleTempId, children) {

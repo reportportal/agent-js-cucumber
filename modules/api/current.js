@@ -190,10 +190,10 @@ module.exports = {
         this.storage.setRuleTempId(ruleId, ruleTempId);
         this.storage.setRuleTempIdToTestCase(id, ruleTempId);
         this.storage.setRuleChildrenIds(ruleTempId, childrenIds);
-        this.storage.setStartedRuleChildren(ruleTempId, scenarioId);
+        this.storage.setStartedRuleChildrenIds(ruleTempId, scenarioId);
       } else {
         this.storage.setRuleTempIdToTestCase(id, ruleTempId);
-        this.storage.setStartedRuleChildren(ruleTempId, scenarioId);
+        this.storage.setStartedRuleChildrenIds(ruleTempId, scenarioId);
         scenario = utils.findScenario(currentNode.rule, scenarioId);
       }
     } else {
@@ -519,18 +519,21 @@ module.exports = {
 
     // finish RULE if it's exist and if it's last scenario
     const ruleTempId = this.storage.getRuleTempIdToTestCase(testCaseStartedId);
-    const allScenarios = this.storage.getRuleChildrenIds(ruleTempId);
-    const startedScenarios = this.storage.getStartedRuleChildren(ruleTempId);
-    const isLastScenario = utils.isAllRuleChildrenStarted(allScenarios, startedScenarios);
+    const ruleChildrenIds = this.storage.getRuleChildrenIds(ruleTempId);
+    const startedRuleChildrenIds = this.storage.getStartedRuleChildrenIds(ruleTempId);
+    const isAllRuleChildrenStarted = utils.isAllRuleChildrenStarted(
+      ruleChildrenIds,
+      startedRuleChildrenIds,
+    );
 
-    if (ruleTempId && isLastScenario) {
+    if (ruleTempId && isAllRuleChildrenStarted) {
       this.reportportal.finishTestItem(ruleTempId, {
         endTime: this.reportportal.helpers.now(),
       });
 
       this.storage.removeRuleTempIdToTestCase(testCaseStartedId);
-      this.storage.removeStartedRuleChildren(ruleTempId);
-      this.storage.removeRuleChildren(ruleTempId);
+      this.storage.removeStartedRuleChildrenIds(ruleTempId);
+      this.storage.removeRuleChildrenIds(ruleTempId);
       this.codeRefIndexesMap.clear();
     }
 
