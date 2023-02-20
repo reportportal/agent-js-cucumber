@@ -65,15 +65,8 @@ const findNode = (feature, searchId) => {
   });
 };
 
-const detectLastScenario = (node, searchId) => {
-  let isLastScenario = false;
-  node.children.forEach((child, index) => {
-    if (child.scenario) {
-      isLastScenario = child.scenario.id === searchId && index === node.children.length - 1;
-    }
-  });
-  return isLastScenario;
-};
+const isAllRuleChildrenStarted = (ruleChildrenIds, startedRuleChildrenIds) =>
+  ruleChildrenIds.every((childId) => startedRuleChildrenIds.has(childId));
 
 const findScenario = (node, searchId) => {
   const children = node.children.find((child) => {
@@ -140,7 +133,7 @@ module.exports = {
   formatCodeRef,
   findNode,
   findScenario,
-  detectLastScenario,
+  isAllRuleChildrenStarted,
   bindToClass,
   collectParams,
   findAstNodesData,

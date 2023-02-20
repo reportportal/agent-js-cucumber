@@ -17,6 +17,7 @@
 const launchTempId = 'tempId';
 const uri = 'features/statuses/statuses.feature';
 const scenarioId = '1957ea93-e4de-4895-86e8-acb857b5b069';
+const ruleId = '2034eaf4-f7hv-8234-55l4-njk687k3k423';
 const scenario = {
   id: scenarioId,
   name: 'scenario name',
@@ -133,4 +134,5 @@ module.exports = {
   scenarioTempId,
   stepTempId,
   ruleTempId,
+  ruleId,
 };

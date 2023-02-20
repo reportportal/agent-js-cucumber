@@ -163,32 +163,39 @@ module.exports = {
     const currentNode = utils.findNode(feature, scenarioId);
 
     let scenario;
-    let ruleTempId = this.storage.getRuleTempId();
-    if (currentNode.rule && !ruleTempId) {
-      // start RULE
-      const { rule } = currentNode;
-      const { name, description, tags, keyword } = rule;
-      const currentNodeCodeRef = utils.formatCodeRef(featureCodeRef, name);
-      const testData = {
-        startTime: this.reportportal.helpers.now(),
-        type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
-        name: `${keyword}: ${name}`,
-        description,
-        attributes: utils.createAttributes(tags),
-        codeRef: currentNodeCodeRef,
-      };
-      const parentId = this.storage.getFeatureTempId();
-      const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
-      ruleTempId = tempId;
-      this.storage.setRuleTempId(tempId);
+    let ruleTempId;
+    if (currentNode.rule) {
+      ruleTempId = this.storage.getRuleTempId(currentNode.rule.id);
 
-      scenario = utils.findScenario(rule, scenarioId);
-      const isLastScenario = utils.detectLastScenario(currentNode.rule, scenarioId);
-      this.storage.setLastScenario(isLastScenario);
-    } else if (currentNode.rule && ruleTempId) {
-      scenario = utils.findScenario(currentNode.rule, scenarioId);
-      const isLastScenario = utils.detectLastScenario(currentNode.rule, scenarioId);
-      this.storage.setLastScenario(isLastScenario);
+      if (!ruleTempId) {
+        const { rule } = currentNode;
+
+        const { name, description, tags, keyword, children = [], id: ruleId } = rule;
+        const childrenIds = children.map((child) => child.scenario.id);
+        const currentNodeCodeRef = utils.formatCodeRef(featureCodeRef, name);
+        const testData = {
+          startTime: this.reportportal.helpers.now(),
+          type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
+          name: `${keyword}: ${name}`,
+          description,
+          attributes: utils.createAttributes(tags),
+          codeRef: currentNodeCodeRef,
+        };
+        const parentId = this.storage.getFeatureTempId();
+        const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
+        ruleTempId = tempId;
+
+        scenario = utils.findScenario(rule, scenarioId);
+
+        this.storage.setRuleTempId(ruleId, ruleTempId);
+        this.storage.setRuleTempIdToTestCase(id, ruleTempId);
+        this.storage.setRuleChildrenIds(ruleTempId, childrenIds);
+        this.storage.setStartedRuleChildrenIds(ruleTempId, scenarioId);
+      } else {
+        this.storage.setRuleTempIdToTestCase(id, ruleTempId);
+        this.storage.setStartedRuleChildrenIds(ruleTempId, scenarioId);
+        scenario = utils.findScenario(currentNode.rule, scenarioId);
+      }
     } else {
       scenario = currentNode.scenario;
     }
@@ -198,6 +205,7 @@ module.exports = {
       isRetry = true;
       this.storage.updateTestCase(testCaseId, { isRetry });
 
+      // do not show scenario with retry in RP
       if (!this.isScenarioBasedStatistics) return;
     }
 
@@ -239,7 +247,7 @@ module.exports = {
     }
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
-    this.storage.setScenarioTempId(tempId);
+    this.storage.setScenarioTempId(testCaseId, tempId);
     this.storage.updateTestCase(testCaseId, {
       codeRef: scenarioCodeRef,
     });
@@ -288,9 +296,9 @@ module.exports = {
       }
 
       const launchTempId = this.storage.getLaunchTempId();
-      const parentId = this.storage.getScenarioTempId();
+      const parentId = this.storage.getScenarioTempId(testCaseId);
       const { tempId } = this.reportportal.startTestItem(stepData, launchTempId, parentId);
-      this.storage.setStepTempId(tempId);
+      this.storage.setStepTempId(testStepId, tempId);
     }
   },
   onTestStepAttachmentEvent(data) {
@@ -333,7 +341,7 @@ module.exports = {
           const request = {
             time: this.reportportal.helpers.now(),
           };
-          let tempStepId = this.storage.getStepTempId();
+          let tempStepId = this.storage.getStepTempId(testStepId);
 
           if (dataObj) {
             request.level = dataObj.level;
@@ -358,7 +366,7 @@ module.exports = {
               name: fileName,
             },
           };
-          let tempStepId = this.storage.getStepTempId();
+          let tempStepId = this.storage.getStepTempId(testStepId);
 
           if (dataObj) {
             if (dataObj.level) {
@@ -385,7 +393,7 @@ module.exports = {
     const { testCaseStartedId, testStepId, testStepResult } = data;
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const step = this.storage.getStep(testCaseId, testStepId);
-    const tempStepId = this.storage.getStepTempId();
+    const tempStepId = this.storage.getStepTempId(testStepId);
     let status;
 
     switch (testStepResult.status.toLowerCase()) {
@@ -491,7 +499,7 @@ module.exports = {
       this.storage.updateTestCase(testCaseId, { status: STATUSES.FAILED });
     }
 
-    this.storage.setStepTempId(null);
+    this.storage.removeStepTempId(testStepId);
   },
   onTestCaseFinishedEvent({ testCaseStartedId, willBeRetried }) {
     const isNeedToFinishTestCase = !this.isScenarioBasedStatistics && willBeRetried;
@@ -502,7 +510,7 @@ module.exports = {
 
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const testCase = this.storage.getTestCase(testCaseId);
-    const scenarioTempId = this.storage.getScenarioTempId();
+    const scenarioTempId = this.storage.getScenarioTempId(testCaseId);
 
     this.reportportal.finishTestItem(scenarioTempId, {
       endTime: this.reportportal.helpers.now(),
@@ -510,14 +518,22 @@ module.exports = {
     });
 
     // finish RULE if it's exist and if it's last scenario
-    const isLastScenario = this.storage.getLastScenario();
-    const ruleTempId = this.storage.getRuleTempId();
-    if (ruleTempId && isLastScenario) {
+    const ruleTempId = this.storage.getRuleTempIdToTestCase(testCaseStartedId);
+    const ruleChildrenIds = this.storage.getRuleChildrenIds(ruleTempId);
+    const startedRuleChildrenIds = this.storage.getStartedRuleChildrenIds(ruleTempId);
+    const isAllRuleChildrenStarted = utils.isAllRuleChildrenStarted(
+      ruleChildrenIds,
+      startedRuleChildrenIds,
+    );
+
+    if (ruleTempId && isAllRuleChildrenStarted) {
       this.reportportal.finishTestItem(ruleTempId, {
         endTime: this.reportportal.helpers.now(),
       });
-      this.storage.setRuleTempId(null);
-      this.storage.setLastScenario(false);
+
+      this.storage.removeRuleTempIdToTestCase(testCaseStartedId);
+      this.storage.removeStartedRuleChildrenIds(ruleTempId);
+      this.storage.removeRuleChildrenIds(ruleTempId);
       this.codeRefIndexesMap.clear();
     }
 
@@ -525,7 +541,7 @@ module.exports = {
       this.storage.removeTestCaseStartedId(testCaseStartedId);
       this.storage.removeSteps(testCaseId);
       this.storage.removeTestCase(testCaseId);
-      this.storage.setScenarioTempId(null);
+      this.storage.removeScenarioTempId(testCaseStartedId);
     }
   },
   onTestRunFinishedEvent() {

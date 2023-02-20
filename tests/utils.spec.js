@@ -62,18 +62,18 @@ describe('utils', () => {
     });
   });
 
-  describe('detectLastScenario', () => {
-    it('detectLastScenario should return true', () => {
-      const node = featureWithRule.children[0].rule;
-
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(true);
+  describe('isAllRuleChildrenStarted', () => {
+    it('isAllRuleChildrenStarted should return true', () => {
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedRuleChildren = new Set(ruleChildren);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(true);
     });
 
-    it('detectLastScenario should return false', () => {
-      const node = featureWithRule.children[0].rule;
-      node.children.push({ scenario: { id: 'abc' } });
+    it('isAllRuleChildrenStarted should return false', () => {
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedRuleChildren = new Set();
 
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(false);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(false);
     });
   });
 
