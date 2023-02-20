@@ -246,7 +246,7 @@ module.exports = {
     }
     const parentId = ruleTempId || this.storage.getFeatureTempId();
     const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
-    this.storage.setScenarioTempId(id, tempId);
+    this.storage.setScenarioTempId(testCaseId, tempId);
     this.storage.updateTestCase(testCaseId, {
       codeRef: scenarioCodeRef,
     });
@@ -256,6 +256,7 @@ module.exports = {
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const testCase = this.storage.getTestCase(testCaseId);
     const step = this.storage.getStep(testCaseId, testStepId);
+
     // start step
     if (step) {
       const currentFeatureUri = this.storage.getCurrentFeatureUri();
@@ -294,7 +295,7 @@ module.exports = {
       }
 
       const launchTempId = this.storage.getLaunchTempId();
-      const parentId = this.storage.getScenarioTempId(testCaseStartedId);
+      const parentId = this.storage.getScenarioTempId(testCaseId);
       const { tempId } = this.reportportal.startTestItem(stepData, launchTempId, parentId);
       this.storage.setStepTempId(testStepId, tempId);
     }
@@ -508,7 +509,7 @@ module.exports = {
 
     const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
     const testCase = this.storage.getTestCase(testCaseId);
-    const scenarioTempId = this.storage.getScenarioTempId(testCaseStartedId);
+    const scenarioTempId = this.storage.getScenarioTempId(testCaseId);
 
     this.reportportal.finishTestItem(scenarioTempId, {
       endTime: this.reportportal.helpers.now(),

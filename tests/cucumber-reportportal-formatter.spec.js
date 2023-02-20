@@ -156,7 +156,7 @@ describe('cucumber-reportportal-formatter', () => {
     it('start scenario flow', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
-      expect(formatter.storage.getScenarioTempId(testCaseStartedId)).toBe('testItemId');
+      expect(formatter.storage.getScenarioTempId(testCaseId)).toBe('testItemId');
     });
 
     it('start rule flow', () => {
