@@ -198,18 +198,18 @@ describe('test Storage', () => {
     expect(storage.getRuleTempIdToTestCase(testCaseStartedId)).toBeUndefined();
   });
 
-  it('set/getRuleChildren', () => {
+  it('set/getRuleChildrenIds', () => {
     const ruleChildren = featureWithRule.children.map((child) => child.rule.children);
-    storage.setRuleChildren(ruleTempId, ruleChildren);
+    storage.setRuleChildrenIds(ruleTempId, ruleChildren);
 
-    expect(storage.getRuleChildren(ruleTempId)).toStrictEqual(ruleChildren);
+    expect(storage.getRuleChildrenIds(ruleTempId)).toStrictEqual(ruleChildren);
   });
 
   it('set/removeRuleTempIdToTestCase', () => {
     const ruleChildren = featureWithRule.children.map((child) => child.rule.children);
-    storage.setRuleChildren(ruleTempId, ruleChildren);
-    storage.removeRuleChildren(ruleTempId);
+    storage.setRuleChildrenIds(ruleTempId, ruleChildren);
+    storage.removeRuleChildrenIds(ruleTempId);
 
-    expect(storage.getRuleChildren(ruleTempId)).toStrictEqual([]);
+    expect(storage.getRuleChildrenIds(ruleTempId)).toStrictEqual([]);
   });
 });

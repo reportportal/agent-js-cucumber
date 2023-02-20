@@ -65,8 +65,8 @@ const findNode = (feature, searchId) => {
   });
 };
 
-const detectLastScenario = (allScenarios, startedScenarios) =>
-  allScenarios.every((scenarioId) => startedScenarios.includes(scenarioId));
+const isAllRuleChildrenStarted = (allScenarios, startedScenarios) =>
+  allScenarios.every((scenarioId) => startedScenarios.has(scenarioId));
 
 const findScenario = (node, searchId) => {
   const children = node.children.find((child) => {
@@ -133,7 +133,7 @@ module.exports = {
   formatCodeRef,
   findNode,
   findScenario,
-  detectLastScenario,
+  isAllRuleChildrenStarted,
   bindToClass,
   collectParams,
   findAstNodesData,

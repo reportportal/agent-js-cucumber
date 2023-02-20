@@ -62,18 +62,18 @@ describe('utils', () => {
     });
   });
 
-  describe('detectLastScenario', () => {
-    it('detectLastScenario should return true', () => {
+  describe('isAllRuleChildrenStarted', () => {
+    it('isAllRuleChildrenStarted should return true', () => {
       const ruleChildren = featureWithRule.children[0].rule.children;
-      const startedChildren = ruleChildren;
-      expect(utils.detectLastScenario(ruleChildren, startedChildren)).toBe(true);
+      const startedRuleChildren = new Set(ruleChildren);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(true);
     });
 
-    it('detectLastScenario should return false', () => {
+    it('isAllRuleChildrenStarted should return false', () => {
       const ruleChildren = featureWithRule.children[0].rule.children;
-      const startedChildren = [];
+      const startedRuleChildren = new Set();
 
-      expect(utils.detectLastScenario(ruleChildren, startedChildren)).toBe(false);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(false);
     });
   });
 

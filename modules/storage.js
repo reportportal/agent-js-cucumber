@@ -31,8 +31,8 @@ module.exports = class Storage {
     this.stepTempId = new Map();
     this.ruleTempId = new Map();
     this.ruleTempIdToTestCaseStartedId = new Map();
-    this.startedChildren = new Map();
-    this.ruleChildren = new Map();
+    this.startedRuleChildren = new Map();
+    this.ruleChildrenIds = new Map();
   }
 
   setLaunchTempId(id) {
@@ -203,29 +203,27 @@ module.exports = class Storage {
     this.ruleTempIdToTestCaseStartedId.delete(testCaseStartedId);
   }
 
-  getStartedChildren(ruleTempId) {
-    return this.startedChildren.get(ruleTempId) || [];
+  getStartedRuleChildren(ruleTempId) {
+    return this.startedRuleChildren.get(ruleTempId) || new Set();
   }
 
-  setStartedChildren(ruleTempId, child) {
-    this.startedChildren.set(ruleTempId, [
-      ...new Set([...this.getStartedChildren(ruleTempId), child]),
-    ]);
+  setStartedRuleChildren(ruleTempId, child) {
+    this.startedRuleChildren.set(ruleTempId, this.getStartedRuleChildren(ruleTempId).add(child));
   }
 
-  removeStartedChildren(ruleTempId) {
-    this.startedChildren.delete(ruleTempId);
+  removeStartedRuleChildren(ruleTempId) {
+    this.startedRuleChildren.delete(ruleTempId);
   }
 
-  setRuleChildren(ruleTempId, children) {
-    this.ruleChildren.set(ruleTempId, children);
+  setRuleChildrenIds(ruleTempId, children) {
+    this.ruleChildrenIds.set(ruleTempId, children);
   }
 
-  getRuleChildren(ruleTempId) {
-    return this.ruleChildren.get(ruleTempId) || [];
+  getRuleChildrenIds(ruleTempId) {
+    return this.ruleChildrenIds.get(ruleTempId) || [];
   }
 
-  removeRuleChildren(ruleTempId) {
-    this.ruleChildren.delete(ruleTempId);
+  removeRuleChildrenIds(ruleTempId) {
+    this.ruleChildrenIds.delete(ruleTempId);
   }
 };

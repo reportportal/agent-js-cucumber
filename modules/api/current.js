@@ -189,11 +189,11 @@ module.exports = {
 
         this.storage.setRuleTempId(ruleId, ruleTempId);
         this.storage.setRuleTempIdToTestCase(id, ruleTempId);
-        this.storage.setRuleChildren(ruleTempId, childrenIds);
-        this.storage.setStartedChildren(ruleTempId, scenarioId);
-      } else if (ruleTempId) {
+        this.storage.setRuleChildrenIds(ruleTempId, childrenIds);
+        this.storage.setStartedRuleChildren(ruleTempId, scenarioId);
+      } else {
         this.storage.setRuleTempIdToTestCase(id, ruleTempId);
-        this.storage.setStartedChildren(ruleTempId, scenarioId);
+        this.storage.setStartedRuleChildren(ruleTempId, scenarioId);
         scenario = utils.findScenario(currentNode.rule, scenarioId);
       }
     } else {
@@ -205,6 +205,7 @@ module.exports = {
       isRetry = true;
       this.storage.updateTestCase(testCaseId, { isRetry });
 
+      // do not show scenario with retry in RP
       if (!this.isScenarioBasedStatistics) return;
     }
 
@@ -518,9 +519,9 @@ module.exports = {
 
     // finish RULE if it's exist and if it's last scenario
     const ruleTempId = this.storage.getRuleTempIdToTestCase(testCaseStartedId);
-    const allScenarios = this.storage.getRuleChildren(ruleTempId);
-    const startedScenarios = this.storage.getStartedChildren(ruleTempId);
-    const isLastScenario = utils.detectLastScenario(allScenarios, startedScenarios);
+    const allScenarios = this.storage.getRuleChildrenIds(ruleTempId);
+    const startedScenarios = this.storage.getStartedRuleChildren(ruleTempId);
+    const isLastScenario = utils.isAllRuleChildrenStarted(allScenarios, startedScenarios);
 
     if (ruleTempId && isLastScenario) {
       this.reportportal.finishTestItem(ruleTempId, {
@@ -528,7 +529,7 @@ module.exports = {
       });
 
       this.storage.removeRuleTempIdToTestCase(testCaseStartedId);
-      this.storage.removeStartedChildren(ruleTempId);
+      this.storage.removeStartedRuleChildren(ruleTempId);
       this.storage.removeRuleChildren(ruleTempId);
       this.codeRefIndexesMap.clear();
     }
