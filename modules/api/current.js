@@ -90,6 +90,8 @@ module.exports = {
       attributes,
       rerun: this.isRerun,
       rerunOf: this.rerunOf,
+      ...(this.config.debug && { debug: this.config.debug }),
+      ...(this.config.mode && { mode: this.config.mode }),
     };
     const { tempId } = this.reportportal.startLaunch(startLaunchData);
     this.storage.setLaunchTempId(tempId);
