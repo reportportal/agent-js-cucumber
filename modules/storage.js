@@ -17,6 +17,8 @@
 module.exports = class Storage {
   constructor() {
     this.launchTempId = null;
+    this.currentFeatureUri = null;
+    this.featureTempId = null;
     this.documents = new Map();
     this.pickles = new Map();
     this.hooks = new Map();
@@ -24,12 +26,13 @@ module.exports = class Storage {
     this.testCaseStartedIds = new Map();
     this.steps = new Map();
     this.parameters = new Map();
-    this.currentFeatureUri = null;
-    this.featureTempId = null;
-    this.ruleTempId = null;
-    this.scenarioTempId = null;
-    this.stepTempId = null;
-    this.isLastScenario = false;
+    this.astNodesData = new Map();
+    this.scenarioTempId = new Map();
+    this.stepTempId = new Map();
+    this.ruleTempId = new Map();
+    this.ruleTempIdToTestCaseStartedId = new Map();
+    this.startedRuleChildrenIds = new Map();
+    this.ruleChildrenIds = new Map();
   }
 
   setLaunchTempId(id) {
@@ -68,10 +71,6 @@ module.exports = class Storage {
 
   getPickle(id) {
     return this.pickles.get(id);
-  }
-
-  getPicklesValues() {
-    return this.pickles.values();
   }
 
   setHook(id, data) {
@@ -148,35 +147,86 @@ module.exports = class Storage {
     return this.featureTempId;
   }
 
-  setScenarioTempId(id) {
-    this.scenarioTempId = id;
+  setScenarioTempId(testCaseStartedId, scenarioTempId) {
+    this.scenarioTempId.set(testCaseStartedId, scenarioTempId);
   }
 
-  getScenarioTempId() {
-    return this.scenarioTempId;
+  getScenarioTempId(testCaseStartedId) {
+    return this.scenarioTempId.get(testCaseStartedId);
   }
 
-  setStepTempId(value) {
-    this.stepTempId = value;
+  removeScenarioTempId(testCaseStartedId) {
+    this.scenarioTempId.delete(testCaseStartedId);
   }
 
-  getStepTempId() {
-    return this.stepTempId;
+  setStepTempId(parentId, value) {
+    this.stepTempId.set(parentId, value);
   }
 
-  setRuleTempId(id) {
-    this.ruleTempId = id;
+  getStepTempId(parentId) {
+    return this.stepTempId.get(parentId);
   }
 
-  getRuleTempId() {
-    return this.ruleTempId;
+  removeStepTempId(parentId) {
+    this.stepTempId.delete(parentId);
   }
 
-  setLastScenario(val) {
-    this.isLastScenario = val;
+  setAstNodesData({ uri }, astNodesData) {
+    this.astNodesData.set(uri, astNodesData);
   }
 
-  getLastScenario() {
-    return this.isLastScenario;
+  getAstNodesData(uri) {
+    return this.astNodesData.get(uri);
+  }
+
+  getRuleTempId(ruleId) {
+    return this.ruleTempId.get(ruleId);
+  }
+
+  setRuleTempId(ruleId, ruleTempId) {
+    this.ruleTempId.set(ruleId, ruleTempId);
+  }
+
+  removeRuleTempId(ruleId) {
+    this.ruleTempId.delete(ruleId);
+  }
+
+  setRuleTempIdToTestCase(testCaseStartedId, ruleTempId) {
+    this.ruleTempIdToTestCaseStartedId.set(testCaseStartedId, ruleTempId);
+  }
+
+  getRuleTempIdToTestCase(testCaseStartedId) {
+    return this.ruleTempIdToTestCaseStartedId.get(testCaseStartedId);
+  }
+
+  removeRuleTempIdToTestCase(testCaseStartedId) {
+    this.ruleTempIdToTestCaseStartedId.delete(testCaseStartedId);
+  }
+
+  getStartedRuleChildrenIds(ruleTempId) {
+    return this.startedRuleChildrenIds.get(ruleTempId) || new Set();
+  }
+
+  setStartedRuleChildrenIds(ruleTempId, child) {
+    this.startedRuleChildrenIds.set(
+      ruleTempId,
+      this.getStartedRuleChildrenIds(ruleTempId).add(child),
+    );
+  }
+
+  removeStartedRuleChildrenIds(ruleTempId) {
+    this.startedRuleChildrenIds.delete(ruleTempId);
+  }
+
+  setRuleChildrenIds(ruleTempId, children) {
+    this.ruleChildrenIds.set(ruleTempId, children);
+  }
+
+  getRuleChildrenIds(ruleTempId) {
+    return this.ruleChildrenIds.get(ruleTempId) || [];
+  }
+
+  removeRuleChildrenIds(ruleTempId) {
+    this.ruleChildrenIds.delete(ruleTempId);
   }
 };

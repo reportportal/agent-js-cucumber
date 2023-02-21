@@ -1,3 +1,10 @@
+### Added
+- Provide BDD entities titles to their names
+- Screenshot attaching on failure
+- Parallel reporting support 
+### Fixed
+- Finish feature/scenario only when its children have already been finished
+- [#130](https://github.com/reportportal/agent-js-cucumber/issues/130) DEBUG mode in the config file does not report to Debug
 
 ## [5.1.1] - 2023-01-05
 ### Fixed

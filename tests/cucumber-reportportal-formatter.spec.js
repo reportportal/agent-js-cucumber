@@ -56,10 +56,15 @@ describe('cucumber-reportportal-formatter', () => {
   });
 
   describe('onGherkinDocumentEvent', () => {
-    it('should set document to storage', () => {
+    beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
-
+    });
+    it('should set document to storage', () => {
       expect(formatter.storage.getDocument(uri)).toBe(gherkinDocument);
+    });
+
+    it('should set document feature.children', () => {
+      expect(formatter.storage.getAstNodesData(uri)).toStrictEqual(scenario.steps);
     });
   });
 
@@ -81,7 +86,11 @@ describe('cucumber-reportportal-formatter', () => {
 
   describe('onTestCaseEvent', () => {
     it('should set steps to storage under testCaseId', () => {
-      const expectedRes = { ...pickle.steps[0], type: TEST_ITEM_TYPES.STEP };
+      formatter.onGherkinDocumentEvent(gherkinDocument);
+      const expectedRes = {
+        ...pickle.steps[0],
+        type: TEST_ITEM_TYPES.STEP,
+      };
 
       formatter.storage.setPickle(pickle);
       formatter.onTestCaseEvent(testCase);
@@ -110,11 +119,11 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getFeatureTempId()).toBe('testItemId');
     });
 
-    it('should finish FEATURE if has currentFeatureUri', () => {
+    it('should finish previous FEATURE if currentFeatureUri is different from pickleFeatureUri', () => {
       const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
       const tempFeatureId = 'tempFeatureId';
       formatter.storage.setFeatureTempId(tempFeatureId);
-      formatter.storage.setCurrentFeatureUri(pickle.uri);
+      formatter.storage.setCurrentFeatureUri('currentFeatureUri');
 
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
@@ -123,10 +132,31 @@ describe('cucumber-reportportal-formatter', () => {
       });
     });
 
+    it('should not finish FEATURE if pickleFeatureUri the same as currentFeatureUrl', () => {
+      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+      const tempFeatureId = 'tempFeatureId';
+      formatter.storage.setFeatureTempId(tempFeatureId);
+      formatter.storage.setCurrentFeatureUri(pickle.uri);
+
+      formatter.onTestCaseStartedEvent(testCaseStarted);
+
+      expect(finishTestItem).not.toHaveBeenCalled();
+    });
+
+    it('should start new FEATURE if it is first feature in this launch', () => {
+      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+      const tempFeatureId = 'tempFeatureId';
+      formatter.storage.setFeatureTempId(tempFeatureId);
+
+      formatter.onTestCaseStartedEvent(testCaseStarted);
+
+      expect(finishTestItem).not.toHaveBeenCalled();
+    });
+
     it('start scenario flow', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
-      expect(formatter.storage.getScenarioTempId()).toBe('testItemId');
+      expect(formatter.storage.getScenarioTempId(testCaseId)).toBe('testItemId');
     });
 
     it('start rule flow', () => {
@@ -145,7 +175,7 @@ describe('cucumber-reportportal-formatter', () => {
         {
           attributes: [],
           description: undefined,
-          name: scenario.name,
+          name: `${scenario.keyword}: ${scenario.name}`,
           startTime: mockedDate,
           type: 'TEST',
           codeRef: `${uri}/${feature.name}/${scenario.name}`,
@@ -206,7 +236,7 @@ describe('cucumber-reportportal-formatter', () => {
         status: STATUSES.FAILED,
         description: '```error\nerror message\n```',
       });
-      expect(formatter.storage.getStepTempId()).toBe(null);
+      expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
     });
   });
 
@@ -234,7 +264,20 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getTestCaseId(testCaseStartedId)).toBe(undefined);
       expect(formatter.storage.getStep(testCaseId, testStepId)).toBe(undefined);
       expect(formatter.storage.getTestCase(testCaseId)).toBe(undefined);
-      expect(formatter.storage.getScenarioTempId()).toBeNull();
+      expect(formatter.storage.getScenarioTempId(testCaseStartedId)).toBeUndefined();
+    });
+
+    it('should not finishTestItem if this is scenarioBaseStatistics or test case willBeRetried', () => {
+      const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+      const testCaseWithReties = { ...testCaseFinished, willBeRetried: true };
+      spyFinishTestItem.mockReset();
+      formatter.onTestCaseFinishedEvent(testCaseWithReties);
+
+      expect(spyFinishTestItem).not.toHaveBeenCalled();
+      expect(formatter.storage.getTestCaseId(testCaseStartedId)).not.toBeUndefined();
+      expect(formatter.storage.getStep(testCaseId, testStepId)).not.toBeUndefined();
+      expect(formatter.storage.getTestCase(testCaseId)).not.toBeUndefined();
+      expect(formatter.storage.getScenarioTempId()).not.toBeNull();
     });
   });
 

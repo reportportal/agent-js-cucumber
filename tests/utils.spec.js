@@ -15,7 +15,7 @@
  */
 
 const utils = require('../modules/utils');
-const { scenarioId, featureWithRule, feature } = require('./data');
+const { scenarioId, featureWithRule, feature, scenario } = require('./data');
 
 describe('utils', () => {
   describe('getJSON', () => {
@@ -62,18 +62,18 @@ describe('utils', () => {
     });
   });
 
-  describe('detectLastScenario', () => {
-    it('detectLastScenario should return true', () => {
-      const node = featureWithRule.children[0].rule;
-
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(true);
+  describe('isAllRuleChildrenStarted', () => {
+    it('isAllRuleChildrenStarted should return true', () => {
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedRuleChildren = new Set(ruleChildren);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(true);
     });
 
-    it('detectLastScenario should return false', () => {
-      const node = featureWithRule.children[0].rule;
-      node.children.push({ scenario: { id: 'abc' } });
+    it('isAllRuleChildrenStarted should return false', () => {
+      const ruleChildren = featureWithRule.children[0].rule.children;
+      const startedRuleChildren = new Set();
 
-      expect(utils.detectLastScenario(node, scenarioId)).toBe(false);
+      expect(utils.isAllRuleChildrenStarted(ruleChildren, startedRuleChildren)).toBe(false);
     });
   });
 
@@ -127,5 +127,26 @@ describe('utils', () => {
     };
 
     expect(utils.collectParams({ tableHeader, tableBody })).toEqual(expectedRes);
+  });
+  it('findAstNodesData should create an array of scenario steps', () => {
+    expect(utils.findAstNodesData(feature.children)).toStrictEqual(scenario.steps);
+  });
+
+  describe('getScreenshotName', () => {
+    const astNodeIds = ['scenarioStepsId'];
+
+    it('should return "UNDEFINED STEP" when astNodeIds is undefined or null', () => {
+      expect(utils.getScreenshotName(scenario.steps, undefined)).toBe('UNDEFINED STEP');
+    });
+
+    it('should return "UNDEFINED STEP" when astNodesData does not contains step information of corresponding step', () => {
+      expect(utils.getScreenshotName(scenario.steps, ['not exists ID'])).toBe('UNDEFINED STEP');
+    });
+
+    it('should return "Failed at step definition line: column: " when astNodesData contains step information for corresponding step', () => {
+      expect(utils.getScreenshotName(scenario.steps, astNodeIds)).toBe(
+        'Failed at step definition line:7 column:5',
+      );
+    });
   });
 });

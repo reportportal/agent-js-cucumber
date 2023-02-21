@@ -65,15 +65,8 @@ const findNode = (feature, searchId) => {
   });
 };
 
-const detectLastScenario = (node, searchId) => {
-  let isLastScenario = false;
-  node.children.forEach((child, index) => {
-    if (child.scenario) {
-      isLastScenario = child.scenario.id === searchId && index === node.children.length - 1;
-    }
-  });
-  return isLastScenario;
-};
+const isAllRuleChildrenStarted = (ruleChildrenIds, startedRuleChildrenIds) =>
+  ruleChildrenIds.every((childId) => startedRuleChildrenIds.has(childId));
 
 const findScenario = (node, searchId) => {
   const children = node.children.find((child) => {
@@ -112,6 +105,27 @@ const collectParams = ({ tableHeader, tableBody }) => {
   }, {});
 };
 
+const findAstNodesData = (children) => {
+  const flattenChildren = children.reduce(
+    (acc, child) => acc.concat('rule' in child ? child.rule.children : child),
+    [],
+  );
+
+  return flattenChildren.reduce((acc, child) => {
+    const childValues = Object.values(child);
+    return acc.concat(childValues.map((childValue) => childValue.steps).flat());
+  }, []);
+};
+
+const getScreenshotName = (astNodesData, astNodesIds) => {
+  const location =
+    astNodesIds && (astNodesData.find(({ id }) => astNodesIds.includes(id)) || {}).location;
+
+  return location
+    ? `Failed at step definition line:${location.line} column:${location.column}`
+    : 'UNDEFINED STEP';
+};
+
 module.exports = {
   createAttribute,
   createAttributes,
@@ -119,7 +133,9 @@ module.exports = {
   formatCodeRef,
   findNode,
   findScenario,
-  detectLastScenario,
+  isAllRuleChildrenStarted,
   bindToClass,
   collectParams,
+  findAstNodesData,
+  getScreenshotName,
 };
