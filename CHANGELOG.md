@@ -1,3 +1,5 @@
+
+## [5.2.1] - 2023-02-21
 ### Added
 - Provide BDD entities titles to their names
 - Screenshot attaching on failure
