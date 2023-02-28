@@ -9,6 +9,9 @@
     "cli-table3": "^0.6.3",
     "strip-ansi": "^6.0.1"
   },
+  "engines": {
+    "node": ">=10.x"
+  },
   "devDependencies": {
     "@cucumber/cucumber": "^8.10.0",
     "@types/jest": "^29.2.3",
