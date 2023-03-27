@@ -1,4 +1,4 @@
-# agent-js-cucumber
+# @reportportal/agent-js-cucumber
 
 Agent to integrate CucumberJS with ReportPortal.
 * More about [CucumberJS](https://cucumber.io/docs/installation/javascript/)
