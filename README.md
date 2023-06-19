@@ -46,15 +46,12 @@ npm install --save-dev @reportportal/agent-js-cucumber
 2. Create Report Portal configuration file
    For example `./rpConfig.json`
 
-   In example below `${text}` - is used as placeholder for your data. This data you must get from ReportPortal profile.
-    
     ```json
     {
-      "token": "${rp.token}",
-      "endpoint": "${rp.endpoint}/api/v1",
-      "launch": "${rp.launch}",
-      "project": "${rp.your_project}",
-      "takeScreenshot": "onFailure",
+      "apiKey": "reportportalApiKey",
+      "endpoint": "https://your.reportportal.server/api/v1",
+      "launch": "Your launch name",
+      "project": "Your reportportal project name",
       "description": "Awesome launch description.",
       "attributes": [
         {
@@ -62,17 +59,29 @@ npm install --save-dev @reportportal/agent-js-cucumber
           "value": "launchAttributeValue"
         }
       ],
-      "mode": "DEFAULT",
-      "debug": false,
-      "restClientConfig": {
-        "timeout": 0
-      }
+      "takeScreenshot": "onFailure"
     }
     ```
-    `takeScreenshot` - if this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.<br/>
-    `mode` - Launch mode. Allowable values *DEFAULT* (by default) or *DEBUG*.<br/>
-    `debug` - this flag allows seeing the logs of the `client-javascript`. Useful for debugging.<br/>
-    `restClientConfig` (optional) - The object with `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, may contain other client options eg. `timeout`.
+
+The full list of available options presented below.
+
+| Option                  | Necessity  | Default   | Description                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------|------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| apiKey                  | Required   |           | User's reportportal token from which you want to send requests. It can be found on the profile page of this user.                                                                                                                                                                                                                                                                        |
+| endpoint                | Required   |           | URL of your server. For example 'https://server:8080/api/v1'.                                                                                                                                                                                                                                                                                                                            |
+| launch                  | Required   |           | Name of launch at creation.                                                                                                                                                                                                                                                                                                                                                              |
+| project                 | Required   |           | The name of the project in which the launches will be created.                                                                                                                                                                                                                                                                                                                           |
+| attributes              | Optional   | []        | Launch attributes.                                                                                                                                                                                                                                                                                                                                                                       |
+| description             | Optional   | ''        | Launch description.                                                                                                                                                                                                                                                                                                                                                                      |
+| rerun                   | Optional   | false     | Enable [rerun](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md)                                                                                                                                                                                                                                                                                  |
+| rerunOf                 | Optional   | Not set   | UUID of launch you want to rerun. If not specified, reportportal will update the latest launch with the same name                                                                                                                                                                                                                                                                        |
+| mode                    | Optional   | 'DEFAULT' | Results will be submitted to Launches page <br/> *'DEBUG'* - Results will be submitted to Debug page.                                                                                                                                                                                                                                                                                    |
+| skippedIssue            | Optional   | true      | reportportal provides feature to mark skipped tests as not 'To Investigate'. <br/> Option could be equal boolean values: <br/> *true* - skipped tests considered as issues and will be marked as 'To Investigate' on reportportal. <br/> *false* - skipped tests will not be marked as 'To Investigate' on application.                                                                  |
+| debug                   | Optional   | false     | This flag allows seeing the logs of the client-javascript. Useful for debugging.                                                                                                                                                                                                                                                                                                         |
+| takeScreenshot          | Optional   | Not set   | Possible values: *onFailure*. If this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.                                                                                                                                                                                                                                         |
+| scenarioBasedStatistics | Optional   | false     | While true, the Gherkin Scenarios considered as entity with statistics. In this case Cucumber steps will be reported to the log level as nested steps.                                                                                                                                                                                                                                   |
+| restClientConfig        | Optional   | Not set   | The object with `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, may contain other client options eg. [`timeout`](https://github.com/reportportal/client-javascript#timeout-30000ms-on-axios-requests). <br/> Visit [client-javascript](https://github.com/reportportal/client-javascript) for more details. |
+| token                   | Deprecated | Not set   | Use `apiKey` instead.                                                                                                                                                                                                                                                                                                                                                                    |
 
 3. Create Report Portal formatter in a new js file, for example `reportPortalFormatter.js`:
 
@@ -120,20 +129,6 @@ npm install --save-dev @reportportal/agent-js-cucumber
     
     More info in the [examples](https://github.com/reportportal/examples-js/tree/master/example-cucumber) repository.
 
-## Rerun
-
-To report [rerun](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md) to the report portal you need to specify the following options to the config file:
-
-- rerun - to enable rerun
-- rerunOf - UUID of launch you want to rerun. If not specified, report portal will update the latest launch with the same name
-
-Example:
-
-```json
-  "rerun": true,
-  "rerunOf": "f68f39f9-279c-4e8d-ac38-1216dffcc59c"
-```
-
 ## Step reporting configuration
 
 By default, this agent reports the following structure:
@@ -146,17 +141,15 @@ You may change this behavior to report steps to the log level by enabling scenar
 
 - feature - TEST
 - scenario - STEP
-- step - log item
+- step - log item (nested step)
 
-To report your steps as logs, you need to pass an additional parameter to the agent config: `"scenarioBasedStatistics": true`
+To report your steps as logs without creating statistics for every step, you need to pass an additional parameter to the agent config: `"scenarioBasedStatistics": true`
 
 ```json
 {
   "scenarioBasedStatistics": true
 }
 ```
-
-This will report your your steps with logs to a log level without creating statistics for every step.
 
 ## API
 
