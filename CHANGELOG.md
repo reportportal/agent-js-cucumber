@@ -1,3 +1,5 @@
+
+## [5.2.2] - 2023-07-18
 ### Added
 - Add `@cucumber/cucumber` version 9 support. Addressed [147](https://github.com/reportportal/agent-js-cucumber/issues/147).
 ### Changed
