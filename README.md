@@ -4,7 +4,7 @@ Agent to integrate CucumberJS with ReportPortal.
 * More about [CucumberJS](https://cucumber.io/docs/installation/javascript/)
 * More about [ReportPortal](http://reportportal.io/)
 
-This agent works well with cucumber versions from 7.x.
+This agent works well with cucumber versions from 7.x to 9.x.
 Documentation for legacy cucumber versions from 4.x to 6.x can be found [here](/modules/api/deprecated/README.md)
 
 ## Install agent to your project dir
@@ -31,14 +31,14 @@ npm install --save-dev @reportportal/agent-js-cucumber
     #### Note
     
     Protractor and Cucumber have their own **timeouts** .
-    When protractror start main process that lauches cucumber it would have different timeouts if there not the same they would wait for scripts different time.
-    If cucumbers's timeout less then protractor's it would through wrong exeption.
+    When protractor start main process that launches cucumber it would have different timeouts if they are not the same they would wait for scripts different time.
+    If cucumber's timeout less than protractor's it would through wrong exception.
     For example if page that has been loaded and hasn't got angular, the next error would be thrown : `Error: function timed out after 10000 milliseconds . . .` . Instead of protractor's :
     `Error: Error while running testForAngular: asynchronous script timeout: result was not received in 4 seconds . . .` .
-    So it must be handled manually by setting cucumbers's timeout greater then protractor's is at the hooks.js. For example if you set up protractor's timeout 9000 miliseconds , so cucumber must be at least 1 second greater = 10000 miliseconds. Example :
+    So it must be handled manually by setting cucumber's timeout greater than protractor's is at the hooks.js. For example if you set up protractor's timeout 9000 miliseconds , so cucumber must be at least 1 second greater = 10000 miliseconds. Example :
     
     ```javascript
-    var { setDefaultTimeout } = require('cucumber');
+    var { setDefaultTimeout } = require('@cucumber/cucumber');
     
     setDefaultTimeout(10000);
     ```
@@ -73,7 +73,7 @@ The full list of available options presented below.
 | project                 | Required   |           | The name of the project in which the launches will be created.                                                                                                                                                                                                                                                                                                                           |
 | attributes              | Optional   | []        | Launch attributes.                                                                                                                                                                                                                                                                                                                                                                       |
 | description             | Optional   | ''        | Launch description.                                                                                                                                                                                                                                                                                                                                                                      |
-| rerun                   | Optional   | false     | Enable [rerun](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md)                                                                                                                                                                                                                                                                                  |
+| rerun                   | Optional   | false     | Enable [rerun](https://reportportal.io/docs/dev-guides/RerunDevelopersGuide)                                                                                                                                                                                                                                                                                                             |
 | rerunOf                 | Optional   | Not set   | UUID of launch you want to rerun. If not specified, reportportal will update the latest launch with the same name                                                                                                                                                                                                                                                                        |
 | mode                    | Optional   | 'DEFAULT' | Results will be submitted to Launches page <br/> *'DEBUG'* - Results will be submitted to Debug page.                                                                                                                                                                                                                                                                                    |
 | skippedIssue            | Optional   | true      | reportportal provides feature to mark skipped tests as not 'To Investigate'. <br/> Option could be equal boolean values: <br/> *true* - skipped tests considered as issues and will be marked as 'To Investigate' on reportportal. <br/> *false* - skipped tests will not be marked as 'To Investigate' on application.                                                                  |
