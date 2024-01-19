@@ -15,7 +15,7 @@
     "strip-ansi": "^6.0.1"
   },
   "engines": {
-    "node": ">=10.x"
+    "node": ">=12.x"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^9.3.0",
