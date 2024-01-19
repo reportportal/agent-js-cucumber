@@ -2,6 +2,8 @@
 - Node.js 10 usage. This version is the latest that supports Node.js 10.
 ### Changed
 - `@reportportal/client-javascript` bumped to version `5.0.15`.
+### Security
+- Updated versions of vulnerable packages (@babel/traverse, follow-redirects).
 
 ## [5.2.2] - 2023-07-18
 ### Added
