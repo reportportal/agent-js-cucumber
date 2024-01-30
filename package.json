@@ -18,21 +18,21 @@
     "node": ">=12.x"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^9.3.0",
+    "@cucumber/cucumber": "^10.3.1",
     "@types/jest": "^29.5.3",
     "eslint": "^8.45.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^3.8.0",
     "jest": "^29.6.1",
     "prettier": "^2.8.8"
   },
   "peerDependencies": {
-    "cucumber": "4.x - 6.x",
-    "@cucumber/cucumber": "7.x - 9.x"
+    "@cucumber/cucumber": "7.x - 10.x",
+    "cucumber": "4.x - 6.x"
   },
   "repository": {
     "type": "git",

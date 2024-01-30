@@ -1,3 +1,7 @@
+
+### Added
+- Add `@cucumber/cucumber` version 10 support. Addressed [155](https://github.com/reportportal/agent-js-cucumber/issues/155).
+
 ### Changed
 - **Breaking change** Drop support of Node.js 10. The version [5.2.3](https://github.com/reportportal/agent-js-cucumber/releases/tag/v5.2.3) is the latest that supports it.
 - `@reportportal/client-javascript` bumped to version `5.1.0`.
