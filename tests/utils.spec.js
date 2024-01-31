@@ -98,20 +98,6 @@ describe('utils', () => {
     expect(utils.findScenario(node, scenarioId)).toBe(expectedRes);
   });
 
-  it('bindToClass should add method to class', () => {
-    const module = {
-      newMethod() {},
-    };
-    class Test {
-      constructor() {
-        utils.bindToClass(module, this);
-      }
-    }
-    const instance = new Test();
-
-    expect(instance.newMethod).toBeTruthy();
-  });
-
   it('collectParams should create map from tableHeader & tableBody', () => {
     const tableHeader = {
       cells: [{ value: 'parameterKey' }],

@@ -78,14 +78,6 @@ const findScenario = (node, searchId) => {
   return children.scenario;
 };
 
-const bindToClass = (module, thisClass) => {
-  const that = thisClass;
-  Object.entries(module).forEach((method) => {
-    const [key, value] = method;
-    that[key] = value.bind(that);
-  });
-};
-
 const collectParams = ({ tableHeader, tableBody }) => {
   const { cells: headerCells } = tableHeader;
   return tableBody.reduce((map, row) => {
@@ -134,7 +126,6 @@ module.exports = {
   findNode,
   findScenario,
   isAllRuleChildrenStarted,
-  bindToClass,
   collectParams,
   findAstNodesData,
   getScreenshotName,

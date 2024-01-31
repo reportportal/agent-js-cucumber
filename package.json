@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@reportportal/client-javascript": "^5.1.0",
-    "cli-table3": "^0.6.3",
     "strip-ansi": "^6.0.1"
   },
   "engines": {
@@ -31,8 +30,7 @@
     "prettier": "^2.8.8"
   },
   "peerDependencies": {
-    "@cucumber/cucumber": "7.x - 10.x",
-    "cucumber": "4.x - 6.x"
+    "@cucumber/cucumber": "7.x - 10.x"
   },
   "repository": {
     "type": "git",
