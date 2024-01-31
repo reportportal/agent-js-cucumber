@@ -210,7 +210,7 @@ module.exports = {
       if (!this.isScenarioBasedStatistics) return;
     }
 
-    const { name: scenarioName } = scenario;
+    const scenarioName = this.storage.getPickle(pickleId).name;
     const [keyword] = scenario.keyword.split(' ');
 
     const currentNodeCodeRef = utils.formatCodeRef(
