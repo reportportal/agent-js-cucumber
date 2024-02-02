@@ -83,6 +83,12 @@ const RP_EVENTS = {
   STATUS: 'rp/status',
 };
 
+const TEST_STEP_FINISHED_RP_MESSAGES = {
+  PENDING: "This step is marked as 'pending'",
+  UNDEFINED: 'There is no step definition found. Please verify and implement it.',
+  AMBIGUOUS: 'There are more than one step implementation. Please verify and reimplement it.',
+};
+
 module.exports = {
   RP_ENTITY_LAUNCH,
   STATUSES,
@@ -90,5 +96,6 @@ module.exports = {
   CUCUMBER_EVENTS,
   RP_EVENTS,
   CUCUMBER_MESSAGES,
+  TEST_STEP_FINISHED_RP_MESSAGES,
   TEST_ITEM_TYPES,
 };

@@ -25,6 +25,7 @@ const {
   LOG_LEVELS,
   STATUSES,
   CUCUMBER_MESSAGES,
+  TEST_STEP_FINISHED_RP_MESSAGES,
   TEST_ITEM_TYPES,
 } = require('./constants');
 const Storage = require('./storage');
@@ -51,35 +52,37 @@ const createRPFormatterClass = (config) =>
       this.customLaunchStatus = null;
       this.codeRefIndexesMap = new Map();
 
-      this.options.eventBroadcaster.on('envelope', (event) => {
-        const [key] = Object.keys(event);
-        switch (key) {
-          case CUCUMBER_MESSAGES.GHERKIN_DOCUMENT:
-            return this.onGherkinDocumentEvent(event[key]);
-          case CUCUMBER_MESSAGES.PICKLE:
-            return this.onPickleEvent(event[key]);
-          case CUCUMBER_MESSAGES.HOOK:
-            return this.onHookEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_RUN_STARTED:
-            return this.onTestRunStartedEvent();
-          case CUCUMBER_MESSAGES.TEST_CASE:
-            return this.onTestCaseEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_CASE_STARTED:
-            return this.onTestCaseStartedEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_STEP_STARTED:
-            return this.onTestStepStartedEvent(event[key]);
-          case CUCUMBER_MESSAGES.ATTACHMENT:
-            return this.onTestStepAttachmentEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_STEP_FINISHED:
-            return this.onTestStepFinishedEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_CASE_FINISHED:
-            return this.onTestCaseFinishedEvent(event[key]);
-          case CUCUMBER_MESSAGES.TEST_RUN_FINISHED:
-            return this.onTestRunFinishedEvent(event[key]);
-          default:
-            return null;
-        }
-      });
+      this.options.eventBroadcaster.on('envelope', this.eventHandler);
+    }
+
+    eventHandler(event) {
+      const [key] = Object.keys(event);
+      switch (key) {
+        case CUCUMBER_MESSAGES.GHERKIN_DOCUMENT:
+          return this.onGherkinDocumentEvent(event[key]);
+        case CUCUMBER_MESSAGES.PICKLE:
+          return this.onPickleEvent(event[key]);
+        case CUCUMBER_MESSAGES.HOOK:
+          return this.onHookEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_RUN_STARTED:
+          return this.onTestRunStartedEvent();
+        case CUCUMBER_MESSAGES.TEST_CASE:
+          return this.onTestCaseEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_CASE_STARTED:
+          return this.onTestCaseStartedEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_STEP_STARTED:
+          return this.onTestStepStartedEvent(event[key]);
+        case CUCUMBER_MESSAGES.ATTACHMENT:
+          return this.onTestStepAttachmentEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_STEP_FINISHED:
+          return this.onTestStepFinishedEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_CASE_FINISHED:
+          return this.onTestCaseFinishedEvent(event[key]);
+        case CUCUMBER_MESSAGES.TEST_RUN_FINISHED:
+          return this.onTestRunFinishedEvent(event[key]);
+        default:
+          return null;
+      }
     }
 
     onGherkinDocumentEvent(data) {
@@ -433,7 +436,7 @@ const createRPFormatterClass = (config) =>
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
             level: 'WARN',
-            message: "This step is marked as 'pending'",
+            message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
           });
           status = STATUSES.FAILED;
           break;
@@ -442,7 +445,7 @@ const createRPFormatterClass = (config) =>
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
             level: 'ERROR',
-            message: 'There is no step definition found. Please verify and implement it.',
+            message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
           });
           status = STATUSES.FAILED;
           break;
@@ -451,8 +454,7 @@ const createRPFormatterClass = (config) =>
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
             level: 'ERROR',
-            message:
-              'There are more than one step implementation. Please verify and reimplement it.',
+            message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
           });
           status = STATUSES.FAILED;
           break;
