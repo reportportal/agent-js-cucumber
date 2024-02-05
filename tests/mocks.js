@@ -36,7 +36,7 @@ class RPClientMock {
 }
 
 const getDefaultConfig = () => ({
-  token: '00000000-0000-0000-0000-000000000000',
+  apiKey: '00000000-0000-0000-0000-000000000000',
   endpoint: 'https://reportportal.server/api/v1',
   project: 'ProjectName',
   launch: 'LauncherName',

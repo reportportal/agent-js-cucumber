@@ -21,6 +21,10 @@ const {
   gherkinDocument,
   uri,
   pickle,
+  pickleWithParameters,
+  testCaseWithParameters,
+  ruleId,
+  ruleTempId,
   hook,
   testCase,
   testCaseStarted,
@@ -257,7 +261,7 @@ describe('cucumber-reportportal-formatter', () => {
   describe('onTestCaseStartedEvent', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
-      formatter.onPickleEvent(pickle);
+      formatter.onPickleEvent(pickleWithParameters);
       formatter.onTestRunStartedEvent();
       formatter.onTestCaseEvent(testCase);
     });
@@ -335,19 +339,33 @@ describe('cucumber-reportportal-formatter', () => {
           type: 'TEST',
           codeRef: `${uri}/${feature.name}/${scenario.name}`,
           retry: false,
+          parameters: [
+            {
+              key: scenario.examples[0].tableHeader.cells[0].value,
+              value: scenario.examples[0].tableBody[0].cells[0].value,
+            },
+          ],
         },
         'tempLaunchId',
         'testItemId',
       );
+    });
+
+    it('should set isRetry for test case in storage if attempt > 0', () => {
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+
+      formatter.onTestCaseStartedEvent({ ...testCaseStarted, attempt: 1 });
+
+      expect(formatter.storage.getTestCase(testCaseId).isRetry).toEqual(true);
     });
   });
 
   describe('onTestStepStartedEvent', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
-      formatter.onPickleEvent(pickle);
+      formatter.onPickleEvent(pickleWithParameters);
       formatter.onTestRunStartedEvent();
-      formatter.onTestCaseEvent(testCase);
+      formatter.onTestCaseEvent(testCaseWithParameters);
       formatter.onTestCaseStartedEvent(testCaseStarted);
     });
 
@@ -362,6 +380,12 @@ describe('cucumber-reportportal-formatter', () => {
           startTime: mockedDate,
           type: 'STEP',
           codeRef: `${uri}/${feature.name}/${scenario.name}/${step.text}`,
+          parameters: [
+            {
+              key: scenario.examples[0].tableHeader.cells[0].value,
+              value: scenario.examples[0].tableBody[0].cells[0].value,
+            },
+          ],
           hasStats: true,
           retry: false,
         },
@@ -623,16 +647,118 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestStepStartedEvent(testStepStarted);
     });
 
-    it('finishTestItem should be called, clean storage', () => {
-      const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+    describe('FAILED status', () => {
+      const originBrowser = global.browser;
+      const png = 'base64-data';
+
+      beforeAll(() => {
+        global.browser = {
+          takeScreenshot: jest.fn().mockImplementation(() => Promise.resolve(png)),
+        };
+      });
+
+      afterAll(() => {
+        global.browser = originBrowser;
+      });
+
+      it('finishTestItem should be called with faild status, clean storage', () => {
+        const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+        formatter.onTestStepFinishedEvent(testStepFinished);
+
+        expect(spyFinishTestItem).toBeCalledWith('testItemId', {
+          endTime: mockedDate,
+          status: STATUSES.FAILED,
+          description: '```error\nerror message\n```',
+        });
+        expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
+      });
+
+      it('should make screenshot if takeScreenshot === onFailure', () => {
+        const originTakeScreenshot = formatter.config.takeScreenshot;
+
+        const spyTakeScreenshot = jest.spyOn(global.browser, 'takeScreenshot');
+
+        formatter.config.takeScreenshot = 'onFailure';
+        formatter.onTestStepFinishedEvent(testStepFinished);
+        formatter.config.takeScreenshot = originTakeScreenshot;
+
+        expect(spyTakeScreenshot).toBeCalled();
+      });
+    });
+
+    it('finishTestItem should be called with passed status, clean storage', () => {
+      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinishedEvent({
+        ...testStepFinished,
+        testStepResult: { ...testStepFinished.testStepResult, status: STATUSES.PASSED },
+      });
+
+      expect(spyfinishTestItem).toBeCalledWith(
+        'testItemId',
+        expect.objectContaining({
+          status: STATUSES.PASSED,
+        }),
+      );
+      expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
+    });
+
+    it('finishTestItem should be called with unexpected status', () => {
+      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinishedEvent({
+        ...testStepFinished,
+        testStepResult: { ...testStepFinished.testStepResult, status: 'unexpected-status' },
+      });
+
+      expect(spyfinishTestItem).toBeCalledWith(
+        'testItemId',
+        expect.objectContaining({
+          status: 'unexpected-status',
+        }),
+      );
+    });
+
+    it('finishTestItem should be called with NOT_ISSUE type if SKIPPED status', () => {
+      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.config.skippedIssue = false;
+      formatter.onTestStepFinishedEvent({
+        ...testStepFinished,
+        testStepResult: { ...testStepFinished.testStepResult, status: STATUSES.SKIPPED },
+      });
+
+      expect(spyfinishTestItem).toBeCalledWith(
+        'testItemId',
+        expect.objectContaining({ status: STATUSES.SKIPPED, issue: { issueType: 'NOT_ISSUE' } }),
+      );
+    });
+
+    it('should set failed status for test case in storage if isScenarioBasedStatistics === true', () => {
+      const originIsScenarioBasedStatistics = formatter.isScenarioBasedStatistics;
+      formatter.isScenarioBasedStatistics = true;
 
       formatter.onTestStepFinishedEvent(testStepFinished);
+      formatter.isScenarioBasedStatistics = originIsScenarioBasedStatistics;
 
-      expect(spyFinishTestItem).toBeCalledWith('testItemId', {
-        endTime: mockedDate,
-        status: STATUSES.FAILED,
-        description: '```error\nerror message\n```',
+      expect(formatter.storage.getTestCase(testCaseId).status).toEqual(STATUSES.FAILED);
+    });
+
+    it('finishTestItem should be called with NOT_ISSUE type', () => {
+      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
+
+      formatter.onTestStepFinishedEvent({
+        ...testStepFinished,
+        testStepResult: { ...testStepFinished.testStepResult, status: STATUSES.PASSED },
       });
+
+      expect(spyfinishTestItem).toBeCalledWith(
+        'testItemId',
+        expect.objectContaining({
+          status: STATUSES.PASSED,
+        }),
+      );
       expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
     });
 

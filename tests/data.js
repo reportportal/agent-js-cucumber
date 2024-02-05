@@ -17,12 +17,19 @@
 const launchTempId = 'tempId';
 const uri = 'features/statuses/statuses.feature';
 const scenarioId = '1957ea93-e4de-4895-86e8-acb857b5b069';
+const parameters = 'row-cell-id';
 const ruleId = '2034eaf4-f7hv-8234-55l4-njk687k3k423';
 const scenario = {
   id: scenarioId,
   name: 'scenario name',
   keyword: 'Scenario',
   steps: [{ id: 'scenarioStepsId', keyword: 'Then', location: { line: 7, column: 5 } }],
+  examples: [
+    {
+      tableHeader: { cells: [{ value: 'header-cells-value1' }] },
+      tableBody: [{ id: parameters, cells: [{ value: 'row-cell-value1' }] }],
+    },
+  ],
 };
 const feature = {
   keyword: 'Feature',
@@ -51,6 +58,12 @@ const step = {
   argument: undefined,
   astNodeIds: [],
 };
+const stepWithParameters = {
+  id: stepId,
+  text: 'I put "true"',
+  argument: undefined,
+  astNodeIds: [scenarioId, parameters],
+};
 const pickleId = 'c544ae8c-f080-41be-a612-f3000ac46565';
 const pickle = {
   id: pickleId,
@@ -58,6 +71,13 @@ const pickle = {
   astNodeIds: ['1957ea93-e4de-4895-86e8-acb857b5b069'],
   name: 'Given and expected value are equal',
   steps: [step],
+};
+const pickleWithParameters = {
+  id: pickleId,
+  uri: 'features/statuses/statuses.feature',
+  astNodeIds: [scenarioId, parameters],
+  name: 'Given and expected value are equal',
+  steps: [stepWithParameters],
 };
 const hookId = '2b9c9732-acbd-4fa0-8408-42875800d92e';
 const hook = {
@@ -73,6 +93,24 @@ const testCase = {
     {
       id: testStepId,
       pickleStepId: stepId,
+    },
+  ],
+};
+const testCaseWithParameters = {
+  pickleId,
+  id: testCaseId,
+  testSteps: [
+    {
+      id: testStepId,
+      pickleStepId: stepId,
+      stepMatchArgumentsLists: [
+        {
+          stepMatchArguments: [
+            { group: { value: '-header-cells-value1-' } },
+            { group: { value: '-row-cell-value1-' } },
+          ],
+        },
+      ],
     },
   ],
 };
@@ -119,6 +157,8 @@ module.exports = {
   pickleId,
   uri,
   pickle,
+  pickleWithParameters,
+  testCaseWithParameters,
   hookId,
   hook,
   testCase,
