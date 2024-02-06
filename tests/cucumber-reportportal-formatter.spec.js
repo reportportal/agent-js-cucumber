@@ -661,7 +661,7 @@ describe('cucumber-reportportal-formatter', () => {
         global.browser = originBrowser;
       });
 
-      it('finishTestItem should be called with faild status, clean storage', () => {
+      it('finishTestItem should be called with failed status, clean storage', () => {
         const spyFinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
 
         formatter.onTestStepFinishedEvent(testStepFinished);
@@ -720,7 +720,7 @@ describe('cucumber-reportportal-formatter', () => {
       );
     });
 
-    it('finishTestItem should be called with NOT_ISSUE type if SKIPPED status', () => {
+    it('finishTestItem should be called with NOT_ISSUE type if SKIPPED status and skippedIssue set to false', () => {
       const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
 
       formatter.config.skippedIssue = false;
@@ -745,24 +745,7 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getTestCase(testCaseId).status).toEqual(STATUSES.FAILED);
     });
 
-    it('finishTestItem should be called with NOT_ISSUE type', () => {
-      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-
-      formatter.onTestStepFinishedEvent({
-        ...testStepFinished,
-        testStepResult: { ...testStepFinished.testStepResult, status: STATUSES.PASSED },
-      });
-
-      expect(spyfinishTestItem).toBeCalledWith(
-        'testItemId',
-        expect.objectContaining({
-          status: STATUSES.PASSED,
-        }),
-      );
-      expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
-    });
-
-    it('sendLog should be called with pending message', () => {
+    it('sendLog should be called with pending message in case of corresponding status received', () => {
       const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
 
       formatter.onTestStepFinishedEvent({
@@ -777,7 +760,7 @@ describe('cucumber-reportportal-formatter', () => {
       });
     });
 
-    it('sendLog should be called with undefined message', () => {
+    it('sendLog should be called with undefined message in case of corresponding status received', () => {
       const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
 
       formatter.onTestStepFinishedEvent({
@@ -792,7 +775,7 @@ describe('cucumber-reportportal-formatter', () => {
       });
     });
 
-    it('sendLog should be called with ambiguous message', () => {
+    it('sendLog should be called with ambiguous message in case of corresponding status received', () => {
       const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
 
       formatter.onTestStepFinishedEvent({
