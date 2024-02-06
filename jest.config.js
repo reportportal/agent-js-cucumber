@@ -1,7 +1,7 @@
 module.exports = {
   moduleFileExtensions: ['js'],
   testRegex: '/tests/.*\\.spec.(js)$',
-  collectCoverageFrom: ['modules/**.js', '!api/deprecated'],
+  collectCoverageFrom: ['modules/**.js'],
   coverageThreshold: {
     global: {
       branches: 80,
