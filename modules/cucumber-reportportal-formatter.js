@@ -435,7 +435,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.PENDING: {
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
-            level: 'WARN',
+            level: LOG_LEVELS.WARN,
             message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
           });
           status = STATUSES.FAILED;
@@ -444,7 +444,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.UNDEFINED: {
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
-            level: 'ERROR',
+            level: LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
           });
           status = STATUSES.FAILED;
@@ -453,7 +453,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.AMBIGUOUS: {
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
-            level: 'ERROR',
+            level: LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
           });
           status = STATUSES.FAILED;
@@ -467,7 +467,7 @@ const createRPFormatterClass = (config) =>
           status = STATUSES.FAILED;
           this.reportportal.sendLog(tempStepId, {
             time: this.reportportal.helpers.now(),
-            level: 'ERROR',
+            level: LOG_LEVELS.ERROR,
             message: stripAnsi(testStepResult.message),
           });
 
@@ -482,7 +482,7 @@ const createRPFormatterClass = (config) =>
 
             const request = {
               time: this.reportportal.helpers.now(),
-              level: 'ERROR',
+              level: LOG_LEVELS.ERROR,
               file: { name: screenshotName },
               message: screenshotName,
             };
