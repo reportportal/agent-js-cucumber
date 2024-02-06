@@ -647,7 +647,7 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestStepStartedEvent(testStepStarted);
     });
 
-    describe('FAILED status', () => {
+    describe('finishsed with failed status', () => {
       const originBrowser = global.browser;
       const png = 'base64-data';
 
