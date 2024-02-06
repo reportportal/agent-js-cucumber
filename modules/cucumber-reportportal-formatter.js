@@ -52,7 +52,7 @@ const createRPFormatterClass = (config) =>
       this.customLaunchStatus = null;
       this.codeRefIndexesMap = new Map();
 
-      this.options.eventBroadcaster.on('envelope', this.eventHandler);
+      this.options.eventBroadcaster.on('envelope', this.eventHandler.bind(this));
     }
 
     eventHandler(event) {
