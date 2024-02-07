@@ -69,21 +69,8 @@ const isAllRuleChildrenStarted = (ruleChildrenIds, startedRuleChildrenIds) =>
   ruleChildrenIds.every((childId) => startedRuleChildrenIds.has(childId));
 
 const findScenario = (node, searchId) => {
-  const children = node.children.find((child) => {
-    if (child.scenario) {
-      return child.scenario.id === searchId;
-    }
-    return null;
-  });
+  const children = node.children.find((child) => child.scenario && child.scenario.id === searchId);
   return children.scenario;
-};
-
-const bindToClass = (module, thisClass) => {
-  const that = thisClass;
-  Object.entries(module).forEach((method) => {
-    const [key, value] = method;
-    that[key] = value.bind(that);
-  });
 };
 
 const collectParams = ({ tableHeader, tableBody }) => {
@@ -134,7 +121,6 @@ module.exports = {
   findNode,
   findScenario,
   isAllRuleChildrenStarted,
-  bindToClass,
   collectParams,
   findAstNodesData,
   getScreenshotName,
