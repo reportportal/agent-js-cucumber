@@ -214,7 +214,7 @@ Then(/^I should see my new task in the list$/, function() {
 
 ### Attributes
 
-Attributes for features and scenarios are parsed from @tags as `@key:value` pair.
+Attributes for features are parsed from @tags as `@key:value` pair.
 
 To add attributes to the items you can use the next method:
 
@@ -225,6 +225,8 @@ Then(/^I should see my new task in the list$/, function() {
 ```
 
 The attributes will be concatenated.
+
+> **Note:** The agent does not support adding attributes to the `scenario`.
 
 ### Description
 
