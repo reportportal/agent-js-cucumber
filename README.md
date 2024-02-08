@@ -216,7 +216,7 @@ Then(/^I should see my new task in the list$/, function() {
 
 Attributes for features and scenarios are parsed from @tags as `@key:value` pair.
 
-To add attributes to the items you can use the next method:
+To add attributes to the step items you can use the next method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
