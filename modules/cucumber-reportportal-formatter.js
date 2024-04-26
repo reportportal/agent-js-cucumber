@@ -146,6 +146,35 @@ const createRPFormatterClass = (config) =>
       this.storage.setSteps(testCaseId, stepsMap);
     }
 
+    suiteStart({ pickleFeatureUri, feature }) {
+      if (this.storage.getFeatureTempId(pickleFeatureUri)) return;
+
+      const launchTempId = this.storage.getLaunchTempId();
+      const suiteData = {
+        name: `${feature.keyword}: ${feature.name}`,
+        startTime: this.reportportal.helpers.now(),
+        type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
+        description: (feature.description || '').trim(),
+        attributes: utils.createAttributes(feature.tags),
+        codeRef: utils.formatCodeRef(pickleFeatureUri, feature.name),
+      };
+
+      const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId);
+      this.storage.setFeatureTempId(pickleFeatureUri, tempId);
+    }
+
+    suiteEnd(pickleFeatureUri) {
+      const featureTempId = this.storage.getFeatureTempId(pickleFeatureUri);
+      const featureEndTime = this.storage.getFeatureEndTime(pickleFeatureUri);
+
+      this.reportportal.finishTestItem(featureTempId, {
+        endTime: featureEndTime || this.reportportal.helpers.now(),
+      });
+
+      this.storage.deleteFeatureTempId(pickleFeatureUri);
+      this.storage.deleteFeatureEndTime(pickleFeatureUri);
+    }
+
     onTestCaseStartedEvent(data) {
       const { id, testCaseId, attempt } = data;
       this.storage.setTestCaseStartedId(id, testCaseId);
@@ -155,36 +184,10 @@ const createRPFormatterClass = (config) =>
         uri: pickleFeatureUri,
         astNodeIds: [scenarioId, parametersId],
       } = this.storage.getPickle(pickleId);
-      const currentFeatureUri = this.storage.getCurrentFeatureUri();
       const feature = this.storage.getFeature(pickleFeatureUri);
       const launchTempId = this.storage.getLaunchTempId();
-      const isNeedToStartFeature = currentFeatureUri !== pickleFeatureUri;
-
-      // start FEATURE if no currentFeatureUri or new feature
-      // else finish old one
       const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
-      if (isNeedToStartFeature) {
-        const isFirstFeatureInLaunch = currentFeatureUri === null;
-        const suiteData = {
-          name: `${feature.keyword}: ${feature.name}`,
-          startTime: this.reportportal.helpers.now(),
-          type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
-          description: (feature.description || '').trim(),
-          attributes: utils.createAttributes(feature.tags),
-          codeRef: featureCodeRef,
-        };
-
-        if (!isFirstFeatureInLaunch) {
-          const previousFeatureTempId = this.storage.getFeatureTempId();
-          this.reportportal.finishTestItem(previousFeatureTempId, {
-            endTime: this.reportportal.helpers.now(),
-          });
-        }
-
-        this.storage.setCurrentFeatureUri(pickleFeatureUri);
-        const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId, '');
-        this.storage.setFeatureTempId(tempId);
-      }
+      this.suiteStart({ pickleFeatureUri, feature });
 
       // current feature node rule(this entity is for grouping several
       // scenarios in one logical block) || scenario
@@ -209,7 +212,7 @@ const createRPFormatterClass = (config) =>
             attributes: utils.createAttributes(tags),
             codeRef: currentNodeCodeRef,
           };
-          const parentId = this.storage.getFeatureTempId();
+          const parentId = this.storage.getFeatureTempId(pickleFeatureUri);
           const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
           ruleTempId = tempId;
 
@@ -273,7 +276,7 @@ const createRPFormatterClass = (config) =>
         });
         testData.parameters = this.storage.getParameters(parametersId);
       }
-      const parentId = ruleTempId || this.storage.getFeatureTempId();
+      const parentId = ruleTempId || this.storage.getFeatureTempId(pickleFeatureUri);
       const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
       this.storage.setScenarioTempId(testCaseId, tempId);
       this.storage.updateTestCase(testCaseId, {
@@ -289,7 +292,7 @@ const createRPFormatterClass = (config) =>
 
       // start step
       if (step) {
-        const currentFeatureUri = this.storage.getCurrentFeatureUri();
+        const currentFeatureUri = (this.storage.getPickle(testCase.pickleId) || {}).uri;
         const astNodesData = this.storage.getAstNodesData(currentFeatureUri);
 
         const { text: stepName, type, astNodeIds } = step;
@@ -423,6 +426,7 @@ const createRPFormatterClass = (config) =>
     onTestStepFinishedEvent(data) {
       const { testCaseStartedId, testStepId, testStepResult } = data;
       const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+      const testCase = this.storage.getTestCase(testCaseId);
       const step = this.storage.getStep(testCaseId, testStepId);
       const tempStepId = this.storage.getStepTempId(testStepId);
       let status;
@@ -476,7 +480,7 @@ const createRPFormatterClass = (config) =>
             this.config.takeScreenshot && this.config.takeScreenshot === 'onFailure';
 
           if (isBrowserAvailable && isTakeScreenshotOptionProvidedInRPConfig) {
-            const currentFeatureUri = this.storage.getCurrentFeatureUri();
+            const currentFeatureUri = (this.storage.getPickle(testCase.pickleId) || {}).uri;
             const astNodesData = this.storage.getAstNodesData(currentFeatureUri);
             const screenshotName = utils.getScreenshotName(astNodesData, step.astNodeIds);
 
@@ -575,12 +579,15 @@ const createRPFormatterClass = (config) =>
         this.storage.removeTestCase(testCaseId);
         this.storage.removeScenarioTempId(testCaseStartedId);
       }
+
+      const { uri: pickleFeatureUri } = this.storage.getPickle(testCase.pickleId);
+      this.storage.setFeatureEndTime(pickleFeatureUri, this.reportportal.helpers.now());
     }
 
     onTestRunFinishedEvent() {
-      const featureTempId = this.storage.getFeatureTempId();
-      this.reportportal.finishTestItem(featureTempId, {
-        endTime: this.reportportal.helpers.now(),
+      const featureUris = this.storage.getActiveFeatureUris();
+      featureUris.forEach((featureUri) => {
+        this.suiteEnd(featureUri);
       });
 
       const launchId = this.storage.getLaunchTempId();
@@ -589,8 +596,6 @@ const createRPFormatterClass = (config) =>
           ...(this.customLaunchStatus && { status: this.customLaunchStatus }),
         });
         this.storage.setLaunchTempId(null);
-        this.storage.setCurrentFeatureUri(null);
-        this.storage.setFeatureTempId(null);
         this.customLaunchStatus = null;
       });
     }

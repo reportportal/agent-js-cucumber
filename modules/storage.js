@@ -17,8 +17,8 @@
 module.exports = class Storage {
   constructor() {
     this.launchTempId = null;
-    this.currentFeatureUri = null;
-    this.featureTempId = null;
+    this.featureTempIds = new Map();
+    this.featureEndTime = new Map();
     this.documents = new Map();
     this.pickles = new Map();
     this.hooks = new Map();
@@ -41,14 +41,6 @@ module.exports = class Storage {
 
   getLaunchTempId() {
     return this.launchTempId;
-  }
-
-  getCurrentFeatureUri() {
-    return this.currentFeatureUri;
-  }
-
-  setCurrentFeatureUri(value) {
-    this.currentFeatureUri = value;
   }
 
   setDocument(gherkinDocument) {
@@ -139,12 +131,32 @@ module.exports = class Storage {
     return this.parameters.get(id);
   }
 
-  setFeatureTempId(value) {
-    this.featureTempId = value;
+  setFeatureTempId(id, value) {
+    this.featureTempIds.set(id, value);
   }
 
-  getFeatureTempId() {
-    return this.featureTempId;
+  getFeatureTempId(id) {
+    return this.featureTempIds.get(id);
+  }
+
+  deleteFeatureTempId(id) {
+    this.featureTempIds.delete(id);
+  }
+
+  getActiveFeatureUris() {
+    return Array.from(this.featureTempIds.keys());
+  }
+
+  getFeatureEndTime(id) {
+    return this.featureEndTime.get(id);
+  }
+
+  setFeatureEndTime(id, time) {
+    this.featureEndTime.set(id, time);
+  }
+
+  deleteFeatureEndTime(id) {
+    this.featureEndTime.delete(id);
   }
 
   setScenarioTempId(testCaseStartedId, scenarioTempId) {

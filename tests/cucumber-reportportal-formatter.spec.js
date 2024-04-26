@@ -23,8 +23,6 @@ const {
   pickle,
   pickleWithParameters,
   testCaseWithParameters,
-  ruleId,
-  ruleTempId,
   hook,
   testCase,
   testCaseStarted,
@@ -38,6 +36,8 @@ const {
   feature,
   scenario,
   step,
+  launchTempId,
+  featureTempId,
 } = require('./data');
 const {
   STATUSES,
@@ -270,46 +270,6 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
       expect(formatter.storage.getTestCaseId(testCaseStarted.id)).toBe(testCase.id);
-    });
-
-    it('should start FEATURE if no currentFeatureUri or new feature', () => {
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(formatter.storage.getFeatureTempId()).toBe('testItemId');
-    });
-
-    it('should finish previous FEATURE if currentFeatureUri is different from pickleFeatureUri', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-      formatter.storage.setCurrentFeatureUri('currentFeatureUri');
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).toHaveBeenCalledWith(tempFeatureId, {
-        endTime: mockedDate,
-      });
-    });
-
-    it('should not finish FEATURE if pickleFeatureUri the same as currentFeatureUrl', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-      formatter.storage.setCurrentFeatureUri(pickle.uri);
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).not.toHaveBeenCalled();
-    });
-
-    it('should start new FEATURE if it is first feature in this launch', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).not.toHaveBeenCalled();
     });
 
     it('start scenario flow', () => {
@@ -832,6 +792,36 @@ describe('cucumber-reportportal-formatter', () => {
     });
   });
 
+  describe('suiteStart', () => {
+    it('startTestItem should be called', () => {
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+      formatter.storage.setLaunchTempId(launchTempId);
+
+      formatter.suiteStart({ pickleFeatureUri: uri, feature });
+
+      expect(spyStartTestItem).lastCalledWith(
+        {
+          name: `Feature: ${feature.name}`,
+          startTime: mockedDate,
+          type: 'SUITE',
+          codeRef: `${uri}/${feature.name}`,
+          attributes: [],
+          description: '',
+        },
+        launchTempId,
+      );
+    });
+
+    it('should be skipped if suite is already running', () => {
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+      formatter.storage.setFeatureTempId(uri, featureTempId);
+
+      formatter.suiteStart({ pickleFeatureUri: uri, feature });
+
+      expect(spyStartTestItem).not.toHaveBeenCalled();
+    });
+  });
+
   describe('onTestRunFinishedEvent', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
@@ -859,8 +849,8 @@ describe('cucumber-reportportal-formatter', () => {
       expect(spyGetPromiseFinishAllItems).toBeCalledWith('tempLaunchId');
 
       expect(formatter.storage.getLaunchTempId()).toBeNull();
-      expect(formatter.storage.getCurrentFeatureUri()).toBeNull();
-      expect(formatter.storage.getFeatureTempId()).toBeNull();
+      expect(formatter.storage.getActiveFeatureUris().length).toBe(0);
+      expect(formatter.storage.getFeatureTempId(uri)).toBeUndefined();
     });
   });
 });
