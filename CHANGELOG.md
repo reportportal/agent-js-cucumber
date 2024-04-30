@@ -1,3 +1,5 @@
+
+## [5.3.1] - 2024-04-30
 ### Security
 - Updated versions of vulnerable packages (@reportportal/client-javascript, @cucumber/cucumber).
 
