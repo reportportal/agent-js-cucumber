@@ -17,7 +17,7 @@
     "node": ">=12.x"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "10.4",
+    "@cucumber/cucumber": "^10.6.0",
     "@types/jest": "^29.5.3",
     "eslint": "^8.45.0",
     "eslint-config-airbnb-base": "^15.0.0",
