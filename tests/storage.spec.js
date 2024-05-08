@@ -50,16 +50,17 @@ describe('test Storage', () => {
     expect(storage.getLaunchTempId()).toBe(launchTempId);
   });
 
-  it('set/getDocument', () => {
-    storage.setDocument(gherkinDocument);
-
-    expect(storage.getDocument(uri)).toEqual(gherkinDocument);
-  });
-
   it('set/getFeature', () => {
-    storage.setDocument(gherkinDocument);
+    storage.setFeature(uri, feature);
 
     expect(storage.getFeature(uri)).toEqual(feature);
+  });
+
+  it('set/deleteFeature', () => {
+    storage.setFeature(uri, feature);
+    storage.deleteFeature(uri);
+
+    expect(storage.getFeature(uri)).toBeUndefined();
   });
 
   it('set/getPickle', () => {
@@ -135,37 +136,15 @@ describe('test Storage', () => {
   });
 
   it('set/getFeatureTempId', () => {
-    storage.setFeatureTempId(uri, featureTempId);
+    storage.setFeature(uri, { tempId: featureTempId });
 
     expect(storage.getFeatureTempId(uri)).toBe(featureTempId);
   });
 
-  it('set/deleteFeatureTempId', () => {
-    storage.setFeatureTempId(uri, featureTempId);
-    storage.deleteFeatureTempId(uri);
-
-    expect(storage.getFeatureTempId(uri)).toBeUndefined();
-  });
-
   it('set/getActiveFeatureUris', () => {
-    storage.setFeatureTempId(uri, featureTempId);
+    storage.setFeature(uri, feature);
 
     expect(storage.getActiveFeatureUris()).toEqual([uri]);
-  });
-
-  it('set/getFeatureEndTime', () => {
-    const date = Date.now();
-    storage.setFeatureEndTime(uri, date);
-
-    expect(storage.getFeatureEndTime(uri)).toBe(date);
-  });
-
-  it('set/deleteFeatureEndTime', () => {
-    const date = Date.now();
-    storage.setFeatureEndTime(uri, date);
-    storage.deleteFeatureEndTime(uri);
-
-    expect(storage.getFeatureEndTime(uri)).toBeUndefined();
   });
 
   it('set/getScenarioTempId', () => {

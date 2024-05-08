@@ -86,7 +86,7 @@ const createRPFormatterClass = (config) =>
     }
 
     onGherkinDocumentEvent(data) {
-      this.storage.setDocument(data);
+      this.storage.setFeature(data.uri, data.feature);
       this.storage.setAstNodesData(data, utils.findAstNodesData(data.feature.children));
     }
 
@@ -146,7 +146,7 @@ const createRPFormatterClass = (config) =>
       this.storage.setSteps(testCaseId, stepsMap);
     }
 
-    suiteStart({ pickleFeatureUri, feature }) {
+    startFeature({ pickleFeatureUri, feature }) {
       if (this.storage.getFeatureTempId(pickleFeatureUri)) return;
 
       const launchTempId = this.storage.getLaunchTempId();
@@ -160,19 +160,17 @@ const createRPFormatterClass = (config) =>
       };
 
       const { tempId } = this.reportportal.startTestItem(suiteData, launchTempId);
-      this.storage.setFeatureTempId(pickleFeatureUri, tempId);
+      this.storage.updateFeature(pickleFeatureUri, { tempId });
     }
 
-    suiteEnd(pickleFeatureUri) {
-      const featureTempId = this.storage.getFeatureTempId(pickleFeatureUri);
-      const featureEndTime = this.storage.getFeatureEndTime(pickleFeatureUri);
+    finishFeature(pickleFeatureUri) {
+      const { tempId, endTime } = this.storage.getFeature(pickleFeatureUri);
 
-      this.reportportal.finishTestItem(featureTempId, {
-        endTime: featureEndTime || this.reportportal.helpers.now(),
+      this.reportportal.finishTestItem(tempId, {
+        endTime: endTime || this.reportportal.helpers.now(),
       });
 
-      this.storage.deleteFeatureTempId(pickleFeatureUri);
-      this.storage.deleteFeatureEndTime(pickleFeatureUri);
+      this.storage.deleteFeature(pickleFeatureUri);
     }
 
     onTestCaseStartedEvent(data) {
@@ -187,7 +185,7 @@ const createRPFormatterClass = (config) =>
       const feature = this.storage.getFeature(pickleFeatureUri);
       const launchTempId = this.storage.getLaunchTempId();
       const featureCodeRef = utils.formatCodeRef(pickleFeatureUri, feature.name);
-      this.suiteStart({ pickleFeatureUri, feature });
+      this.startFeature({ pickleFeatureUri, feature });
 
       // current feature node rule(this entity is for grouping several
       // scenarios in one logical block) || scenario
@@ -581,13 +579,13 @@ const createRPFormatterClass = (config) =>
       }
 
       const { uri: pickleFeatureUri } = this.storage.getPickle(testCase.pickleId);
-      this.storage.setFeatureEndTime(pickleFeatureUri, this.reportportal.helpers.now());
+      this.storage.updateFeature(pickleFeatureUri, { endTime: this.reportportal.helpers.now() });
     }
 
     onTestRunFinishedEvent() {
       const featureUris = this.storage.getActiveFeatureUris();
       featureUris.forEach((featureUri) => {
-        this.suiteEnd(featureUri);
+        this.finishFeature(featureUri);
       });
 
       const launchId = this.storage.getLaunchTempId();

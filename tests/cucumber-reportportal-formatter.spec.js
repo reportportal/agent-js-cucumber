@@ -179,8 +179,8 @@ describe('cucumber-reportportal-formatter', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
     });
-    it('should set document to storage', () => {
-      expect(formatter.storage.getDocument(uri)).toBe(gherkinDocument);
+    it('should set feature to storage', () => {
+      expect(formatter.storage.getFeature(uri)).toBe(gherkinDocument.feature);
     });
 
     it('should set document feature.children', () => {
@@ -792,12 +792,12 @@ describe('cucumber-reportportal-formatter', () => {
     });
   });
 
-  describe('suiteStart', () => {
+  describe('startFeature', () => {
     it('startTestItem should be called', () => {
       const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
       formatter.storage.setLaunchTempId(launchTempId);
 
-      formatter.suiteStart({ pickleFeatureUri: uri, feature });
+      formatter.startFeature({ pickleFeatureUri: uri, feature });
 
       expect(spyStartTestItem).lastCalledWith(
         {
@@ -814,9 +814,9 @@ describe('cucumber-reportportal-formatter', () => {
 
     it('should be skipped if suite is already running', () => {
       const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
-      formatter.storage.setFeatureTempId(uri, featureTempId);
+      formatter.storage.setFeature(uri, { tempId: featureTempId });
 
-      formatter.suiteStart({ pickleFeatureUri: uri, feature });
+      formatter.startFeature({ pickleFeatureUri: uri, feature });
 
       expect(spyStartTestItem).not.toHaveBeenCalled();
     });
