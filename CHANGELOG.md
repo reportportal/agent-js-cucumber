@@ -1,3 +1,5 @@
+### Fixed
+- Reporting of feature (suite) for parallel execution [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
 
 ## [5.3.1] - 2024-04-30
 ### Security
