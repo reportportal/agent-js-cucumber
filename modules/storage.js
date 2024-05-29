@@ -25,7 +25,7 @@ module.exports = class Storage {
     this.steps = new Map();
     this.parameters = new Map();
     this.astNodesData = new Map();
-    this.scenarioTempId = new Map();
+    this.scenario = new Map();
     this.stepTempId = new Map();
     this.ruleTempId = new Map();
     this.ruleTempIdToTestCaseStartedId = new Map();
@@ -141,16 +141,25 @@ module.exports = class Storage {
     return Array.from(this.features.keys());
   }
 
-  setScenarioTempId(testCaseStartedId, scenarioTempId) {
-    this.scenarioTempId.set(testCaseStartedId, scenarioTempId);
+  setScenario(testCaseStartedId, scenario) {
+    this.scenario.set(testCaseStartedId, scenario);
+  }
+
+  updateScenario(id, newData) {
+    const scenario = this.scenario.get(id) || {};
+    this.scenario.set(id, { ...scenario, ...newData });
+  }
+
+  getScenario(testCaseStartedId) {
+    return this.scenario.get(testCaseStartedId);
   }
 
   getScenarioTempId(testCaseStartedId) {
-    return this.scenarioTempId.get(testCaseStartedId);
+    return (this.getScenario(testCaseStartedId) || {}).tempId;
   }
 
-  removeScenarioTempId(testCaseStartedId) {
-    this.scenarioTempId.delete(testCaseStartedId);
+  removeScenario(testCaseStartedId) {
+    this.scenario.delete(testCaseStartedId);
   }
 
   setStepTempId(parentId, value) {

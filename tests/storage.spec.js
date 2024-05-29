@@ -147,17 +147,17 @@ describe('test Storage', () => {
     expect(storage.getActiveFeatureUris()).toEqual([uri]);
   });
 
-  it('set/getScenarioTempId', () => {
-    storage.setScenarioTempId(testCaseStartedId, scenarioTempId);
+  it('set/getScenario', () => {
+    storage.setScenario(testCaseStartedId, { tempId: scenarioTempId });
 
-    expect(storage.getScenarioTempId(testCaseStartedId)).toBe(scenarioTempId);
+    expect(storage.getScenario(testCaseStartedId)).toEqual({ tempId: scenarioTempId });
   });
 
-  it('set/removeScenarioTempId', () => {
-    storage.setScenarioTempId(testCaseStartedId, scenarioTempId);
-    storage.removeScenarioTempId(testCaseStartedId);
+  it('set/removeScenario', () => {
+    storage.setScenario(testCaseStartedId, { tempId: scenarioTempId });
+    storage.removeScenario(testCaseStartedId);
 
-    expect(storage.getScenarioTempId(testCaseStartedId)).toBeUndefined();
+    expect(storage.getScenario(testCaseStartedId)).toBeUndefined();
   });
 
   it('set/getStepTempId', () => {

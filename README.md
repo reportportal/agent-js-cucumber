@@ -168,11 +168,14 @@ this.attach(
 ```
 To send attachment to the launch just specify `entity: 'launch'` property.
 
-Also `this.screenshot` and `this.launchScreenshot` methods can be used to take screenshots.
+Also `this.screenshot`, `this.scenarioScreenshot` and `this.launchScreenshot` methods can be used to take screenshots.
 
 ```javascript
 Then(/^I should see my new task in the list$/, function(callback) {
   this.screenshot('This screenshot')
+    .then(() => callback())
+    .catch((err) => callback(err));
+  this.scenarioScreenshot('This is screenshot for scenario')
     .then(() => callback())
     .catch((err) => callback(err));
   this.launchScreenshot('This is screenshot for launch')
@@ -181,7 +184,7 @@ Then(/^I should see my new task in the list$/, function(callback) {
 });
 ```
 
-`screenshot`/`launchScreenshot` function return promise fulfilled after `screenshot` is taken and image added to attachments.
+`screenshot`/`scenarioScreenshot`/`launchScreenshot` function return promise fulfilled after `screenshot` is taken and image added to attachments.
 Handler will parse attachments and send corresponding log to the step item.
 
 ### Logs
@@ -196,6 +199,19 @@ Then(/^I should see my new task in the list$/, function() {
   this.warn('This is Warn Level log');
   this.trace('This is Trace Level log');
   this.fatal('This is Fatal Level log');
+});
+```
+
+To report logs to the **scenario** you can use the next methods:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.scenarioInfo('This is Info Level log');
+  this.scenarioDebug('This is Debug Level log');
+  this.scenarioError('This is Error Level log');
+  this.scenarioWarn('This is Warn Level log');
+  this.scenarioTrace('This is Trace Level log');
+  this.scenarioFatal('This is Fatal Level log');
 });
 ```
 
@@ -216,11 +232,19 @@ Then(/^I should see my new task in the list$/, function() {
 
 Attributes for features and scenarios are parsed from @tags as `@key:value` pair.
 
-To add attributes to the step items you can use the next method:
+To add attributes to the **step items** you can use the next method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
   this.addAttributes([{ key: 'agent', value: 'cucumber' }]);
+});
+```
+
+To add attributes to the **scenario** you can use the next method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.addScenarioAttributes([{ key: 'agent', value: 'cucumber' }]);
 });
 ```
 
@@ -230,7 +254,7 @@ The attributes will be concatenated.
 
 Description for features and scenarios are parsed from their definition.
 
-To add description to the items you can use the following method:
+To add description to the **items** you can use the following method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
@@ -238,15 +262,31 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
+To add description to the **scenario** you can use the following method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.addScenarioDescription('Scenario description.');
+});
+```
+
 The description will be concatenated.
 
 ### TestCaseId
 
-To set test case id to the items you can use the following method:
+To set test case id to the **items** you can use the following method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
   this.setTestCaseId('itemTestCaseId');
+});
+```
+
+To set test case id to the **scenario** you can use the following method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.setScenarioTestCaseId('scenarioTestCaseId');
 });
 ```
 
@@ -268,7 +308,22 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
-To set status to the **item** you can use the next methods:
+To set status to the **scenario** you can use the next methods:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.setScenarioStatusPassed();
+  this.setScenarioStatusFailed();
+  this.setScenarioStatusSkipped();
+  this.setScenarioStatusStopped();
+  this.setScenarioStatusInterrupted();
+  this.setScenarioStatusCancelled();
+  this.setScenarioStatusInfo();
+  this.setScenarioStatusWarn();
+});
+```
+
+To set status to the **launch** you can use the next methods:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {

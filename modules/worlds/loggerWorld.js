@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const { LOG_LEVELS, RP_ENTITY_LAUNCH } = require('../constants');
+const { LOG_LEVELS, RP_ENTITIES } = require('../constants');
 
 class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {
@@ -87,7 +87,7 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.INFO,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -98,7 +98,7 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.DEBUG,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -109,7 +109,7 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.ERROR,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -120,7 +120,7 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.WARN,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -131,7 +131,7 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.TRACE,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -142,7 +142,73 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.FATAL,
         message: logMessage,
-        entity: RP_ENTITY_LAUNCH,
+        entity: RP_ENTITIES.LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioInfo(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.INFO,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioDebug(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.DEBUG,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioError(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.ERROR,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioWarn(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.WARN,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioTrace(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.TRACE,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioFatal(logMessage) {
+    this.attach(
+      JSON.stringify({
+        level: LOG_LEVELS.FATAL,
+        message: logMessage,
+        entity: RP_ENTITIES.SCENARIO,
       }),
       'text/plain',
     );
@@ -153,7 +219,11 @@ class ReportPortalCucumberLoggerWorld {
   }
 
   launchScreenshot(logMessage) {
-    return this.createScreenshot(logMessage, RP_ENTITY_LAUNCH);
+    return this.createScreenshot(logMessage, RP_ENTITIES.LAUNCH);
+  }
+
+  scenarioScreenshot(logMessage) {
+    return this.createScreenshot(logMessage, RP_ENTITIES.SCENARIO);
   }
 
   createScreenshot(message, entity) {
