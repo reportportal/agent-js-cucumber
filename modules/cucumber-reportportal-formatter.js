@@ -398,22 +398,22 @@ const createRPFormatterClass = (config) =>
             const request = {
               time: this.reportportal.helpers.now(),
             };
-            let tempStepId = this.storage.getStepTempId(testStepId);
+            let tempId = this.storage.getStepTempId(testStepId);
 
             if (dataObj) {
               request.level = dataObj.level;
               request.message = dataObj.message;
 
               if (dataObj.entity === RP_ENTITIES.LAUNCH) {
-                tempStepId = this.storage.getLaunchTempId();
+                tempId = this.storage.getLaunchTempId();
               } else if (dataObj.entity === RP_ENTITIES.SCENARIO) {
-                tempStepId = this.storage.getScenarioTempId(testCaseId);
+                tempId = this.storage.getScenarioTempId(testCaseId);
               }
             } else {
               request.level = LOG_LEVELS.DEBUG;
               request.message = data.body;
             }
-            this.reportportal.sendLog(tempStepId, request);
+            this.reportportal.sendLog(tempId, request);
             break;
           }
           default: {
