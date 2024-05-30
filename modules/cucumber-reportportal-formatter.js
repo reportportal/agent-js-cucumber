@@ -21,7 +21,7 @@ const utils = require('./utils');
 const pjson = require('../package.json');
 const {
   RP_EVENTS,
-  RP_ENTITY_LAUNCH,
+  RP_ENTITIES,
   LOG_LEVELS,
   STATUSES,
   CUCUMBER_MESSAGES,
@@ -255,13 +255,13 @@ const createRPFormatterClass = (config) =>
         scenarioCodeRefIndexValue && !isRetry
           ? `${currentNodeCodeRef} [${scenarioCodeRefIndexValue}]`
           : currentNodeCodeRef;
-
+      const scenarioAttributes = utils.createAttributes(scenario.tags);
       const testData = {
         startTime: this.reportportal.helpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
         name: `${keyword}: ${name}`,
         description: scenario.description,
-        attributes: utils.createAttributes(scenario.tags),
+        attributes: scenarioAttributes,
         codeRef: scenarioCodeRef,
         retry: this.isScenarioBasedStatistics && attempt > 0,
       };
@@ -276,7 +276,11 @@ const createRPFormatterClass = (config) =>
       }
       const parentId = ruleTempId || this.storage.getFeatureTempId(pickleFeatureUri);
       const { tempId } = this.reportportal.startTestItem(testData, launchTempId, parentId);
-      this.storage.setScenarioTempId(testCaseId, tempId);
+      this.storage.setScenario(testCaseId, {
+        tempId,
+        description: scenario.description,
+        attributes: scenarioAttributes,
+      });
       this.storage.updateTestCase(testCaseId, {
         codeRef: scenarioCodeRef,
       });
@@ -336,22 +340,24 @@ const createRPFormatterClass = (config) =>
       if (data) {
         const { testStepId, testCaseStartedId } = data;
         const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
+        const scenario = this.storage.getScenario(testCaseId) || {};
         const step = this.storage.getStep(testCaseId, testStepId);
         const dataObj = utils.getJSON(data.body);
 
         switch (data.mediaType) {
-          case RP_EVENTS.TEST_CASE_ID: {
+          case RP_EVENTS.STEP_TEST_CASE_ID:
+          case RP_EVENTS.STEP_STATUS: {
             this.storage.updateStep(testCaseId, testStepId, dataObj);
             break;
           }
-          case RP_EVENTS.ATTRIBUTES: {
+          case RP_EVENTS.STEP_ATTRIBUTES: {
             const savedAttributes = step.attributes || [];
             this.storage.updateStep(testCaseId, testStepId, {
               attributes: savedAttributes.concat(dataObj.attributes),
             });
             break;
           }
-          case RP_EVENTS.DESCRIPTION: {
+          case RP_EVENTS.STEP_DESCRIPTION: {
             const savedDescription = step.description || '';
             this.storage.updateStep(testCaseId, testStepId, {
               description: savedDescription
@@ -360,31 +366,54 @@ const createRPFormatterClass = (config) =>
             });
             break;
           }
-          case RP_EVENTS.STATUS: {
-            if (dataObj.entity !== RP_ENTITY_LAUNCH) {
-              this.storage.updateStep(testCaseId, testStepId, dataObj);
-            } else {
-              this.customLaunchStatus = dataObj.status;
-            }
+
+          case RP_EVENTS.SCENARIO_TEST_CASE_ID:
+          case RP_EVENTS.SCENARIO_STATUS: {
+            this.storage.updateScenario(testCaseId, dataObj);
             break;
           }
+          case RP_EVENTS.SCENARIO_ATTRIBUTES: {
+            const savedAttributes = scenario.attributes || [];
+            this.storage.updateScenario(testCaseId, {
+              attributes: savedAttributes.concat(dataObj.attributes),
+            });
+            break;
+          }
+          case RP_EVENTS.SCENARIO_DESCRIPTION: {
+            const savedDescription = scenario.description || '';
+            this.storage.updateScenario(testCaseId, {
+              description: savedDescription
+                ? `${savedDescription}<br/>${dataObj.description}`
+                : dataObj.description,
+            });
+            break;
+          }
+
+          case RP_EVENTS.LAUNCH_STATUS: {
+            this.customLaunchStatus = dataObj.status;
+            break;
+          }
+
           case 'text/plain': {
             const request = {
               time: this.reportportal.helpers.now(),
             };
-            let tempStepId = this.storage.getStepTempId(testStepId);
+            let tempId = this.storage.getStepTempId(testStepId);
 
             if (dataObj) {
               request.level = dataObj.level;
               request.message = dataObj.message;
-              if (dataObj.entity === RP_ENTITY_LAUNCH) {
-                tempStepId = this.storage.getLaunchTempId();
+
+              if (dataObj.entity === RP_ENTITIES.LAUNCH) {
+                tempId = this.storage.getLaunchTempId();
+              } else if (dataObj.entity === RP_ENTITIES.SCENARIO) {
+                tempId = this.storage.getScenarioTempId(testCaseId);
               }
             } else {
               request.level = LOG_LEVELS.DEBUG;
               request.message = data.body;
             }
-            this.reportportal.sendLog(tempStepId, request);
+            this.reportportal.sendLog(tempId, request);
             break;
           }
           default: {
@@ -397,7 +426,7 @@ const createRPFormatterClass = (config) =>
                 name: fileName,
               },
             };
-            let tempStepId = this.storage.getStepTempId(testStepId);
+            let tempId = this.storage.getStepTempId(testStepId);
 
             if (dataObj) {
               if (dataObj.level) {
@@ -405,8 +434,11 @@ const createRPFormatterClass = (config) =>
               }
               request.message = dataObj.message;
               request.file.name = dataObj.message;
-              if (dataObj.entity === RP_ENTITY_LAUNCH) {
-                tempStepId = this.storage.getLaunchTempId();
+
+              if (dataObj.entity === RP_ENTITIES.LAUNCH) {
+                tempId = this.storage.getLaunchTempId();
+              } else if (dataObj.entity === RP_ENTITIES.SCENARIO) {
+                tempId = this.storage.getScenarioTempId(testCaseId);
               }
             }
             const fileObj = {
@@ -414,7 +446,7 @@ const createRPFormatterClass = (config) =>
               type: data.mediaType,
               content: (dataObj && dataObj.data) || data.body,
             };
-            this.reportportal.sendLog(tempStepId, request, fileObj);
+            this.reportportal.sendLog(tempId, request, fileObj);
             break;
           }
         }
@@ -544,11 +576,22 @@ const createRPFormatterClass = (config) =>
 
       const testCaseId = this.storage.getTestCaseId(testCaseStartedId);
       const testCase = this.storage.getTestCase(testCaseId);
-      const scenarioTempId = this.storage.getScenarioTempId(testCaseId);
+      const {
+        tempId: scenarioTempId,
+        status: scenarioStatus,
+        testCaseId: customTestCaseId,
+        attributes,
+        description,
+      } = this.storage.getScenario(testCaseId);
 
       this.reportportal.finishTestItem(scenarioTempId, {
         endTime: this.reportportal.helpers.now(),
-        ...(this.isScenarioBasedStatistics && { status: testCase.status || STATUSES.PASSED }),
+        ...(this.isScenarioBasedStatistics && {
+          status: scenarioStatus || testCase.status || STATUSES.PASSED,
+        }),
+        ...(this.isScenarioBasedStatistics && customTestCaseId && { testCaseId: customTestCaseId }),
+        ...(attributes && { attributes }),
+        ...(description && { description }),
       });
 
       // finish RULE if it's exist and if it's last scenario
@@ -575,7 +618,7 @@ const createRPFormatterClass = (config) =>
         this.storage.removeTestCaseStartedId(testCaseStartedId);
         this.storage.removeSteps(testCaseId);
         this.storage.removeTestCase(testCaseId);
-        this.storage.removeScenarioTempId(testCaseStartedId);
+        this.storage.removeScenario(testCaseStartedId);
       }
 
       const { uri: pickleFeatureUri } = this.storage.getPickle(testCase.pickleId);
