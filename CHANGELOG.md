@@ -2,19 +2,24 @@
 - New API methods for scenario
 ### Fixed
 - Reporting of feature (suite) for parallel execution [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
+### Changed
+- `@reportportal/client-javascript` bumped to version `5.1.4`.
+### Security
+- Updated versions of vulnerable packages (braces).
 
 ## [5.3.1] - 2024-04-30
 ### Security
 - Updated versions of vulnerable packages (@reportportal/client-javascript, @cucumber/cucumber).
 
 ## [5.3.0] - 2024-02-07
-
 ### Added
 - Add `@cucumber/cucumber` version 10 support. Addressed [155](https://github.com/reportportal/agent-js-cucumber/issues/155).
 ### Changed
 - **Breaking change** Drop support of cucumber <7. Addressed [153](https://github.com/reportportal/agent-js-cucumber/issues/153).
 - **Breaking change** Drop support of Node.js 10. The version [5.2.3](https://github.com/reportportal/agent-js-cucumber/releases/tag/v5.2.3) is the latest that supports it.
 - `@reportportal/client-javascript` bumped to version `5.1.0`.
+### Deprecated
+- Node.js 12 usage. This minor version is the latest that supports Node.js 12.
 
 ## [5.2.3] - 2024-01-19
 ### Deprecated
