@@ -1,5 +1,5 @@
 ### Added
-- New API methods for scenario
+- New API methods for scenarios.
 ### Fixed
 - Reporting of feature (suite) for parallel execution [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
 ### Changed
