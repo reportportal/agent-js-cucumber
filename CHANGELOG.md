@@ -3,7 +3,7 @@
 ### Fixed
 - Reporting of feature (suite) for parallel execution [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
 ### Changed
-- `@reportportal/client-javascript` bumped to version `5.1.4`.
+- `@reportportal/client-javascript` bumped to version `5.1.4`, new `launchUuidPrintOutput` types introduced: 'FILE', 'ENVIRONMENT'.
 ### Security
 - Updated versions of vulnerable packages (braces).
 
