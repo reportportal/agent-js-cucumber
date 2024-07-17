@@ -15,7 +15,7 @@
  */
 
 const LoggerWorld = require('./loggerWorld');
-const { RP_EVENTS, STATUSES, RP_ENTITY_LAUNCH } = require('../constants');
+const { RP_EVENTS, STATUSES } = require('../constants');
 
 class ReportPortalCucumberWorld extends LoggerWorld {
   setTestCaseId(testCaseId) {
@@ -23,7 +23,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         testCaseId,
       }),
-      RP_EVENTS.TEST_CASE_ID,
+      RP_EVENTS.STEP_TEST_CASE_ID,
     );
   }
 
@@ -32,7 +32,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         attributes,
       }),
-      RP_EVENTS.ATTRIBUTES,
+      RP_EVENTS.STEP_ATTRIBUTES,
     );
   }
 
@@ -41,7 +41,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         description,
       }),
-      RP_EVENTS.DESCRIPTION,
+      RP_EVENTS.STEP_DESCRIPTION,
     );
   }
 
@@ -50,7 +50,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.PASSED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -59,7 +59,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.FAILED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -68,7 +68,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.SKIPPED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -77,7 +77,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.STOPPED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -86,7 +86,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.INTERRUPTED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -95,7 +95,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.CANCELLED,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -104,7 +104,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.INFO,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -113,7 +113,7 @@ class ReportPortalCucumberWorld extends LoggerWorld {
       JSON.stringify({
         status: STATUSES.WARN,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.STEP_STATUS,
     );
   }
 
@@ -121,9 +121,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.PASSED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -131,9 +130,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.FAILED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -141,9 +139,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.SKIPPED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -151,9 +148,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.STOPPED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -161,9 +157,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.INTERRUPTED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -171,9 +166,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.CANCELLED,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -181,9 +175,8 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.INFO,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
     );
   }
 
@@ -191,9 +184,107 @@ class ReportPortalCucumberWorld extends LoggerWorld {
     this.attach(
       JSON.stringify({
         status: STATUSES.WARN,
-        entity: RP_ENTITY_LAUNCH,
       }),
-      RP_EVENTS.STATUS,
+      RP_EVENTS.LAUNCH_STATUS,
+    );
+  }
+
+  setScenarioTestCaseId(testCaseId) {
+    this.attach(
+      JSON.stringify({
+        testCaseId,
+      }),
+      RP_EVENTS.SCENARIO_TEST_CASE_ID,
+    );
+  }
+
+  addScenarioAttributes(attributes) {
+    this.attach(
+      JSON.stringify({
+        attributes,
+      }),
+      RP_EVENTS.SCENARIO_ATTRIBUTES,
+    );
+  }
+
+  addScenarioDescription(description) {
+    this.attach(
+      JSON.stringify({
+        description,
+      }),
+      RP_EVENTS.SCENARIO_DESCRIPTION,
+    );
+  }
+
+  setScenarioStatusPassed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.PASSED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusFailed() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.FAILED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusSkipped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.SKIPPED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusStopped() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.STOPPED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusInterrupted() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INTERRUPTED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusCancelled() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.CANCELLED,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusInfo() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.INFO,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
+    );
+  }
+
+  setScenarioStatusWarn() {
+    this.attach(
+      JSON.stringify({
+        status: STATUSES.WARN,
+      }),
+      RP_EVENTS.SCENARIO_STATUS,
     );
   }
 }

@@ -40,7 +40,10 @@ const LOG_LEVELS = {
   WARN: 'WARN',
 };
 
-const RP_ENTITY_LAUNCH = 'launch';
+const RP_ENTITIES = {
+  LAUNCH: 'launch',
+  SCENARIO: 'scenario',
+};
 
 const CUCUMBER_EVENTS = {
   GHERKIN_DOCUMENT: 'gherkin-document',
@@ -77,10 +80,15 @@ const TEST_ITEM_TYPES = {
 };
 
 const RP_EVENTS = {
-  TEST_CASE_ID: 'rp/testCaseId',
-  ATTRIBUTES: 'rp/attributes',
-  DESCRIPTION: 'rp/description',
-  STATUS: 'rp/status',
+  STEP_TEST_CASE_ID: 'rp/step/testCaseId',
+  STEP_ATTRIBUTES: 'rp/step/attributes',
+  STEP_DESCRIPTION: 'rp/step/description',
+  STEP_STATUS: 'rp/step/status',
+  SCENARIO_TEST_CASE_ID: 'rp/scenario/testCaseId',
+  SCENARIO_ATTRIBUTES: 'rp/scenario/attributes',
+  SCENARIO_DESCRIPTION: 'rp/scenario/description',
+  SCENARIO_STATUS: 'rp/scenario/status',
+  LAUNCH_STATUS: 'rp/launch/status',
 };
 
 const TEST_STEP_FINISHED_RP_MESSAGES = {
@@ -90,7 +98,7 @@ const TEST_STEP_FINISHED_RP_MESSAGES = {
 };
 
 module.exports = {
-  RP_ENTITY_LAUNCH,
+  RP_ENTITIES,
   STATUSES,
   LOG_LEVELS,
   CUCUMBER_EVENTS,

@@ -4,9 +4,9 @@ Agent to integrate CucumberJS with ReportPortal.
 * More about [CucumberJS](https://cucumber.io/docs/installation/javascript/)
 * More about [ReportPortal](http://reportportal.io/)
 
-This agent works well with cucumber versions from 7.x to 10.x.
+This agent works with cucumber versions from 7.x to 10.x.
 
-## Install agent to your project dir
+## Install the agent to your project dir
 
 ```cmd
 npm install --save-dev @reportportal/agent-js-cucumber
@@ -64,23 +64,26 @@ npm install --save-dev @reportportal/agent-js-cucumber
 
 The full list of available options presented below.
 
-| Option                  | Necessity  | Default   | Description                                                                                                                                                                                                                                                                                                                                                                              |
-|-------------------------|------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| apiKey                  | Required   |           | User's reportportal token from which you want to send requests. It can be found on the profile page of this user.                                                                                                                                                                                                                                                                        |
-| endpoint                | Required   |           | URL of your server. For example 'https://server:8080/api/v1'.                                                                                                                                                                                                                                                                                                                            |
-| launch                  | Required   |           | Name of launch at creation.                                                                                                                                                                                                                                                                                                                                                              |
-| project                 | Required   |           | The name of the project in which the launches will be created.                                                                                                                                                                                                                                                                                                                           |
-| attributes              | Optional   | []        | Launch attributes.                                                                                                                                                                                                                                                                                                                                                                       |
-| description             | Optional   | ''        | Launch description.                                                                                                                                                                                                                                                                                                                                                                      |
-| rerun                   | Optional   | false     | Enable [rerun](https://reportportal.io/docs/dev-guides/RerunDevelopersGuide)                                                                                                                                                                                                                                                                                                             |
-| rerunOf                 | Optional   | Not set   | UUID of launch you want to rerun. If not specified, reportportal will update the latest launch with the same name                                                                                                                                                                                                                                                                        |
-| mode                    | Optional   | 'DEFAULT' | Results will be submitted to Launches page <br/> *'DEBUG'* - Results will be submitted to Debug page.                                                                                                                                                                                                                                                                                    |
-| skippedIssue            | Optional   | true      | reportportal provides feature to mark skipped tests as not 'To Investigate'. <br/> Option could be equal boolean values: <br/> *true* - skipped tests considered as issues and will be marked as 'To Investigate' on reportportal. <br/> *false* - skipped tests will not be marked as 'To Investigate' on application.                                                                  |
-| debug                   | Optional   | false     | This flag allows seeing the logs of the client-javascript. Useful for debugging.                                                                                                                                                                                                                                                                                                         |
-| takeScreenshot          | Optional   | Not set   | Possible values: *onFailure*. If this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.                                                                                                                                                                                                                                         |
-| scenarioBasedStatistics | Optional   | false     | While true, the Gherkin Scenarios considered as entity with statistics. In this case Cucumber steps will be reported to the log level as nested steps.                                                                                                                                                                                                                                   |
-| restClientConfig        | Optional   | Not set   | The object with `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, may contain other client options eg. [`timeout`](https://github.com/reportportal/client-javascript#timeout-30000ms-on-axios-requests). <br/> Visit [client-javascript](https://github.com/reportportal/client-javascript) for more details. |
-| token                   | Deprecated | Not set   | Use `apiKey` instead.                                                                                                                                                                                                                                                                                                                                                                    |
+| Option                  | Necessity  | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-------------------------|------------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| apiKey                  | Required   |           | User's reportportal token from which you want to send requests. It can be found on the profile page of this user.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| endpoint                | Required   |           | URL of your server. For example 'https://server:8080/api/v1'.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| launch                  | Required   |           | Name of launch at creation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| project                 | Required   |           | The name of the project in which the launches will be created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| attributes              | Optional   | []        | Launch attributes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| description             | Optional   | ''        | Launch description.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| rerun                   | Optional   | false     | Enable [rerun](https://reportportal.io/docs/dev-guides/RerunDevelopersGuide)                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| rerunOf                 | Optional   | Not set   | UUID of launch you want to rerun. If not specified, reportportal will update the latest launch with the same name                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| mode                    | Optional   | 'DEFAULT' | Results will be submitted to Launches page <br/> *'DEBUG'* - Results will be submitted to Debug page.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| debug                   | Optional   | false     | This flag allows seeing the logs of the client-javascript. Useful for debugging.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| restClientConfig        | Optional   | Not set   | `axios` like http client [config](https://github.com/axios/axios#request-config). May contain `agent` property for configure [http(s)](https://nodejs.org/api/https.html#https_https_request_url_options_callback) client, and other client options e.g. `proxy`, [`timeout`](https://github.com/reportportal/client-javascript#timeout-30000ms-on-axios-requests). For debugging and displaying logs the `debug: true` option can be used. <br/> Visit [client-javascript](https://github.com/reportportal/client-javascript) for more details. |
+| headers                 | Optional   | {}        | The object with custom headers for internal http client.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| launchUuidPrint         | Optional   | false     | Whether to print the current launch UUID.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| launchUuidPrintOutput   | Optional   | 'STDOUT'  | Launch UUID printing output. Possible values: 'STDOUT', 'STDERR', 'FILE', 'ENVIRONMENT'. Works only if `launchUuidPrint` set to `true`. File format: `rp-launch-uuid-${launch_uuid}.tmp`. Env variable: `RP_LAUNCH_UUID`, note that the env variable is only available in the reporter process (it cannot be obtained from tests).                                                                                                                                                                                                               |
+| skippedIssue            | Optional   | true      | reportportal provides feature to mark skipped tests as not 'To Investigate'. <br/> Option could be equal boolean values: <br/> *true* - skipped tests considered as issues and will be marked as 'To Investigate' on reportportal. <br/> *false* - skipped tests will not be marked as 'To Investigate' on application.                                                                                                                                                                                                                          |
+| takeScreenshot          | Optional   | Not set   | Possible values: *onFailure*. If this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| scenarioBasedStatistics | Optional   | false     | While true, the Gherkin Scenarios considered as entity with statistics. In this case Cucumber steps will be reported to the log level as nested steps.                                                                                                                                                                                                                                                                                                                                                                                           |
+| token                   | Deprecated | Not set   | Use `apiKey` instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 3. Create Report Portal formatter in a new js file, for example `reportPortalFormatter.js`:
 
@@ -166,13 +169,16 @@ this.attach(
   type,
 );
 ```
-To send attachment to the launch just specify `entity: 'launch'` property.
+To send attachment to the launch/scenario just specify `entity: 'launch'` or `entity: 'scenario'` property accordingly.
 
-Also `this.screenshot` and `this.launchScreenshot` methods can be used to take screenshots.
+Also `this.screenshot`, `this.scenarioScreenshot` and `this.launchScreenshot` methods can be used to take screenshots.
 
 ```javascript
 Then(/^I should see my new task in the list$/, function(callback) {
   this.screenshot('This screenshot')
+    .then(() => callback())
+    .catch((err) => callback(err));
+  this.scenarioScreenshot('This is screenshot for scenario')
     .then(() => callback())
     .catch((err) => callback(err));
   this.launchScreenshot('This is screenshot for launch')
@@ -181,7 +187,7 @@ Then(/^I should see my new task in the list$/, function(callback) {
 });
 ```
 
-`screenshot`/`launchScreenshot` function return promise fulfilled after `screenshot` is taken and image added to attachments.
+`screenshot`/`scenarioScreenshot`/`launchScreenshot` function return promise fulfilled after `screenshot` is taken and image added to attachments.
 Handler will parse attachments and send corresponding log to the step item.
 
 ### Logs
@@ -196,6 +202,19 @@ Then(/^I should see my new task in the list$/, function() {
   this.warn('This is Warn Level log');
   this.trace('This is Trace Level log');
   this.fatal('This is Fatal Level log');
+});
+```
+
+To report logs to the **scenario** you can use the next methods:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.scenarioInfo('This is Info Level log');
+  this.scenarioDebug('This is Debug Level log');
+  this.scenarioError('This is Error Level log');
+  this.scenarioWarn('This is Warn Level log');
+  this.scenarioTrace('This is Trace Level log');
+  this.scenarioFatal('This is Fatal Level log');
 });
 ```
 
@@ -216,11 +235,19 @@ Then(/^I should see my new task in the list$/, function() {
 
 Attributes for features and scenarios are parsed from @tags as `@key:value` pair.
 
-To add attributes to the step items you can use the next method:
+To add attributes to the **step items** you can use the next method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
   this.addAttributes([{ key: 'agent', value: 'cucumber' }]);
+});
+```
+
+To add attributes to the **scenario** you can use the next method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.addScenarioAttributes([{ key: 'agent', value: 'cucumber' }]);
 });
 ```
 
@@ -230,7 +257,7 @@ The attributes will be concatenated.
 
 Description for features and scenarios are parsed from their definition.
 
-To add description to the items you can use the following method:
+To add description to the **items** you can use the following method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
@@ -238,15 +265,31 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
+To add description to the **scenario** you can use the following method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.addScenarioDescription('Scenario description.');
+});
+```
+
 The description will be concatenated.
 
 ### TestCaseId
 
-To set test case id to the items you can use the following method:
+To set test case id to the **items** you can use the following method:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {
   this.setTestCaseId('itemTestCaseId');
+});
+```
+
+To set test case id to the **scenario** you can use the following method:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.setScenarioTestCaseId('scenarioTestCaseId');
 });
 ```
 
@@ -268,7 +311,22 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
-To set status to the **item** you can use the next methods:
+To set status to the **scenario** you can use the next methods:
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.setScenarioStatusPassed();
+  this.setScenarioStatusFailed();
+  this.setScenarioStatusSkipped();
+  this.setScenarioStatusStopped();
+  this.setScenarioStatusInterrupted();
+  this.setScenarioStatusCancelled();
+  this.setScenarioStatusInfo();
+  this.setScenarioStatusWarn();
+});
+```
+
+To set status to the **launch** you can use the next methods:
 
 ```javascript
 Then(/^I should see my new task in the list$/, function() {

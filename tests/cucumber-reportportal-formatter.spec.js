@@ -23,8 +23,6 @@ const {
   pickle,
   pickleWithParameters,
   testCaseWithParameters,
-  ruleId,
-  ruleTempId,
   hook,
   testCase,
   testCaseStarted,
@@ -37,14 +35,17 @@ const {
   testCaseStartedId,
   feature,
   scenario,
+  scenarioId,
   step,
+  launchTempId,
+  featureTempId,
 } = require('./data');
 const {
   STATUSES,
   TEST_ITEM_TYPES,
   CUCUMBER_MESSAGES,
   RP_EVENTS,
-  RP_ENTITY_LAUNCH,
+  RP_ENTITIES,
   TEST_STEP_FINISHED_RP_MESSAGES,
   LOG_LEVELS,
 } = require('../modules/constants');
@@ -179,8 +180,8 @@ describe('cucumber-reportportal-formatter', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
     });
-    it('should set document to storage', () => {
-      expect(formatter.storage.getDocument(uri)).toBe(gherkinDocument);
+    it('should set feature to storage', () => {
+      expect(formatter.storage.getFeature(uri)).toBe(gherkinDocument.feature);
     });
 
     it('should set document feature.children', () => {
@@ -270,46 +271,6 @@ describe('cucumber-reportportal-formatter', () => {
       formatter.onTestCaseStartedEvent(testCaseStarted);
 
       expect(formatter.storage.getTestCaseId(testCaseStarted.id)).toBe(testCase.id);
-    });
-
-    it('should start FEATURE if no currentFeatureUri or new feature', () => {
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(formatter.storage.getFeatureTempId()).toBe('testItemId');
-    });
-
-    it('should finish previous FEATURE if currentFeatureUri is different from pickleFeatureUri', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-      formatter.storage.setCurrentFeatureUri('currentFeatureUri');
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).toHaveBeenCalledWith(tempFeatureId, {
-        endTime: mockedDate,
-      });
-    });
-
-    it('should not finish FEATURE if pickleFeatureUri the same as currentFeatureUrl', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-      formatter.storage.setCurrentFeatureUri(pickle.uri);
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).not.toHaveBeenCalled();
-    });
-
-    it('should start new FEATURE if it is first feature in this launch', () => {
-      const finishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-      const tempFeatureId = 'tempFeatureId';
-      formatter.storage.setFeatureTempId(tempFeatureId);
-
-      formatter.onTestCaseStartedEvent(testCaseStarted);
-
-      expect(finishTestItem).not.toHaveBeenCalled();
     });
 
     it('start scenario flow', () => {
@@ -422,7 +383,7 @@ describe('cucumber-reportportal-formatter', () => {
 
     it('should update step in storage', () => {
       const data = {
-        mediaType: RP_EVENTS.TEST_CASE_ID,
+        mediaType: RP_EVENTS.STEP_TEST_CASE_ID,
         testStepId,
         testCaseStartedId,
         body: JSON.stringify(body),
@@ -435,7 +396,7 @@ describe('cucumber-reportportal-formatter', () => {
 
     it('should update step attributes in storage', () => {
       const data = {
-        mediaType: RP_EVENTS.ATTRIBUTES,
+        mediaType: RP_EVENTS.STEP_ATTRIBUTES,
         testStepId,
         testCaseStartedId,
         body: JSON.stringify(body),
@@ -450,7 +411,7 @@ describe('cucumber-reportportal-formatter', () => {
 
     it('should update step description in storage', () => {
       const data = {
-        mediaType: RP_EVENTS.DESCRIPTION,
+        mediaType: RP_EVENTS.STEP_DESCRIPTION,
         testStepId,
         testCaseStartedId,
         body: JSON.stringify(body),
@@ -465,7 +426,7 @@ describe('cucumber-reportportal-formatter', () => {
 
     it('should update step description in storage', () => {
       const data = {
-        mediaType: RP_EVENTS.DESCRIPTION,
+        mediaType: RP_EVENTS.STEP_DESCRIPTION,
         testStepId,
         testCaseStartedId,
         body: JSON.stringify(body),
@@ -478,10 +439,50 @@ describe('cucumber-reportportal-formatter', () => {
       });
     });
 
+    it('should update scenario in storage', () => {
+      const customTestCaseId = 'test-case-id';
+      const data = {
+        mediaType: RP_EVENTS.SCENARIO_TEST_CASE_ID,
+        testStepId,
+        testCaseStartedId,
+        body: JSON.stringify({ testCaseId: customTestCaseId }),
+      };
+
+      formatter.onTestStepAttachmentEvent(data);
+
+      expect(formatter.storage.getScenario(testCaseId)).toEqual({ testCaseId: customTestCaseId });
+    });
+
+    it('should update scenario attributes in storage', () => {
+      const data = {
+        mediaType: RP_EVENTS.SCENARIO_ATTRIBUTES,
+        testStepId,
+        testCaseStartedId,
+        body: JSON.stringify(body),
+      };
+
+      formatter.onTestStepAttachmentEvent(data);
+
+      expect(formatter.storage.getScenario(testCaseId).attributes).toEqual(body.attributes);
+    });
+
+    it('should update scenario description in storage', () => {
+      const data = {
+        mediaType: RP_EVENTS.SCENARIO_DESCRIPTION,
+        testStepId,
+        testCaseStartedId,
+        body: JSON.stringify(body),
+      };
+
+      formatter.onTestStepAttachmentEvent(data);
+
+      expect(formatter.storage.getScenario(testCaseId).description).toEqual(body.description);
+    });
+
     describe('Status event handling', () => {
       it('should update step in storage', () => {
         const data = {
-          mediaType: RP_EVENTS.STATUS,
+          mediaType: RP_EVENTS.STEP_STATUS,
           testStepId,
           testCaseStartedId,
           body: JSON.stringify(body),
@@ -492,13 +493,26 @@ describe('cucumber-reportportal-formatter', () => {
         expect(formatter.storage.getStep(testCaseId, testStepId)).toEqual(body);
       });
 
+      it('should update scenario in storage', () => {
+        const data = {
+          mediaType: RP_EVENTS.SCENARIO_STATUS,
+          testStepId,
+          testCaseStartedId,
+          body: JSON.stringify(body),
+        };
+
+        formatter.onTestStepAttachmentEvent(data);
+
+        expect(formatter.storage.getScenario(testCaseId).status).toEqual(body.status);
+      });
+
       it('should set status in customLaunchStatus field', () => {
         const status = 'start';
         const data = {
-          mediaType: RP_EVENTS.STATUS,
+          mediaType: RP_EVENTS.LAUNCH_STATUS,
           testStepId,
           testCaseStartedId,
-          body: JSON.stringify({ ...body, entity: RP_ENTITY_LAUNCH, status }),
+          body: JSON.stringify({ ...body, status }),
         };
 
         formatter.onTestStepAttachmentEvent(data);
@@ -528,6 +542,26 @@ describe('cucumber-reportportal-formatter', () => {
         });
       });
 
+      it('sendLog should be called with scenario temp id', () => {
+        jest.spyOn(formatter.storage, 'getScenarioTempId').mockImplementationOnce(() => scenarioId);
+        const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+        const data = {
+          mediaType: 'text/plain',
+          testStepId,
+          testCaseStartedId,
+          body: JSON.stringify({ ...body, entity: RP_ENTITIES.SCENARIO }),
+        };
+
+        formatter.onTestStepAttachmentEvent(data);
+
+        expect(spySendLog).toHaveBeenCalledWith(scenarioId, {
+          time: mockedDate,
+          level: body.level,
+          message: body.message,
+        });
+      });
+
       it('sendLog should be called with launch temp id', () => {
         jest.spyOn(formatter.storage, 'getLaunchTempId').mockImplementationOnce(() => launchTempId);
         const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
@@ -536,7 +570,7 @@ describe('cucumber-reportportal-formatter', () => {
           mediaType: 'text/plain',
           testStepId,
           testCaseStartedId,
-          body: JSON.stringify({ ...body, entity: RP_ENTITY_LAUNCH }),
+          body: JSON.stringify({ ...body, entity: RP_ENTITIES.LAUNCH }),
         };
 
         formatter.onTestStepAttachmentEvent(data);
@@ -604,6 +638,37 @@ describe('cucumber-reportportal-formatter', () => {
         );
       });
 
+      it('sendLog should be called with scenario temp id', () => {
+        jest.spyOn(formatter.storage, 'getScenarioTempId').mockImplementationOnce(() => scenarioId);
+        const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
+
+        const data = {
+          mediaType,
+          testStepId,
+          testCaseStartedId,
+          body: JSON.stringify({ ...body, entity: RP_ENTITIES.SCENARIO }),
+        };
+
+        formatter.onTestStepAttachmentEvent(data);
+
+        expect(spySendLog).toHaveBeenCalledWith(
+          scenarioId,
+          {
+            time: mockedDate,
+            level: body.level,
+            message: body.message,
+            file: {
+              name: body.message,
+            },
+          },
+          {
+            name: fileName,
+            type: mediaType,
+            content: body.data,
+          },
+        );
+      });
+
       it('sendLog should be called with launch temp id', () => {
         jest.spyOn(formatter.storage, 'getLaunchTempId').mockImplementationOnce(() => launchTempId);
         const spySendLog = jest.spyOn(formatter.reportportal, 'sendLog');
@@ -612,7 +677,7 @@ describe('cucumber-reportportal-formatter', () => {
           mediaType,
           testStepId,
           testCaseStartedId,
-          body: JSON.stringify({ ...body, entity: RP_ENTITY_LAUNCH }),
+          body: JSON.stringify({ ...body, entity: RP_ENTITIES.LAUNCH }),
         };
 
         formatter.onTestStepAttachmentEvent(data);
@@ -832,6 +897,36 @@ describe('cucumber-reportportal-formatter', () => {
     });
   });
 
+  describe('startFeature', () => {
+    it('startTestItem should be called', () => {
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+      formatter.storage.setLaunchTempId(launchTempId);
+
+      formatter.startFeature({ pickleFeatureUri: uri, feature });
+
+      expect(spyStartTestItem).lastCalledWith(
+        {
+          name: `Feature: ${feature.name}`,
+          startTime: mockedDate,
+          type: 'SUITE',
+          codeRef: `${uri}/${feature.name}`,
+          attributes: [],
+          description: '',
+        },
+        launchTempId,
+      );
+    });
+
+    it('should be skipped if suite is already running', () => {
+      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
+      formatter.storage.setFeature(uri, { tempId: featureTempId });
+
+      formatter.startFeature({ pickleFeatureUri: uri, feature });
+
+      expect(spyStartTestItem).not.toHaveBeenCalled();
+    });
+  });
+
   describe('onTestRunFinishedEvent', () => {
     beforeEach(() => {
       formatter.onGherkinDocumentEvent(gherkinDocument);
@@ -859,8 +954,8 @@ describe('cucumber-reportportal-formatter', () => {
       expect(spyGetPromiseFinishAllItems).toBeCalledWith('tempLaunchId');
 
       expect(formatter.storage.getLaunchTempId()).toBeNull();
-      expect(formatter.storage.getCurrentFeatureUri()).toBeNull();
-      expect(formatter.storage.getFeatureTempId()).toBeNull();
+      expect(formatter.storage.getActiveFeatureUris().length).toBe(0);
+      expect(formatter.storage.getFeatureTempId(uri)).toBeUndefined();
     });
   });
 });

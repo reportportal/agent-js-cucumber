@@ -1,10 +1,19 @@
+### Added
+- New API methods for scenarios.
+### Fixed
+- Scenario retries are inconsistently tagged. Addressed [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
+### Changed
+- `@reportportal/client-javascript` bumped to version `5.1.4`, new `launchUuidPrintOutput` types introduced: 'FILE', 'ENVIRONMENT'.
+### Security
+- Updated versions of vulnerable packages (braces).
+### Deprecated
+- Node.js 12 usage. This minor version is the latest that supports Node.js 12.
 
 ## [5.3.1] - 2024-04-30
 ### Security
 - Updated versions of vulnerable packages (@reportportal/client-javascript, @cucumber/cucumber).
 
 ## [5.3.0] - 2024-02-07
-
 ### Added
 - Add `@cucumber/cucumber` version 10 support. Addressed [155](https://github.com/reportportal/agent-js-cucumber/issues/155).
 ### Changed
