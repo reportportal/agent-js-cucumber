@@ -41,8 +41,8 @@ const LOG_LEVELS = {
 };
 
 const RP_ENTITIES = {
-  LAUNCH: 'LAUNCH',
-  SCENARIO: 'SCENARIO',
+  LAUNCH: 'launch',
+  SCENARIO: 'scenario',
 };
 
 const CUCUMBER_EVENTS = {
