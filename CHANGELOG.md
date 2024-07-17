@@ -1,3 +1,5 @@
+
+## [5.4.0] - 2024-07-17
 ### Added
 - New API methods for scenarios.
 ### Fixed
