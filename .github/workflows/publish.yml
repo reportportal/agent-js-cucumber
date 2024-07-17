@@ -31,7 +31,7 @@ jobs:
         run: npm install
       - name: Run lint
         run: npm run lint
-      - name: Check test coverage
+      - name: Run tests and check coverage
         run: npm run test:coverage
 
   publish-to-npm-and-gpr:

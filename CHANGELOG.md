@@ -1,7 +1,7 @@
 ### Added
 - New API methods for scenarios.
 ### Fixed
-- Reporting of feature (suite) for parallel execution [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
+- Scenario retries are inconsistently tagged. Addressed [#142](https://github.com/reportportal/agent-js-cucumber/issues/142).
 ### Changed
 - `@reportportal/client-javascript` bumped to version `5.1.4`, new `launchUuidPrintOutput` types introduced: 'FILE', 'ENVIRONMENT'.
 ### Security
