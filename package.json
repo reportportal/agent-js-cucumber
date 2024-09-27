@@ -17,7 +17,7 @@
     "node": ">=12.x"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^10.8.0",
+    "@cucumber/cucumber": "^11.0.1",
     "@types/jest": "^29.5.12",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
@@ -30,7 +30,7 @@
     "prettier": "^2.8.8"
   },
   "peerDependencies": {
-    "@cucumber/cucumber": "7.x - 10.x"
+    "@cucumber/cucumber": "7.x - 11.x"
   },
   "repository": {
     "type": "git",
