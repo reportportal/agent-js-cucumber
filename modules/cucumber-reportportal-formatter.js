@@ -15,6 +15,7 @@
  */
 
 const ReportPortalClient = require('@reportportal/client-javascript');
+const clientHelpers = require('@reportportal/client-javascript/lib/helpers');
 const { Formatter } = require('@cucumber/cucumber');
 const stripAnsi = require('strip-ansi');
 const utils = require('./utils');
@@ -110,7 +111,7 @@ const createRPFormatterClass = (config) =>
       }
       const startLaunchData = {
         name: this.config.launch,
-        startTime: this.reportportal.helpers.now(),
+        startTime: clientHelpers.now(),
         description: this.config.description || '',
         attributes,
         rerun: this.isRerun,
@@ -152,7 +153,7 @@ const createRPFormatterClass = (config) =>
       const launchTempId = this.storage.getLaunchTempId();
       const suiteData = {
         name: `${feature.keyword}: ${feature.name}`,
-        startTime: this.reportportal.helpers.now(),
+        startTime: clientHelpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
         description: (feature.description || '').trim(),
         attributes: utils.createAttributes(feature.tags),
@@ -167,7 +168,7 @@ const createRPFormatterClass = (config) =>
       const { tempId, endTime } = this.storage.getFeature(pickleFeatureUri);
 
       this.reportportal.finishTestItem(tempId, {
-        endTime: endTime || this.reportportal.helpers.now(),
+        endTime: endTime || clientHelpers.now(),
       });
 
       this.storage.deleteFeature(pickleFeatureUri);
@@ -203,7 +204,7 @@ const createRPFormatterClass = (config) =>
           const childrenIds = children.map((child) => child.scenario.id);
           const currentNodeCodeRef = utils.formatCodeRef(featureCodeRef, name);
           const testData = {
-            startTime: this.reportportal.helpers.now(),
+            startTime: clientHelpers.now(),
             type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.TEST : TEST_ITEM_TYPES.SUITE,
             name: `${keyword}: ${name}`,
             description,
@@ -257,7 +258,7 @@ const createRPFormatterClass = (config) =>
           : currentNodeCodeRef;
       const scenarioAttributes = utils.createAttributes(scenario.tags);
       const testData = {
-        startTime: this.reportportal.helpers.now(),
+        startTime: clientHelpers.now(),
         type: this.isScenarioBasedStatistics ? TEST_ITEM_TYPES.STEP : TEST_ITEM_TYPES.TEST,
         name: `${keyword}: ${name}`,
         description: scenario.description,
@@ -311,7 +312,7 @@ const createRPFormatterClass = (config) =>
 
         const stepData = {
           name: keyword ? `${keyword} ${name}` : name,
-          startTime: this.reportportal.helpers.now(),
+          startTime: clientHelpers.now(),
           type,
           codeRef,
           hasStats: !this.isScenarioBasedStatistics,
@@ -396,7 +397,7 @@ const createRPFormatterClass = (config) =>
 
           case 'text/plain': {
             const request = {
-              time: this.reportportal.helpers.now(),
+              time: clientHelpers.now(),
             };
             let tempId = this.storage.getStepTempId(testStepId);
 
@@ -419,7 +420,7 @@ const createRPFormatterClass = (config) =>
           default: {
             const fileName = 'file'; // TODO: generate human valuable file name here if possible
             const request = {
-              time: this.reportportal.helpers.now(),
+              time: clientHelpers.now(),
               level: LOG_LEVELS.INFO,
               message: fileName,
               file: {
@@ -468,7 +469,7 @@ const createRPFormatterClass = (config) =>
         }
         case STATUSES.PENDING: {
           this.reportportal.sendLog(tempStepId, {
-            time: this.reportportal.helpers.now(),
+            time: clientHelpers.now(),
             level: LOG_LEVELS.WARN,
             message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
           });
@@ -477,7 +478,7 @@ const createRPFormatterClass = (config) =>
         }
         case STATUSES.UNDEFINED: {
           this.reportportal.sendLog(tempStepId, {
-            time: this.reportportal.helpers.now(),
+            time: clientHelpers.now(),
             level: LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
           });
@@ -486,7 +487,7 @@ const createRPFormatterClass = (config) =>
         }
         case STATUSES.AMBIGUOUS: {
           this.reportportal.sendLog(tempStepId, {
-            time: this.reportportal.helpers.now(),
+            time: clientHelpers.now(),
             level: LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
           });
@@ -500,7 +501,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.FAILED: {
           status = STATUSES.FAILED;
           this.reportportal.sendLog(tempStepId, {
-            time: this.reportportal.helpers.now(),
+            time: clientHelpers.now(),
             level: LOG_LEVELS.ERROR,
             message: stripAnsi(testStepResult.message),
           });
@@ -515,7 +516,7 @@ const createRPFormatterClass = (config) =>
             const screenshotName = utils.getScreenshotName(astNodesData, step.astNodeIds);
 
             const request = {
-              time: this.reportportal.helpers.now(),
+              time: clientHelpers.now(),
               level: LOG_LEVELS.ERROR,
               file: { name: screenshotName },
               message: screenshotName,
@@ -556,7 +557,7 @@ const createRPFormatterClass = (config) =>
           ...(descriptionToSend && { description: descriptionToSend }),
           ...(customTestCaseId && { testCaseId: customTestCaseId }),
           ...(withoutIssue && { issue: { issueType: 'NOT_ISSUE' } }),
-          endTime: this.reportportal.helpers.now(),
+          endTime: clientHelpers.now(),
         });
       }
 
@@ -585,7 +586,7 @@ const createRPFormatterClass = (config) =>
       } = this.storage.getScenario(testCaseId);
 
       this.reportportal.finishTestItem(scenarioTempId, {
-        endTime: this.reportportal.helpers.now(),
+        endTime: clientHelpers.now(),
         ...(this.isScenarioBasedStatistics && {
           status: scenarioStatus || testCase.status || STATUSES.PASSED,
         }),
@@ -605,7 +606,7 @@ const createRPFormatterClass = (config) =>
 
       if (ruleTempId && isAllRuleChildrenStarted) {
         this.reportportal.finishTestItem(ruleTempId, {
-          endTime: this.reportportal.helpers.now(),
+          endTime: clientHelpers.now(),
         });
 
         this.storage.removeRuleTempIdToTestCase(testCaseStartedId);
@@ -622,7 +623,7 @@ const createRPFormatterClass = (config) =>
       }
 
       const { uri: pickleFeatureUri } = this.storage.getPickle(testCase.pickleId);
-      this.storage.updateFeature(pickleFeatureUri, { endTime: this.reportportal.helpers.now() });
+      this.storage.updateFeature(pickleFeatureUri, { endTime: clientHelpers.now() });
     }
 
     onTestRunFinishedEvent() {

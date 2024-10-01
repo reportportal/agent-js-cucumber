@@ -1,3 +1,10 @@
+### Added
+- `@cucumber/cucumber` version 11 support. Addressed [169](https://github.com/reportportal/agent-js-cucumber/issues/169).
+### Changed
+- **Breaking change** Drop support of Node.js 12. The version [5.4.0](https://github.com/reportportal/agent-js-cucumber/releases/tag/v5.4.0) is the latest that supports it.
+- The agent now supports reporting the time for launches, test items and logs with microsecond precision in the ISO string format.
+For logs, microsecond precision is available on the UI from ReportPortal version 24.2.
+- `@reportportal/client-javascript` bumped to version `5.3.0`.
 
 ## [5.4.0] - 2024-07-17
 ### Added
@@ -17,7 +24,7 @@
 
 ## [5.3.0] - 2024-02-07
 ### Added
-- Add `@cucumber/cucumber` version 10 support. Addressed [155](https://github.com/reportportal/agent-js-cucumber/issues/155).
+- `@cucumber/cucumber` version 10 support. Addressed [155](https://github.com/reportportal/agent-js-cucumber/issues/155).
 ### Changed
 - **Breaking change** Drop support of cucumber <7. Addressed [153](https://github.com/reportportal/agent-js-cucumber/issues/153).
 - **Breaking change** Drop support of Node.js 10. The version [5.2.3](https://github.com/reportportal/agent-js-cucumber/releases/tag/v5.2.3) is the latest that supports it.
@@ -33,7 +40,7 @@
 
 ## [5.2.2] - 2023-07-18
 ### Added
-- Add `@cucumber/cucumber` version 9 support. Addressed [147](https://github.com/reportportal/agent-js-cucumber/issues/147).
+- `@cucumber/cucumber` version 9 support. Addressed [147](https://github.com/reportportal/agent-js-cucumber/issues/147).
 ### Changed
 - `token` configuration option was renamed to `apiKey` to maintain common convention.
 - `@reportportal/client-javascript` bumped to version `5.0.12`.
@@ -55,7 +62,7 @@
 
 ## [5.1.0] - 2022-11-29
 ### Added
-- Added support for 7-8 versions of `@cucumber/cucumber` package
+- `@cucumber/cucumber` versions 7-8 support.
 ### Updated
 - `@reportportal/client-javascript` version to the latest
 

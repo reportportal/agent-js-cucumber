@@ -17,7 +17,6 @@
 const Storage = require('../modules/storage');
 const {
   launchTempId,
-  gherkinDocument,
   feature,
   pickleId,
   uri,
