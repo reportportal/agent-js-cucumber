@@ -1,11 +1,8 @@
-const mockedDate = Date.now();
+const mockedDate = '2024-09-23T12:20:59.392987Z';
 
 class RPClientMock {
   constructor(config) {
     this.config = config;
-    this.helpers = {
-      now: () => mockedDate,
-    };
 
     this.startLaunch = jest.fn().mockReturnValue({
       promise: Promise.resolve('ok'),

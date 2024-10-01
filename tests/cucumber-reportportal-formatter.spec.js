@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+const helpers = require('@reportportal/client-javascript/lib/helpers');
 const { createRPFormatterClass } = require('../modules');
 const { RPClientMock, getDefaultConfig, mockedDate } = require('./mocks');
 const Storage = require('../modules/storage');
@@ -51,6 +52,7 @@ const {
 } = require('../modules/constants');
 
 describe('cucumber-reportportal-formatter', () => {
+  jest.spyOn(helpers, 'now').mockReturnValue(mockedDate);
   const config = getDefaultConfig();
   const FormatterClass = createRPFormatterClass(config);
   const formatter = new FormatterClass({
