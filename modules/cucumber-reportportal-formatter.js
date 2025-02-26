@@ -116,6 +116,7 @@ const createRPFormatterClass = (config) =>
         attributes,
         rerun: this.isRerun,
         rerunOf: this.rerunOf,
+        id: this.config.launchId,
         ...(this.config.mode && { mode: this.config.mode }),
       };
       const { tempId } = this.reportportal.startLaunch(startLaunchData);
@@ -634,9 +635,11 @@ const createRPFormatterClass = (config) =>
 
       const launchId = this.storage.getLaunchTempId();
       this.reportportal.getPromiseFinishAllItems(launchId).then(() => {
-        this.reportportal.finishLaunch(launchId, {
-          ...(this.customLaunchStatus && { status: this.customLaunchStatus }),
-        });
+        if (!this.config.launchId) {
+          this.reportportal.finishLaunch(launchId, {
+            ...(this.customLaunchStatus && { status: this.customLaunchStatus }),
+          });
+        }
         this.storage.setLaunchTempId(null);
         this.customLaunchStatus = null;
       });
