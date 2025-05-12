@@ -1,9 +1,11 @@
+### Fixed
+- Adjusted retrieval of active features. Addressed [168](https://github.com/reportportal/agent-js-cucumber/issues/168)
 
 ## [5.5.1] - 2025-02-26
 ### Added
 - `launchId` option to the config to attach run results to an existing launch. Related to parallel execution on one and several machines.
 
-## [5.5.0] - 2024-10-01
+## [5.5.0] - 2024-10-0 1
 ### Added
 - `@cucumber/cucumber` version 11 support. Addressed [169](https://github.com/reportportal/agent-js-cucumber/issues/169).
 ### Changed
