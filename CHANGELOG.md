@@ -1,3 +1,5 @@
+
+## [5.5.2] - 2025-05-13
 ### Fixed
 - Adjusted retrieval of active features. Addressed [168](https://github.com/reportportal/agent-js-cucumber/issues/168)
 
