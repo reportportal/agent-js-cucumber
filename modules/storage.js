@@ -138,7 +138,8 @@ module.exports = class Storage {
   }
 
   getActiveFeatureUris() {
-    return Array.from(this.features.keys());
+    // Get all started Feature URIs
+    return Array.from(this.features.keys()).filter((uri) => this.getFeatureTempId(uri));
   }
 
   setScenario(testCaseStartedId, scenario) {

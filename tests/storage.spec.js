@@ -141,7 +141,7 @@ describe('test Storage', () => {
   });
 
   it('set/getActiveFeatureUris', () => {
-    storage.setFeature(uri, feature);
+    storage.setFeature(uri, { ...feature, tempId: featureTempId });
 
     expect(storage.getActiveFeatureUris()).toEqual([uri]);
   });
