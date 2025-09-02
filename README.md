@@ -4,7 +4,7 @@ Agent to integrate CucumberJS with ReportPortal.
 * More about [CucumberJS](https://cucumber.io/docs/installation/javascript/)
 * More about [ReportPortal](http://reportportal.io/)
 
-This agent works with Cucumber versions from 7.x to 11.x.
+This agent works with Cucumber versions from 7.x to 12.x.
 See [release notes](https://github.com/reportportal/agent-js-cucumber/releases) for the detailed versions description.
 
 ## Install the agent to your project dir

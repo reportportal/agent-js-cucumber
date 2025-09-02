@@ -1,3 +1,12 @@
+### Added
+- `@cucumber/cucumber` version 12 support. Addressed [181](https://github.com/reportportal/agent-js-cucumber/issues/181).
+### Changed
+- **Breaking change** Drop support of Node.js 14. The version [5.5.0](https://github.com/reportportal/agent-js-cucumber/releases/tag/v5.5.0) is the latest that supports it.
+- Revert time format back to milliseconds (based on [#217](https://github.com/reportportal/client-javascript/issues/217#issuecomment-2659843471)). This is also fixing the issue with agents installation on ARM processors [#212](https://github.com/reportportal/agent-js-cypress/issues/212).
+- `@reportportal/client-javascript` bumped to version `5.4.1`.
+### Security
+- Updated versions of vulnerable packages (axios).
+
 
 ## [5.5.2] - 2025-05-13
 ### Fixed
@@ -15,6 +24,8 @@
 - The agent now supports reporting the time for launches, test items and logs with microsecond precision in the ISO string format.
 For logs, microsecond precision is available on the UI from ReportPortal version 24.2.
 - `@reportportal/client-javascript` bumped to version `5.3.0`.
+### Deprecated
+- Node.js 14 usage. This minor version is the latest that supports Node.js 14.
 
 ## [5.4.0] - 2024-07-17
 ### Added

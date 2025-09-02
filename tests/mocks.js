@@ -1,4 +1,4 @@
-const mockedDate = '2024-09-23T12:20:59.392987Z';
+const mockedDate = Date.now();
 
 class RPClientMock {
   constructor(config) {
