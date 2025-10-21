@@ -65,9 +65,58 @@ npm install --save-dev @reportportal/agent-js-cucumber
 
 The full list of available options presented below.
 
+### Authentication Options
+
+The agent supports two authentication methods:
+1. **API Key Authentication** (default)
+2. **OAuth 2.0 Password Grant** (recommended for enhanced security)
+
+**Note:**\
+If both authentication methods are provided, OAuth 2.0 will be used.\
+Either API key or complete OAuth 2.0 configuration is required to connect to ReportPortal.
+
+| Option | Necessity   | Default | Description                                                                                                                                                    |
+|--------|-------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| apiKey | Conditional |         | User's ReportPortal API key from which you want to send requests. It can be found on the profile page of this user. *Required only if OAuth is not configured. |
+| oauth  | Conditional |         | OAuth 2.0 configuration object. When provided, OAuth authentication will be used instead of API key. See OAuth Configuration below.                            |
+
+#### OAuth Configuration
+
+The `oauth` object supports the following properties:
+
+| Property              | Necessity  | Default  | Description                                                                                                                                                                                                                                                                                                                     |
+|-----------------------|------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| tokenEndpoint         | Required   |          | OAuth 2.0 token endpoint URL for password grant flow.                                                                                                                                                                                                                                                                           |
+| username              | Required   |          | Username for OAuth 2.0 password grant.                                                                                                                                                                                                                                                                                          |
+| password              | Required   |          | Password for OAuth 2.0 password grant.                                                                                                                                                                                                                                                                                          |
+| clientId              | Required   |          | OAuth 2.0 client ID.                                                                                                                                                                                                                                                                                                            |
+| clientSecret          | Optional   |          | OAuth 2.0 client secret (optional, depending on your OAuth server configuration).                                                                                                                                                                                                                                               |
+| scope                 | Optional   |          | OAuth 2.0 scope (optional, space-separated list of scopes).                                                                                                                                                                                                                                                                     |
+
+**Note:** The OAuth interceptor automatically handles token refresh when the token is about to expire (1 minute before expiration).
+
+##### OAuth 2.0 configuration example
+
+```javascript
+const rpConfig = {
+  endpoint: 'https://your.reportportal.server/api/v2',
+  project: 'Your reportportal project name',
+  launch: 'Your launch name',
+  oauth: {
+    tokenEndpoint: 'https://your-oauth-server.com/oauth/token',
+    username: 'your-username',
+    password: 'your-password',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret', // optional
+    scope: 'reportportal', // optional
+  }
+};
+```
+
+### General options
+
 | Option                  | Necessity  | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |-------------------------|------------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| apiKey                  | Required   |           | User's reportportal token from which you want to send requests. It can be found on the profile page of this user.                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | endpoint                | Required   |           | URL of your server. For example 'https://server:8080/api/v2'.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | launch                  | Required   |           | Name of launch at creation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | project                 | Required   |           | The name of the project in which the launches will be created.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -85,7 +134,6 @@ The full list of available options presented below.
 | skippedIssue            | Optional   | true      | reportportal provides feature to mark skipped tests as not 'To Investigate'. <br/> Option could be equal boolean values: <br/> *true* - skipped tests considered as issues and will be marked as 'To Investigate' on reportportal. <br/> *false* - skipped tests will not be marked as 'To Investigate' on application.                                                                                                                                                                                                                          |
 | takeScreenshot          | Optional   | Not set   | Possible values: *onFailure*. If this option is defined then framework will take screenshot with protractor or webdriver API if step has failed.                                                                                                                                                                                                                                                                                                                                                                                                 |
 | scenarioBasedStatistics | Optional   | false     | While true, the Gherkin Scenarios considered as entity with statistics. In this case Cucumber steps will be reported to the log level as nested steps.                                                                                                                                                                                                                                                                                                                                                                                           |
-| token                   | Deprecated | Not set   | Use `apiKey` instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 3. Create Report Portal formatter in a new js file, for example `reportPortalFormatter.js`:
 
@@ -155,7 +203,14 @@ To report your steps as logs without creating statistics for every step, you nee
 }
 ```
 
-## API
+## Asynchronous API
+
+The client supports an asynchronous reporting (via the ReportPortal asynchronous API).
+If you want the client to report through the asynchronous API, change `v1` to `v2` in the `endpoint` address.
+
+**Note:** It is highly recommended to use the `v2` endpoint for reporting, especially for extensive test suites.
+
+## Reporting API
 
 ### Attachments
 
