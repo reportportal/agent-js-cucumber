@@ -91,7 +91,7 @@ class ReportPortalCucumberLoggerWorld {
       'text/plain',
     );
   }
-  
+
   launchLog(level, message) {
     this.attach(
       JSON.stringify({
@@ -168,7 +168,7 @@ class ReportPortalCucumberLoggerWorld {
       'text/plain',
     );
   }
-  
+
   scenarioLog(level, message) {
     this.attach(
       JSON.stringify({
