@@ -288,6 +288,63 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
+#### Custom Log
+
+For more flexibility, you can use the `log` method which allows you to specify any log level (either predefined or custom):
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.log('INFO', 'This is a custom log message');
+  this.log('ERROR', 'This is an error log');
+  this.log('DEBUG', 'This is a debug log');
+  this.log('WARN', 'This is a warning log');
+  this.log('CUSTOM_LEVEL', 'This is a custom level log');
+  this.log('clean_up', 'Cleaning up resources');
+});
+```
+
+**Parameters:**
+- `level` (required): Log level. Predefined levels: `INFO`, `ERROR`, `DEBUG`, `TRACE`, `FATAL`, `WARN`. Custom levels are also supported (e.g., `CUSTOM_LEVEL`, `clean_up`).
+- `message` (required): The log message text.
+
+#### Custom Launch Log
+
+For more flexibility, you can use the `launchLog` method which allows you to specify any log level for the **launch** (either predefined or custom):
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.launchLog('INFO', 'This is a custom launch log message');
+  this.launchLog('ERROR', 'This is an error launch log');
+  this.launchLog('DEBUG', 'This is a debug launch log');
+  this.launchLog('WARN', 'This is a warning launch log');
+  this.launchLog('CUSTOM_LEVEL', 'This is a custom level launch log');
+  this.launchLog('clean_up', 'Cleaning up launch resources');
+});
+```
+
+**Parameters:**
+- `level` (required): Log level. Predefined levels: `INFO`, `ERROR`, `DEBUG`, `TRACE`, `FATAL`, `WARN`. Custom levels are also supported (e.g., `CUSTOM_LEVEL`, `clean_up`).
+- `message` (required): The log message text.
+
+#### Custom Scenario Log
+
+For more flexibility, you can use the `scenarioLog` method which allows you to specify any log level for the **scenario** (either predefined or custom):
+
+```javascript
+Then(/^I should see my new task in the list$/, function() {
+  this.scenarioLog('INFO', 'This is a custom scenario log message');
+  this.scenarioLog('ERROR', 'This is an error scenario log');
+  this.scenarioLog('DEBUG', 'This is a debug scenario log');
+  this.scenarioLog('WARN', 'This is a warning scenario log');
+  this.scenarioLog('CUSTOM_LEVEL', 'This is a custom level scenario log');
+  this.scenarioLog('clean_up', 'Cleaning up scenario resources');
+});
+```
+
+**Parameters:**
+- `level` (required): Log level. Predefined levels: `INFO`, `ERROR`, `DEBUG`, `TRACE`, `FATAL`, `WARN`. Custom levels are also supported (e.g., `CUSTOM_LEVEL`, `clean_up`).
+- `message` (required): The log message text.
+
 ### Attributes
 
 Attributes for features and scenarios are parsed from @tags as `@key:value` pair.

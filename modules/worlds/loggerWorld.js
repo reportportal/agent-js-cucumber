@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2025 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,6 +20,16 @@ class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {
     this.attach = attach;
     this.parameters = parameters;
+  }
+
+  log(level, message) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+      }),
+      'text/plain',
+    );
   }
 
   info(logMessage) {
@@ -77,6 +87,17 @@ class ReportPortalCucumberLoggerWorld {
       JSON.stringify({
         level: LOG_LEVELS.FATAL,
         message: logMessage,
+      }),
+      'text/plain',
+    );
+  }
+  
+  launchLog(level, message) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -143,6 +164,17 @@ class ReportPortalCucumberLoggerWorld {
         level: LOG_LEVELS.FATAL,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+  
+  scenarioLog(level, message) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+        entity: RP_ENTITIES.SCENARIO,
       }),
       'text/plain',
     );
