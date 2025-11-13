@@ -1,9 +1,9 @@
 ### Added
 - Custom log methods with flexible log levels:
-  - `log(level, message)` - Log to items with any predefined or custom log level
-  - `launchLog(level, message)` - Log to launch with any predefined or custom log level
-  - `scenarioLog(level, message)` - Log to scenario with any predefined or custom log level
-- Support for custom log levels beyond the predefined ones (INFO, ERROR, DEBUG, TRACE, FATAL, WARN). Check [Custom Log](README.md#custom-log), [Custom Launch Log](README.md#custom-launch-log), and [Custom Scenario Log](README.md#custom-scenario-log) sections in the README for detailed usage examples.
+  - `log(message, level)` - Log to items with any predefined or custom log level
+  - `launchLog(message, level)` - Log to launch with any predefined or custom log level
+  - `scenarioLog(message, level)` - Log to scenario with any predefined or custom log level
+- Support for custom log levels beyond the predefined ones (INFO, ERROR, DEBUG, TRACE, FATAL, WARN).
 
 ## [5.6.1] - 2025-10-21
 ### Added

@@ -15,7 +15,7 @@
  */
 
 const ReportPortalCucumberLoggerWorld = require('../modules/worlds/loggerWorld');
-const { LOG_LEVELS, RP_ENTITIES } = require('../modules/constants');
+const { PREDEFINED_LOG_LEVELS, RP_ENTITIES } = require('../modules/constants');
 
 describe('ReportPortalCucumberLoggerWorld', () => {
   let loggerWorld;
@@ -36,7 +36,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.INFO,
+          level: PREDEFINED_LOG_LEVELS.INFO,
           message,
         }),
         'text/plain',
@@ -51,7 +51,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.DEBUG,
+          level: PREDEFINED_LOG_LEVELS.DEBUG,
           message,
         }),
         'text/plain',
@@ -66,7 +66,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.ERROR,
+          level: PREDEFINED_LOG_LEVELS.ERROR,
           message,
         }),
         'text/plain',
@@ -81,7 +81,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.WARN,
+          level: PREDEFINED_LOG_LEVELS.WARN,
           message,
         }),
         'text/plain',
@@ -96,7 +96,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.TRACE,
+          level: PREDEFINED_LOG_LEVELS.TRACE,
           message,
         }),
         'text/plain',
@@ -111,7 +111,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.FATAL,
+          level: PREDEFINED_LOG_LEVELS.FATAL,
           message,
         }),
         'text/plain',
@@ -126,7 +126,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.INFO,
+          level: PREDEFINED_LOG_LEVELS.INFO,
           message,
           entity: RP_ENTITIES.LAUNCH,
         }),
@@ -142,7 +142,7 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
-          level: LOG_LEVELS.INFO,
+          level: PREDEFINED_LOG_LEVELS.INFO,
           message,
           entity: RP_ENTITIES.SCENARIO,
         }),
@@ -154,8 +154,8 @@ describe('ReportPortalCucumberLoggerWorld', () => {
   describe('custom log', () => {
     it('should attach log with specified level and message', () => {
       const message = 'Test custom message';
-      const level = LOG_LEVELS.INFO;
-      loggerWorld.log(level, message);
+      const level = PREDEFINED_LOG_LEVELS.INFO;
+      loggerWorld.log(message, level);
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
@@ -168,8 +168,8 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
     it('should attach log with ERROR level', () => {
       const message = 'Test error message';
-      const level = LOG_LEVELS.ERROR;
-      loggerWorld.log(level, message);
+      const level = PREDEFINED_LOG_LEVELS.ERROR;
+      loggerWorld.log(message, level);
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
@@ -182,8 +182,8 @@ describe('ReportPortalCucumberLoggerWorld', () => {
 
     it('should attach log with DEBUG level', () => {
       const message = 'Test debug message';
-      const level = LOG_LEVELS.DEBUG;
-      loggerWorld.log(level, message);
+      const level = PREDEFINED_LOG_LEVELS.DEBUG;
+      loggerWorld.log(message, level);
 
       expect(attachSpy).toHaveBeenCalledWith(
         JSON.stringify({
@@ -195,10 +195,10 @@ describe('ReportPortalCucumberLoggerWorld', () => {
     });
 
     it('should accept all valid log levels', () => {
-      Object.keys(LOG_LEVELS).forEach((levelKey) => {
+      Object.keys(PREDEFINED_LOG_LEVELS).forEach((levelKey) => {
         attachSpy.mockClear();
         const message = `Test message for ${levelKey}`;
-        loggerWorld.log(levelKey, message);
+        loggerWorld.log(message, levelKey);
 
         expect(attachSpy).toHaveBeenCalledWith(
           JSON.stringify({
