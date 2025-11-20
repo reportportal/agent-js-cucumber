@@ -1,3 +1,5 @@
+### Added
+- Support for custom log methods with flexible log levels beyond the predefined ones (INFO, ERROR, DEBUG, TRACE, FATAL, WARN). Check the [Logs](README.md#Logs) section in the README for detailed usage examples.
 
 ## [5.6.1] - 2025-10-21
 ### Added

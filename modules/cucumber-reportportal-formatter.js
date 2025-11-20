@@ -23,7 +23,7 @@ const pjson = require('../package.json');
 const {
   RP_EVENTS,
   RP_ENTITIES,
-  LOG_LEVELS,
+  PREDEFINED_LOG_LEVELS,
   STATUSES,
   CUCUMBER_MESSAGES,
   TEST_STEP_FINISHED_RP_MESSAGES,
@@ -412,7 +412,7 @@ const createRPFormatterClass = (config) =>
                 tempId = this.storage.getScenarioTempId(testCaseId);
               }
             } else {
-              request.level = LOG_LEVELS.DEBUG;
+              request.level = PREDEFINED_LOG_LEVELS.DEBUG;
               request.message = data.body;
             }
             this.reportportal.sendLog(tempId, request);
@@ -422,7 +422,7 @@ const createRPFormatterClass = (config) =>
             const fileName = 'file'; // TODO: generate human valuable file name here if possible
             const request = {
               time: clientHelpers.now(),
-              level: LOG_LEVELS.INFO,
+              level: PREDEFINED_LOG_LEVELS.INFO,
               message: fileName,
               file: {
                 name: fileName,
@@ -471,7 +471,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.PENDING: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.WARN,
+            level: PREDEFINED_LOG_LEVELS.WARN,
             message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
           });
           status = STATUSES.FAILED;
@@ -480,7 +480,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.UNDEFINED: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
           });
           status = STATUSES.FAILED;
@@ -489,7 +489,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.AMBIGUOUS: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
           });
           status = STATUSES.FAILED;
@@ -503,7 +503,7 @@ const createRPFormatterClass = (config) =>
           status = STATUSES.FAILED;
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: stripAnsi(testStepResult.message),
           });
 
@@ -518,7 +518,7 @@ const createRPFormatterClass = (config) =>
 
             const request = {
               time: clientHelpers.now(),
-              level: LOG_LEVELS.ERROR,
+              level: PREDEFINED_LOG_LEVELS.ERROR,
               file: { name: screenshotName },
               message: screenshotName,
             };

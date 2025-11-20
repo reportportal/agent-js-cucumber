@@ -48,7 +48,7 @@ const {
   RP_EVENTS,
   RP_ENTITIES,
   TEST_STEP_FINISHED_RP_MESSAGES,
-  LOG_LEVELS,
+  PREDEFINED_LOG_LEVELS,
 } = require('../modules/constants');
 
 describe('cucumber-reportportal-formatter', () => {
@@ -599,7 +599,7 @@ describe('cucumber-reportportal-formatter', () => {
 
         expect(spySendLog).toHaveBeenCalledWith(stepTempId, {
           time: mockedDate,
-          level: LOG_LEVELS.DEBUG,
+          level: PREDEFINED_LOG_LEVELS.DEBUG,
           message: data.body,
         });
       });
@@ -822,7 +822,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.WARN,
+        level: PREDEFINED_LOG_LEVELS.WARN,
         message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
       });
     });
@@ -837,7 +837,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
       });
     });
@@ -852,7 +852,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
       });
     });
