@@ -38,10 +38,16 @@ const createRPFormatterClass = (config) =>
 
       this.options = options;
       this.config = config;
-      this.reportportal = new ReportPortalClient(config, {
-        name: pjson.name,
-        version: pjson.version,
-      });
+      this.reportportal = new ReportPortalClient(
+        {
+          ...config,
+          skippedIsNotIssue: config.skippedIssue === false,
+        },
+        {
+          name: pjson.name,
+          version: pjson.version,
+        },
+      );
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
@@ -105,10 +111,6 @@ const createRPFormatterClass = (config) =>
         ...(this.config.attributes || []),
         { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
       ];
-      if (this.config.skippedIssue === false) {
-        const skippedIssueAttribute = { key: 'skippedIssue', value: 'false', system: true };
-        attributes.push(skippedIssueAttribute);
-      }
       const startLaunchData = {
         name: this.config.launch,
         startTime: clientHelpers.now(),
@@ -551,13 +553,11 @@ const createRPFormatterClass = (config) =>
         const descriptionToSend = errorMessage
           ? `${description}${description ? '\n' : ''}${errorMessage}`
           : description;
-        const withoutIssue = status === STATUSES.SKIPPED && this.config.skippedIssue === false;
         this.reportportal.finishTestItem(tempStepId, {
           ...(status && { status }),
           ...(attributes && { attributes }),
           ...(descriptionToSend && { description: descriptionToSend }),
           ...(customTestCaseId && { testCaseId: customTestCaseId }),
-          ...(withoutIssue && { issue: { issueType: 'NOT_ISSUE' } }),
           endTime: clientHelpers.now(),
         });
       }
