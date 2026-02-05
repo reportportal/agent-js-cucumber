@@ -48,7 +48,7 @@ const {
   RP_EVENTS,
   RP_ENTITIES,
   TEST_STEP_FINISHED_RP_MESSAGES,
-  LOG_LEVELS,
+  PREDEFINED_LOG_LEVELS,
 } = require('../modules/constants');
 
 describe('cucumber-reportportal-formatter', () => {
@@ -213,24 +213,6 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(formatter.storage.getLaunchTempId()).toBe('tempLaunchId');
     });
-
-    it('startLaunch should be called with skippedIssue attribute', () => {
-      const tempId = 'test-temp-id';
-      const spyStartLaunch = jest.spyOn(formatter.reportportal, 'startLaunch');
-      const { skippedIssue } = formatter.config;
-
-      formatter.config.skippedIssue = false;
-      formatter.onTestRunStartedEvent();
-      formatter.config.skippedIssue = skippedIssue;
-
-      expect(spyStartLaunch).toHaveBeenCalledWith(
-        expect.objectContaining({
-          attributes: expect.arrayContaining([
-            { key: 'skippedIssue', value: 'false', system: true },
-          ]),
-        }),
-      );
-    });
   });
 
   describe('onTestCaseEvent', () => {
@@ -288,6 +270,25 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getRuleTempId()).toBe('testItemId');
     });
 
+    it('should handle rule flow when rule tempId already exists', () => {
+      formatter.onGherkinDocumentEvent(gherkinDocumentWithRule);
+      formatter.onPickleEvent(pickle);
+      formatter.onTestCaseEvent(testCase);
+      formatter.onTestRunStartedEvent();
+      formatter.onTestCaseStartedEvent(testCaseStarted);
+
+      // eslint-disable-next-line global-require
+      const ruleTempId = formatter.storage.getRuleTempId(require('./data').ruleId);
+      formatter.onTestCaseEvent({ ...testCase, id: 'second-test-case-id' });
+      formatter.onTestCaseStartedEvent({
+        testCaseId: 'second-test-case-id',
+        id: 'second-test-case-started-id',
+        timestamp: { seconds: 1654094464, nanos: 288000000 },
+      });
+
+      expect(formatter.storage.getRuleTempIdToTestCase('second-test-case-id')).toBe(ruleTempId);
+    });
+
     it('startTestItem should be called', () => {
       const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
 
@@ -315,8 +316,7 @@ describe('cucumber-reportportal-formatter', () => {
     });
 
     it('should set isRetry for test case in storage if attempt > 0', () => {
-      const spyStartTestItem = jest.spyOn(formatter.reportportal, 'startTestItem');
-
+      jest.spyOn(formatter.reportportal, 'startTestItem');
       formatter.onTestCaseStartedEvent({ ...testCaseStarted, attempt: 1 });
 
       expect(formatter.storage.getTestCase(testCaseId).isRetry).toEqual(true);
@@ -599,7 +599,7 @@ describe('cucumber-reportportal-formatter', () => {
 
         expect(spySendLog).toHaveBeenCalledWith(stepTempId, {
           time: mockedDate,
-          level: LOG_LEVELS.DEBUG,
+          level: PREDEFINED_LOG_LEVELS.DEBUG,
           message: data.body,
         });
       });
@@ -771,26 +771,9 @@ describe('cucumber-reportportal-formatter', () => {
       expect(formatter.storage.getStepTempId(testStepStarted.testStepId)).toBeUndefined();
     });
 
-    it('finishTestItem should be called with unexpected status', () => {
+    it('finishTestItem should be called with skipped status', () => {
       const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
 
-      formatter.onTestStepFinishedEvent({
-        ...testStepFinished,
-        testStepResult: { ...testStepFinished.testStepResult, status: 'unexpected-status' },
-      });
-
-      expect(spyfinishTestItem).toBeCalledWith(
-        'testItemId',
-        expect.objectContaining({
-          status: 'unexpected-status',
-        }),
-      );
-    });
-
-    it('finishTestItem should be called with NOT_ISSUE type if SKIPPED status and skippedIssue set to false', () => {
-      const spyfinishTestItem = jest.spyOn(formatter.reportportal, 'finishTestItem');
-
-      formatter.config.skippedIssue = false;
       formatter.onTestStepFinishedEvent({
         ...testStepFinished,
         testStepResult: { ...testStepFinished.testStepResult, status: STATUSES.SKIPPED },
@@ -798,7 +781,9 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spyfinishTestItem).toBeCalledWith(
         'testItemId',
-        expect.objectContaining({ status: STATUSES.SKIPPED, issue: { issueType: 'NOT_ISSUE' } }),
+        expect.objectContaining({
+          status: STATUSES.SKIPPED,
+        }),
       );
     });
 
@@ -822,7 +807,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.WARN,
+        level: PREDEFINED_LOG_LEVELS.WARN,
         message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
       });
     });
@@ -837,7 +822,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
       });
     });
@@ -852,7 +837,7 @@ describe('cucumber-reportportal-formatter', () => {
 
       expect(spySendLog).toBeCalledWith('testItemId', {
         time: mockedDate,
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
       });
     });

@@ -288,6 +288,11 @@ Then(/^I should see my new task in the list$/, function() {
 });
 ```
 
+Custom log methods with flexible log levels:
+- `log(message, level)` - Log to items with any predefined or custom log level
+- `launchLog(message, level)` - Log to launch with any predefined or custom log level
+- `scenarioLog(message, level)` - Log to scenario with any predefined or custom log level
+
 ### Attributes
 
 Attributes for features and scenarios are parsed from @tags as `@key:value` pair.

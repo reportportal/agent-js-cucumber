@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2025 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const { LOG_LEVELS, RP_ENTITIES } = require('../constants');
+const { PREDEFINED_LOG_LEVELS, RP_ENTITIES } = require('../constants');
 
 class ReportPortalCucumberLoggerWorld {
   constructor({ attach, parameters }) {
@@ -22,10 +22,20 @@ class ReportPortalCucumberLoggerWorld {
     this.parameters = parameters;
   }
 
+  log(message, level = PREDEFINED_LOG_LEVELS.INFO) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+      }),
+      'text/plain',
+    );
+  }
+
   info(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.INFO,
+        level: PREDEFINED_LOG_LEVELS.INFO,
         message: logMessage,
       }),
       'text/plain',
@@ -35,7 +45,7 @@ class ReportPortalCucumberLoggerWorld {
   debug(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.DEBUG,
+        level: PREDEFINED_LOG_LEVELS.DEBUG,
         message: logMessage,
       }),
       'text/plain',
@@ -45,7 +55,7 @@ class ReportPortalCucumberLoggerWorld {
   error(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: logMessage,
       }),
       'text/plain',
@@ -55,7 +65,7 @@ class ReportPortalCucumberLoggerWorld {
   warn(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.WARN,
+        level: PREDEFINED_LOG_LEVELS.WARN,
         message: logMessage,
       }),
       'text/plain',
@@ -65,7 +75,7 @@ class ReportPortalCucumberLoggerWorld {
   trace(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.TRACE,
+        level: PREDEFINED_LOG_LEVELS.TRACE,
         message: logMessage,
       }),
       'text/plain',
@@ -75,8 +85,19 @@ class ReportPortalCucumberLoggerWorld {
   fatal(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.FATAL,
+        level: PREDEFINED_LOG_LEVELS.FATAL,
         message: logMessage,
+      }),
+      'text/plain',
+    );
+  }
+
+  launchLog(message, level) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+        entity: RP_ENTITIES.LAUNCH,
       }),
       'text/plain',
     );
@@ -85,7 +106,7 @@ class ReportPortalCucumberLoggerWorld {
   launchInfo(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.INFO,
+        level: PREDEFINED_LOG_LEVELS.INFO,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
       }),
@@ -96,7 +117,7 @@ class ReportPortalCucumberLoggerWorld {
   launchDebug(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.DEBUG,
+        level: PREDEFINED_LOG_LEVELS.DEBUG,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
       }),
@@ -107,7 +128,7 @@ class ReportPortalCucumberLoggerWorld {
   launchError(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
       }),
@@ -118,7 +139,7 @@ class ReportPortalCucumberLoggerWorld {
   launchWarn(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.WARN,
+        level: PREDEFINED_LOG_LEVELS.WARN,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
       }),
@@ -129,7 +150,7 @@ class ReportPortalCucumberLoggerWorld {
   launchTrace(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.TRACE,
+        level: PREDEFINED_LOG_LEVELS.TRACE,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
       }),
@@ -140,9 +161,20 @@ class ReportPortalCucumberLoggerWorld {
   launchFatal(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.FATAL,
+        level: PREDEFINED_LOG_LEVELS.FATAL,
         message: logMessage,
         entity: RP_ENTITIES.LAUNCH,
+      }),
+      'text/plain',
+    );
+  }
+
+  scenarioLog(message, level) {
+    this.attach(
+      JSON.stringify({
+        level,
+        message,
+        entity: RP_ENTITIES.SCENARIO,
       }),
       'text/plain',
     );
@@ -151,7 +183,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioInfo(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.INFO,
+        level: PREDEFINED_LOG_LEVELS.INFO,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),
@@ -162,7 +194,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioDebug(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.DEBUG,
+        level: PREDEFINED_LOG_LEVELS.DEBUG,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),
@@ -173,7 +205,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioError(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.ERROR,
+        level: PREDEFINED_LOG_LEVELS.ERROR,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),
@@ -184,7 +216,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioWarn(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.WARN,
+        level: PREDEFINED_LOG_LEVELS.WARN,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),
@@ -195,7 +227,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioTrace(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.TRACE,
+        level: PREDEFINED_LOG_LEVELS.TRACE,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),
@@ -206,7 +238,7 @@ class ReportPortalCucumberLoggerWorld {
   scenarioFatal(logMessage) {
     this.attach(
       JSON.stringify({
-        level: LOG_LEVELS.FATAL,
+        level: PREDEFINED_LOG_LEVELS.FATAL,
         message: logMessage,
         entity: RP_ENTITIES.SCENARIO,
       }),

@@ -23,7 +23,7 @@ const pjson = require('../package.json');
 const {
   RP_EVENTS,
   RP_ENTITIES,
-  LOG_LEVELS,
+  PREDEFINED_LOG_LEVELS,
   STATUSES,
   CUCUMBER_MESSAGES,
   TEST_STEP_FINISHED_RP_MESSAGES,
@@ -38,10 +38,16 @@ const createRPFormatterClass = (config) =>
 
       this.options = options;
       this.config = config;
-      this.reportportal = new ReportPortalClient(config, {
-        name: pjson.name,
-        version: pjson.version,
-      });
+      this.reportportal = new ReportPortalClient(
+        {
+          ...config,
+          skippedIsNotIssue: config.skippedIssue === false,
+        },
+        {
+          name: pjson.name,
+          version: pjson.version,
+        },
+      );
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
       this.isRerun = rerun || config.rerun;
       this.rerunOf = rerunOf || config.rerunOf;
@@ -105,10 +111,6 @@ const createRPFormatterClass = (config) =>
         ...(this.config.attributes || []),
         { key: 'agent', value: `${pjson.name}|${pjson.version}`, system: true },
       ];
-      if (this.config.skippedIssue === false) {
-        const skippedIssueAttribute = { key: 'skippedIssue', value: 'false', system: true };
-        attributes.push(skippedIssueAttribute);
-      }
       const startLaunchData = {
         name: this.config.launch,
         startTime: clientHelpers.now(),
@@ -412,7 +414,7 @@ const createRPFormatterClass = (config) =>
                 tempId = this.storage.getScenarioTempId(testCaseId);
               }
             } else {
-              request.level = LOG_LEVELS.DEBUG;
+              request.level = PREDEFINED_LOG_LEVELS.DEBUG;
               request.message = data.body;
             }
             this.reportportal.sendLog(tempId, request);
@@ -422,7 +424,7 @@ const createRPFormatterClass = (config) =>
             const fileName = 'file'; // TODO: generate human valuable file name here if possible
             const request = {
               time: clientHelpers.now(),
-              level: LOG_LEVELS.INFO,
+              level: PREDEFINED_LOG_LEVELS.INFO,
               message: fileName,
               file: {
                 name: fileName,
@@ -471,7 +473,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.PENDING: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.WARN,
+            level: PREDEFINED_LOG_LEVELS.WARN,
             message: TEST_STEP_FINISHED_RP_MESSAGES.PENDING,
           });
           status = STATUSES.FAILED;
@@ -480,7 +482,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.UNDEFINED: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.UNDEFINED,
           });
           status = STATUSES.FAILED;
@@ -489,7 +491,7 @@ const createRPFormatterClass = (config) =>
         case STATUSES.AMBIGUOUS: {
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: TEST_STEP_FINISHED_RP_MESSAGES.AMBIGUOUS,
           });
           status = STATUSES.FAILED;
@@ -503,7 +505,7 @@ const createRPFormatterClass = (config) =>
           status = STATUSES.FAILED;
           this.reportportal.sendLog(tempStepId, {
             time: clientHelpers.now(),
-            level: LOG_LEVELS.ERROR,
+            level: PREDEFINED_LOG_LEVELS.ERROR,
             message: stripAnsi(testStepResult.message),
           });
 
@@ -518,7 +520,7 @@ const createRPFormatterClass = (config) =>
 
             const request = {
               time: clientHelpers.now(),
-              level: LOG_LEVELS.ERROR,
+              level: PREDEFINED_LOG_LEVELS.ERROR,
               file: { name: screenshotName },
               message: screenshotName,
             };
@@ -551,13 +553,11 @@ const createRPFormatterClass = (config) =>
         const descriptionToSend = errorMessage
           ? `${description}${description ? '\n' : ''}${errorMessage}`
           : description;
-        const withoutIssue = status === STATUSES.SKIPPED && this.config.skippedIssue === false;
         this.reportportal.finishTestItem(tempStepId, {
           ...(status && { status }),
           ...(attributes && { attributes }),
           ...(descriptionToSend && { description: descriptionToSend }),
           ...(customTestCaseId && { testCaseId: customTestCaseId }),
-          ...(withoutIssue && { issue: { issueType: 'NOT_ISSUE' } }),
           endTime: clientHelpers.now(),
         });
       }
