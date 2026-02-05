@@ -1,3 +1,5 @@
+
+## [5.6.2] - 2026-02-05
 ### Added
 - Support for custom log methods with flexible log levels beyond the predefined ones (INFO, ERROR, DEBUG, TRACE, FATAL, WARN). Check the [Logs](README.md#Logs) section in the README for detailed usage examples.
 **Note:** Custom logs management supported by ReportPortal versions from [25.2](https://github.com/reportportal/reportportal/releases/tag/25.2).
