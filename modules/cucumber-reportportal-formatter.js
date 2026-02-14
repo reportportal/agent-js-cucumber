@@ -236,7 +236,7 @@ const createRPFormatterClass = (config) =>
       let isRetry = isTestCaseRetried;
       if (attempt > 0) {
         isRetry = true;
-        this.storage.updateTestCase(testCaseId, { isRetry });
+        this.storage.updateTestCase(testCaseId, { isRetry, status: undefined });
 
         // do not show scenario with retry in RP
         if (!this.isScenarioBasedStatistics) return;
