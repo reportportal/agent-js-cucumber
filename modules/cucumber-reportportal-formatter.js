@@ -31,6 +31,9 @@ const {
 } = require('./constants');
 const Storage = require('./storage');
 
+const declaredVersion = ((pjson.devDependencies || {})['@cucumber/cucumber'] || '').replace(/^\D+/, '');
+const framework_version = require('@cucumber/cucumber/package.json').version || declaredVersion;
+
 const createRPFormatterClass = (config) =>
   class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -46,6 +49,7 @@ const createRPFormatterClass = (config) =>
         {
           name: pjson.name,
           version: pjson.version,
+          framework_version,
         },
       );
       const { rerun, rerunOf } = options.parsedArgvOptions || {};
