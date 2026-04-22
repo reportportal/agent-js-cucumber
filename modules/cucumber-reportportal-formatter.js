@@ -31,8 +31,15 @@ const {
 } = require('./constants');
 const Storage = require('./storage');
 
-const declaredVersion = ((pjson.devDependencies || {})['@cucumber/cucumber'] || '').replace(/^\D+/, '');
-const framework_version = require('@cucumber/cucumber/package.json').version || declaredVersion;
+const getFrameworkVersion = () => {
+  try {
+    // eslint-disable-next-line global-require
+    return require('@cucumber/cucumber/package.json').version || 'not_set';
+  } catch {
+    return 'not_set';
+  }
+};
+const framework_version = getFrameworkVersion();
 
 const createRPFormatterClass = (config) =>
   class CucumberReportPortalFormatter extends Formatter {
