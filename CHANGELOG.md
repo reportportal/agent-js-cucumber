@@ -1,3 +1,5 @@
+### Security
+- Addressed [CVE-2025-69873](https://www.cve.org/CVERecord?id=CVE-2025-69873), [CVE-2026-33532](https://www.cve.org/CVERecord?id=CVE-2026-33532), [CVE-2026-33750](https://www.cve.org/CVERecord?id=CVE-2026-33750), [CVE-2026-32141](https://www.cve.org/CVERecord?id=CVE-2026-32141), [CVE-2026-33228](https://www.cve.org/CVERecord?id=CVE-2026-33228), [CVE-2026-26996](https://www.cve.org/CVERecord?id=CVE-2026-26996), [CVE-2026-27903](https://www.cve.org/CVERecord?id=CVE-2026-27903), [CVE-2026-27904](https://www.cve.org/CVERecord?id=CVE-2026-27904), [CVE-2026-33671](https://www.cve.org/CVERecord?id=CVE-2026-33671), [CVE-2026-33672](https://www.cve.org/CVERecord?id=CVE-2026-33672).
 ### Added
 - Google Analytics improvements.
 
@@ -24,7 +26,6 @@
 - `@reportportal/client-javascript` bumped to version `5.4.1`.
 ### Security
 - Updated versions of vulnerable packages (axios).
-
 
 ## [5.5.2] - 2025-05-13
 ### Fixed
