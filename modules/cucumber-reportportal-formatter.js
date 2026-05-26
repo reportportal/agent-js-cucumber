@@ -31,6 +31,16 @@ const {
 } = require('./constants');
 const Storage = require('./storage');
 
+const getFrameworkVersion = () => {
+  try {
+    // eslint-disable-next-line global-require
+    return require('@cucumber/cucumber/package.json').version || 'not_set';
+  } catch {
+    return 'not_set';
+  }
+};
+const framework_version = getFrameworkVersion();
+
 const createRPFormatterClass = (config) =>
   class CucumberReportPortalFormatter extends Formatter {
     constructor(options) {
@@ -46,6 +56,7 @@ const createRPFormatterClass = (config) =>
         {
           name: pjson.name,
           version: pjson.version,
+          framework_version,
         },
       );
       const { rerun, rerunOf } = options.parsedArgvOptions || {};

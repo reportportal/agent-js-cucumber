@@ -1,3 +1,5 @@
+### Added
+- Google Analytics improvements.
 
 ## [5.6.2] - 2026-02-05
 ### Added
