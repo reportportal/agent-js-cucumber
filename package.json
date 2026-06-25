@@ -4,6 +4,7 @@
   "description": "Agent that connects cucumber-js with Report Portal",
   "main": "./modules/index",
   "scripts": {
+    "codegraph": "bash scripts/codegraph.sh",
     "lint": "eslint ./modules/**/*.js",
     "format": "npm run lint -- --fix",
     "test": "jest",
