@@ -15,7 +15,7 @@
  */
 
 const ReportPortalClient = require('@reportportal/client-javascript');
-const clientHelpers = require('@reportportal/client-javascript/lib/helpers');
+const clientHelpers = require('@reportportal/client-javascript/helpers');
 const { Formatter } = require('@cucumber/cucumber');
 const stripAnsi = require('strip-ansi');
 const utils = require('./utils');
