@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const helpers = require('@reportportal/client-javascript/lib/helpers');
+const helpers = require('@reportportal/client-javascript/helpers');
 const { createRPFormatterClass } = require('../modules');
 const { RPClientMock, getDefaultConfig, mockedDate } = require('./mocks');
 const Storage = require('../modules/storage');
